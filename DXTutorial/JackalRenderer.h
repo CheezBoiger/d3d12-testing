@@ -18,15 +18,23 @@ class JackalRenderer
 {
 public:
 
-    void init();
+    void init() {
+    }
 
     void cleanUp();
 
-    void render();
+    void render() {
+        beginFrame();
+        endFrame();
+    }
     
     void update();
 
 private:
-    gfx::BackendRenderer* m_pBackendRenderer;
+
+    void beginFrame();
+    void endFrame();
+
+    gfx::BackendRenderer* m_pBackend;
 };
 } //

@@ -38,9 +38,7 @@ public:
 
     void present() override { m_pSwapChain->Present(1, 0); }
 
-    void beginFrame() override;
     void submit(RendererT queue, RendererT* cmdLists, U32 numCmdLists) override;
-    void endFrame() override;
 
     void createCommandList(CommandList** pList) override;
     void destroyCommandList(CommandList* pList) override;

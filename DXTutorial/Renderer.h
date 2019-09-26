@@ -145,11 +145,10 @@ public:
     virtual void adjust(GraphicsConfiguration& config) { }
 
     virtual void submit(RendererT queue, RendererT* cmdList, U32 numCmdLists) { }
-    virtual void present() { m_pSwapChain->Present(1, 0); }
-    virtual void signalFence(RendererT queue, HANDLE fence) { }
 
-    virtual void beginFrame() { /* Frame wait for cpu fence. */ }
-    virtual void endFrame() { /* Submit the job to the gpu queue. */ } 
+    virtual void present() { }
+
+    virtual void signalFence(RendererT queue, HANDLE fence) { }
 
     virtual void createBuffer(Buffer** pBuf) { }
     virtual void createTexture2D() { }
