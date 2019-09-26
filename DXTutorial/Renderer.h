@@ -121,6 +121,16 @@ public:
 
 };
 
+/*
+    Behind every great renderer is a powerful engine that handles the translation between
+    front end rendering, to native gpu calls. The backend renderer has an important duty to ensure
+    that there is a fine line between getting the visuals needed, and getting the visuals to work on anything,
+    this module is responsible for the low level work. Settting up a Rendering engine in this way will allow for
+    better handling of support for multiple Graphics APIs, along with focusing on the important aspects of simplicity
+    between front end work, and back end work.
+
+    You can even set up a null backend renderer, or even a software renderer.
+*/
 class BackendRenderer 
 {
 public:
