@@ -26,3 +26,11 @@ typedef I8 B8;
 
 typedef float R32;
 typedef double R64;
+
+
+#if _DEBUG
+#include <stdio.h>
+#define DEBUG(str, ...) printf(str ## "\n", ## __VA_ARGS__)
+#else
+#define DEBUG(str, ...)
+#endif

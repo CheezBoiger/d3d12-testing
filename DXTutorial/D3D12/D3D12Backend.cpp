@@ -2,10 +2,6 @@
 
 #include "D3D12Backend.h"
 
-
-#pragma comment(lib, "d3d12.dll")
-
-
 namespace gfx
 {
 
@@ -21,14 +17,16 @@ IDXGIFactory4* D3D12Backend::createFactory()
     IDXGIFactory4* pFactory = nullptr;
     HRESULT result = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), (void**)& pFactory);
     if (FAILED(result)) {
-        printf("Failed to create dxgi factory.\n");
+        DEBUG("Failed to create dxgi factory.");
         return nullptr;
     }
     return pFactory;
 }
 
 
-void D3D12Backend::initialize(HWND handle, const GraphicsConfiguration& configs)
+void D3D12Backend::initialize(HWND handle, 
+                              bool isFullScreen, 
+                              const GraphicsConfiguration& configs)
 {
     if (!handle) return;
     IDXGIFactory4* factory = createFactory();
@@ -63,10 +61,13 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
         return;
     }
 
-    result = D3D12CreateDevice(pDesiredAdapter, D3D_FEATURE_LEVEL_11_1, __uuidof(ID3D12Device), (void**)& m_pDevice);
+    result = D3D12CreateDevice(pDesiredAdapter, 
+                               D3D_FEATURE_LEVEL_11_1, 
+                               __uuidof(ID3D12Device), 
+                               (void**)& m_pDevice);
 
     if (FAILED(result)) {
-        printf("Failed to create d3d12 device!\n");
+        DEBUG("Failed to create d3d12 device!");
         return;
     }
 }
@@ -99,7 +100,7 @@ void D3D12Backend::createSwapChain(IDXGIFactory4* pFactory,
                                                       &m_pSwapChain);
     
     if (FAILED(result)) {
-        printf("Failed to create swapchain!");
+        DEBUG("Failed to create swapchain!");
         return;
     }
 }
@@ -113,7 +114,7 @@ void D3D12Backend::querySwapChain()
         ID3D12Resource* pResource = nullptr;
         HRESULT result = m_pSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&pResource);
         if (FAILED(result)) {
-            printf("Failed to query from swapchain buffer!");
+            DEBUG("Failed to query from swapchain buffer!");
             continue;
         }
         resource._swapImage = pResource;
