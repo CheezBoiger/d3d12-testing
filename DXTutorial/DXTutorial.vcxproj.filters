@@ -68,6 +68,9 @@
     <ClCompile Include="D3D12\D3D12Backend.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DXTutorial.rc">

@@ -17,18 +17,22 @@ struct GraphicsConfiguration
 };
 
 
-enum BufferUsage
+enum BufferBind
 {
-    BUFFER_USAGE_CONSTANT_BUFFER,
-    BUFFER_USAGE_TEXTURE_2D,
-    BUFFER_USAGE_TEXTURE_3D,
-    BUFFER_USAGE_UNORDERED_ACCESS_VIEW
+    BUFFER_BIND_CONSTANT_BUFFER = (1 << 0),
+    BUFFER_BIND_RENDER_TARGET = (1 << 1),
+    BUFFER_BIND_SHADER_RESOURCE = (1 << 2),
+    BUFFER_BIND_VERTEX_BUFFER = (1 << 3),
+    BUFFER_BIND_INDEX_BUFFER = (1 << 4),
+    BUFFER_BIND_UNORDERED_ACCESS = (1 << 5)
 };
+
+typedef U32 BufferBindFlags;
 
 enum BufferUsage
 {
-    BUFFER_USAGE_TEXTURE,
-    BUFFER_USAGE_BUFFER
+    BUFFER_USAGE_READBACK,
+    BUFFER_USAGE_UPLOAD,
 };
 
 enum BufferDimension
@@ -39,16 +43,14 @@ enum BufferDimension
     BUFFER_DIMENSION_
 };
 
-
-
 typedef U64 RendererT;
 
 
-class AbstractGraphicsObject
+class GraphicsObject
 {
     static RendererT assignmentOperator;
 public:
-    AbstractGraphicsObject()
+    GraphicsObject()
         : m_uuid(++assignmentOperator) { }
 
     RendererT getUUID() const { return m_uuid; }
@@ -70,19 +72,7 @@ struct Scissor
 };
 
 
-class VertexBuffer : public AbstractGraphicsObject
-{
-
-};
-
-
-class IndexBuffer : public AbstractGraphicsObject
-{
-
-};
-
-
-class DescriptorTable : public AbstractGraphicsObject
+class DescriptorTable : public GraphicsObject
 {
 public:
     virtual ~DescriptorTable() { }
@@ -93,7 +83,7 @@ public:
 };
 
 
-class RenderPass : public AbstractGraphicsObject
+class RenderPass : public GraphicsObject
 {
 public:
     virtual void setRenderTargets() { }
@@ -102,14 +92,14 @@ public:
 };
 
 
-class Buffer : public AbstractGraphicsObject
+class Buffer : public GraphicsObject
 {
 public:
 
 };
 
 
-class CommandList : public AbstractGraphicsObject
+class CommandList : public GraphicsObject
 {
 public:
     CommandList() { }
@@ -134,8 +124,8 @@ public:
     virtual void setPipelineStateObject() { }
     virtual void setRenderPass(RenderPass* pass) { }
     virtual void dispatch(U32 x, U32 y, U32 z) { }
-    virtual void setVertexBuffers(VertexBuffer* buffers, U32 vertexBufferCount) { }
-    virtual void setIndexBuffer(IndexBuffer* buffer) { }
+    virtual void setVertexBuffers(Buffer** buffers, U32 vertexBufferCount) { }
+    virtual void setIndexBuffer(Buffer** buffer) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
@@ -171,7 +161,14 @@ public:
 
     virtual void signalFence(RendererT queue, HANDLE fence) { }
 
-    virtual void createBuffer(Buffer** buffer, BufferDimension dimension, U32 width, U32 height = 1) { }
+    virtual void createBuffer(Buffer** buffer, 
+                              BufferUsage usage,
+                              BufferBindFlags binds, 
+                              BufferDimension dimension, 
+                              U32 width, 
+                              U32 height = 1,
+                              U32 depth = 1,
+                              DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN) { }
     virtual void createTexture2D() { }
     virtual void createVertexBuffer() { }
     virtual void createIndexBuffer() { }

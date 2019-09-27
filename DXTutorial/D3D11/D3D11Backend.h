@@ -27,7 +27,14 @@ public:
     void destroyCommandList(CommandList* pList) override;
 
     void createTexture2D() override;
-    void createBuffer(Buffer** buffer, BufferDimension dimension, U32 width, U32 height = 1) override { CD3D11_BUFFER_DESC::}
+    void createBuffer(Buffer** buffer, 
+                      BufferUsage usage,
+                      BufferBindFlags binds, 
+                      BufferDimension dimension, 
+                      U32 width, 
+                      U32 height = 1,
+                      U32 depth = 1,
+                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN) override;
     void destroyBuffer(Buffer* buffer) override;
 
     void createGraphicsPipelineState() override;

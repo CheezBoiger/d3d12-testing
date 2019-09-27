@@ -148,7 +148,14 @@ void D3D12Backend::querySwapChain()
 }
 
 
-void D3D12Backend::createBuffer(Buffer** buffer, BufferDimension dimension, U32 width, U32 height)
+void D3D12Backend::createBuffer(Buffer** buffer, 
+                                BufferUsage usage,
+                                BufferBindFlags binds, 
+                                BufferDimension dimension, 
+                                U32 width, 
+                                U32 height,
+                                U32 depth,
+                                DXGI_FORMAT format)
 {
     ID3D12Resource* pResource = nullptr;
     D3D12_RESOURCE_DESC desc = { };
@@ -156,14 +163,16 @@ void D3D12Backend::createBuffer(Buffer** buffer, BufferDimension dimension, U32 
     desc.Dimension = getDimension(dimension);
     desc.Width = width;
     desc.Height = height;
+    desc.DepthOrArraySize = depth;
     desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    pResource = m_memAllocator.allocate(desc);
+    desc.Format = format;
+    
+    pResource = m_memAllocator.allocate(m_pDevice, desc);
 
     BufferD3D12* pNativeBuffer = new BufferD3D12();
-    pNativeBuffer->_pBufferResource = pResource;
+    pNativeBuffer->_usage = usage;
     *buffer = pNativeBuffer; 
+
     m_resources[(*buffer)->getUUID()] = pResource;
 }
 } // gfx

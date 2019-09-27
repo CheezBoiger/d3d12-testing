@@ -24,7 +24,7 @@ struct FrameResource
 
 struct BufferD3D12 : public Buffer
 {
-    ID3D12Resource* _pBufferResource;
+    BufferUsage _usage;
 };
 
 class D3D12Backend : public BackendRenderer
@@ -56,7 +56,14 @@ private:
     void createCommandAllocators() { }
 
     void createCommandList(CommandList** pList) override { }
-    void createBuffer(Buffer** pBuf, BufferDimension dimension, U32 width, U32 height = 1) override;
+    void createBuffer(Buffer** buffer, 
+                      BufferUsage usage,
+                      BufferBindFlags binds, 
+                      BufferDimension dimension, 
+                      U32 width, 
+                      U32 height = 1,
+                      U32 depth = 1,
+                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN) override;
     void destroyBuffer(Buffer* buffer) override { }
 
     std::unordered_map<RendererT, CommandList*> m_cmdLists;

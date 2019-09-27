@@ -69,12 +69,12 @@ public:
         m_pCmdList->Dispatch(x, y, z);
     }
 
-    void setVertexBuffers(VertexBuffer* buffers, U32 vertexBufferCount) override {
+    void setVertexBuffers(Buffer** buffers, U32 vertexBufferCount) override {
         //m_pCmdList->IASetVertexBuffers
         
     }
 
-    void setIndexBuffer(IndexBuffer* buffer) override;
+    void setIndexBuffer(Buffer** buffer) override;
 
     void close() override {
         m_pCmdList->Close();
