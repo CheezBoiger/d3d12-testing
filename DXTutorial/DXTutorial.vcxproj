@@ -168,6 +168,7 @@
     <ClInclude Include="WinConfigs.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="D3D11\D3D11Backend.cpp" />
     <ClCompile Include="D3D12\D3D12Backend.cpp" />
     <ClCompile Include="DXTutorial.cpp" />
     <ClCompile Include="Renderer.cpp" />

@@ -12,6 +12,16 @@
 
 namespace gfx {
 
+struct BufferD3D11 : public Buffer
+{
+    U32 _width;
+    U32 _height;
+    U32 _depth;
+    BufferDimension _dimension;
+    DXGI_FORMAT _format;
+    BufferBindFlags _flags;
+};
+
 class D3D11Backend : public BackendRenderer
 {
 public:
@@ -53,6 +63,7 @@ private:
     std::unordered_map<RendererT, GraphicsCommandListImmediateD3D11> m_immediateCmdLists;
     std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
     std::unordered_map<RendererT, ID3D11RenderTargetView*> m_renderTargetViews;
+    std::unordered_map<RendererT, ID3D11Buffer*> m_buffers;
     std::unordered_map<RendererT, ID3D11UnorderedAccessView*> m_unorderedAccessViews;
 };
 } // gfx
