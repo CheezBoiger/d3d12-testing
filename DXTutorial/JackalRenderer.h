@@ -21,19 +21,21 @@ public:
     void init() {
     }
 
-    void cleanUp();
+    void cleanUp() { }
 
     void render() {
         beginFrame();
         endFrame();
     }
     
-    void update();
+    void update() { }
+
+    void pushCommandsCommands() { }
 
 private:
 
-    void beginFrame();
-    void endFrame();
+    void beginFrame() { }
+    void endFrame() { }
 
     gfx::BackendRenderer* m_pBackend;
 };

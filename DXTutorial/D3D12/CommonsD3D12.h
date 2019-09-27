@@ -8,4 +8,3 @@
 #include <d3d12shader.h>
 
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "d3d12shader.lib")

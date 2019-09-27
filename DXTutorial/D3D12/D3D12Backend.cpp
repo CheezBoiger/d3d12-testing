@@ -6,6 +6,18 @@ namespace gfx
 {
 
 
+
+D3D12_RESOURCE_DIMENSION getDimension(BufferDimension dimension)
+{
+    switch (dimension) {
+        case BUFFER_DIMENSION_BUFFER: return D3D12_RESOURCE_DIMENSION_BUFFER;
+        case BUFFER_DIMENSION_2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        case BUFFER_DIMENSION_3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        default: return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+    }
+}
+
+
 D3D12Backend::D3D12Backend()
 {
 
@@ -64,7 +76,7 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
     result = D3D12CreateDevice(pDesiredAdapter, 
                                D3D_FEATURE_LEVEL_11_1, 
                                __uuidof(ID3D12Device), 
-                               (void**)& m_pDevice);
+                                (void**)& m_pDevice);
 
     if (FAILED(result)) {
         DEBUG("Failed to create d3d12 device!");
@@ -134,4 +146,24 @@ void D3D12Backend::querySwapChain()
         resource._signalEvent = CreateEvent(0, false, false, nullptr);
     }
 }
+
+
+void D3D12Backend::createBuffer(Buffer** buffer, BufferDimension dimension, U32 width, U32 height)
+{
+    ID3D12Resource* pResource = nullptr;
+    D3D12_RESOURCE_DESC desc = { };
+    desc.Alignment = 0;
+    desc.Dimension = getDimension(dimension);
+    desc.Width = width;
+    desc.Height = height;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    pResource = m_memAllocator.allocate(desc);
+
+    BufferD3D12* pNativeBuffer = new BufferD3D12();
+    pNativeBuffer->_pBufferResource = pResource;
+    *buffer = pNativeBuffer; 
+    m_resources[(*buffer)->getUUID()] = pResource;
 }
+} // gfx

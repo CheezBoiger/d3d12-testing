@@ -154,6 +154,7 @@
     <ClInclude Include="D3D11\CommandListD3D11.h" />
     <ClInclude Include="D3D11\CommonsD3D11.h" />
     <ClInclude Include="D3D11\D3D11Backend.h" />
+    <ClInclude Include="D3D12\MemoryAllocatorD3D12.h" />
     <ClInclude Include="JackalRenderer.h" />
     <ClInclude Include="D3D11\SwapChain.h" />
     <ClInclude Include="D3D12\CommandListD3D12.h" />

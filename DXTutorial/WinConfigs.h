@@ -9,8 +9,8 @@
 
 #include <string>
 
-#pragma comment(lib, "dxgi.dll")
-
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
 
 typedef unsigned char U8;
 typedef char I8;

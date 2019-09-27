@@ -25,37 +25,24 @@ enum BufferUsage
     BUFFER_USAGE_UNORDERED_ACCESS_VIEW
 };
 
-class VertexBuffer
+enum BufferUsage
 {
-
+    BUFFER_USAGE_TEXTURE,
+    BUFFER_USAGE_BUFFER
 };
 
-class IndexBuffer
+enum BufferDimension
 {
-
-};
-
-class DescriptorTable 
-{
-public:
-    virtual ~DescriptorTable() { }
-
-
-    virtual void setShaderResourceViews() { } 
-    virtual void setUnorderedAccessViews() { }
-    virtual void setConstantBuffers() { }
+    BUFFER_DIMENSION_BUFFER,
+    BUFFER_DIMENSION_2D,
+    BUFFER_DIMENSION_3D,
+    BUFFER_DIMENSION_
 };
 
 
-class RenderPass
-{
-public:
-    virtual void setRenderTargets();
-    virtual void setDepthStencil();
-    
-};
 
 typedef U64 RendererT;
+
 
 class AbstractGraphicsObject
 {
@@ -81,6 +68,46 @@ struct Scissor
 {
     U32 left, top, right, bottom;
 };
+
+
+class VertexBuffer : public AbstractGraphicsObject
+{
+
+};
+
+
+class IndexBuffer : public AbstractGraphicsObject
+{
+
+};
+
+
+class DescriptorTable : public AbstractGraphicsObject
+{
+public:
+    virtual ~DescriptorTable() { }
+
+    virtual void setShaderResourceViews() { }
+    virtual void setUnorderedAccessViews() { }
+    virtual void setConstantBuffers() { }
+};
+
+
+class RenderPass : public AbstractGraphicsObject
+{
+public:
+    virtual void setRenderTargets() { }
+    virtual void setDepthStencil() { }
+
+};
+
+
+class Buffer : public AbstractGraphicsObject
+{
+public:
+
+};
+
 
 class CommandList : public AbstractGraphicsObject
 {
@@ -115,12 +142,6 @@ public:
     virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
 };
 
-class Buffer : public AbstractGraphicsObject
-{
-public:
-
-};
-
 /*
     Behind every great renderer is a powerful engine that handles the translation between
     front end rendering, to native gpu calls. The backend renderer has an important duty to ensure
@@ -150,14 +171,17 @@ public:
 
     virtual void signalFence(RendererT queue, HANDLE fence) { }
 
-    virtual void createBuffer(Buffer** pBuf) { }
+    virtual void createBuffer(Buffer** buffer, BufferDimension dimension, U32 width, U32 height = 1) { }
     virtual void createTexture2D() { }
+    virtual void createVertexBuffer() { }
+    virtual void createIndexBuffer() { }
     virtual void createQueue() { }
     virtual void createGraphicsPipelineState() { }
     virtual void createComputePipelineState() { }
     virtual void createRayTracingPipelineState() { }
     virtual void createRenderPass(RenderPass** pPass) { }
 
+    virtual void destroyBuffer(Buffer* buffer) { }
     virtual void destroyCommandList(CommandList* pCmdList) { }
     virtual void destoryRenderPass(RenderPass pPass) { }
 
