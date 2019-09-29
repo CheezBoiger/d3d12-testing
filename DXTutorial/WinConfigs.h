@@ -30,7 +30,10 @@ typedef double R64;
 
 #if _DEBUG
 #include <stdio.h>
+#include <assert.h>
 #define DEBUG(str, ...) printf(str ## "\n", ## __VA_ARGS__)
+#define ASSERT(x) assert(x)
 #else
 #define DEBUG(str, ...)
+#define ASSERT(x)
 #endif

@@ -7,7 +7,7 @@
 namespace gfx {
 
 
-struct GraphicsConfiguration 
+struct GpuConfiguration 
 {
     B32 _enableVSync;
     B32 _windowed;
@@ -24,15 +24,18 @@ enum BufferBind
     BUFFER_BIND_SHADER_RESOURCE = (1 << 2),
     BUFFER_BIND_VERTEX_BUFFER = (1 << 3),
     BUFFER_BIND_INDEX_BUFFER = (1 << 4),
-    BUFFER_BIND_UNORDERED_ACCESS = (1 << 5)
+    BUFFER_BIND_UNORDERED_ACCESS = (1 << 5),
+    BUFFER_BIND_DEPTH_STENCIL = (1 << 6)
 };
 
 typedef U32 BufferBindFlags;
 
 enum BufferUsage
 {
-    BUFFER_USAGE_READBACK,
-    BUFFER_USAGE_UPLOAD,
+    // Gpu read back from device memory to system memory.
+    BUFFER_USAGE_GPU_TO_CPU,
+    // Cpu upload from system memory to device memory. This is fast data transfer.
+    BUFFER_USAGE_CPU_TO_GPU,
 };
 
 enum BufferDimension
@@ -40,12 +43,28 @@ enum BufferDimension
     BUFFER_DIMENSION_BUFFER,
     BUFFER_DIMENSION_2D,
     BUFFER_DIMENSION_3D,
-    BUFFER_DIMENSION_
+    BUFFER_DIMENSION_2D_ARRAY,
+    BUFFER_DIMENSION_3D_ARRAY,
+    BUFFER_DIMENSION_TEXTURE_CUBE,
+    BUFFER_DIMENSION_TEXTURE_CUBE_ARRAY
+};
+
+enum CommandListRecordUsage
+{
+  COMMAND_LIST_RECORD_USAGE_SIMULTANEOUS,
+  COMMAND_LIST_RECORD_USAGE_ONE_TIME_ONLY
 };
 
 typedef U64 RendererT;
 
-
+/*
+  Graphics objects may have to update, or reinitialize during runtime (ex. window resize,
+  minimize/maximize, graphics configurations from the user...) which will cause any currently
+  bound objects to be become stale. To avoid having to re iniitalize every pointer to a gpu handle
+  in this event, we simply track through a guuid/key system, and lookup the gpu handle. This way, our
+  code remains clean, and we don't have to check for these events, other than performing one function call
+  to reinit these gpu handles.
+*/
 class GraphicsObject
 {
     static RendererT assignmentOperator;
@@ -56,6 +75,11 @@ public:
     RendererT getUUID() const { return m_uuid; }
 private:
     RendererT m_uuid;
+};
+
+
+class Fence : public GraphicsObject
+{
 };
 
 
@@ -72,36 +96,66 @@ struct Scissor
 };
 
 
+class Buffer : public GraphicsObject {
+ public:
+  virtual void* map(U64 start, U64 sz) { return nullptr; }
+  virtual void unmap(U64 start, U64 sz) {}
+};
+
+
 class DescriptorTable : public GraphicsObject
 {
 public:
     virtual ~DescriptorTable() { }
-
-    virtual void setShaderResourceViews() { }
-    virtual void setUnorderedAccessViews() { }
-    virtual void setConstantBuffers() { }
+    virtual void setShaderResourceViews(Buffer** buffers, U32 bufferCount) { }
+    virtual void setUnorderedAccessViews(Buffer** buffers, U32 bufferCount) { }
+    virtual void setConstantBuffers(Buffer** buffers, U32 bufferCount) { }
+    virtual void finalize() { }
 };
 
+
+class GraphicsPipeline : public GraphicsObject
+{
+public:
+};
+
+
+class ComputePipeline : public GraphicsObject
+{
+public:
+};
+
+
+class RayTracingPipeline : public GraphicsObject
+{
+public:
+};
+
+class TargetView : public GraphicsObject
+{
+};
+
+typedef TargetView RenderTargetView;
+typedef TargetView DepthStencilView;
+typedef TargetView ShaderResourceView;
+typedef TargetView UnorderedAccessView;
+typedef TargetView VertexBufferView;
+typedef TargetView IndexBufferView;
 
 class RenderPass : public GraphicsObject
 {
 public:
-    virtual void setRenderTargets() { }
-    virtual void setDepthStencil() { }
-
-};
-
-
-class Buffer : public GraphicsObject
-{
-public:
-
+    virtual void setRenderTargets(RenderTargetView** pRenderTargets, U32 renderTargetCount) { }
+    virtual void setDepthStencil(DepthStencilView* pDepthStencil) { }
+    virtual void finalize() { }
 };
 
 
 class CommandList : public GraphicsObject
 {
 public:
+    static const U64 kSwapchainRenderTargetId = 0xffffffffffffffff;
+
     CommandList() { }
     virtual ~CommandList() { }
 
@@ -121,15 +175,20 @@ public:
                                U32 startVertexLocation, 
                                U32 startInstanceLocation) { }
 
-    virtual void setPipelineStateObject() { }
+    virtual void setGraphicsPipeline(GraphicsPipeline* pPipeline) { }
+    virtual void setComputePipeline(ComputePipeline* pPipeline) { }
+    virtual void setRayTracingPipeline(RayTracingPipeline* pPipeline) { }
+    virtual void setAccelerationStructure() { }
     virtual void setRenderPass(RenderPass* pass) { }
     virtual void dispatch(U32 x, U32 y, U32 z) { }
-    virtual void setVertexBuffers(Buffer** buffers, U32 vertexBufferCount) { }
-    virtual void setIndexBuffer(Buffer** buffer) { }
+    virtual void setVertexBuffers(VertexBufferView** vbvs, U32 vertexBufferCount) { }
+    virtual void setIndexBuffer(IndexBufferView* buffer) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
     virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
+    virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
+    virtual void clearDepthStencil(DepthStencilView* dsv) { }
 };
 
 /*
@@ -150,39 +209,61 @@ public:
 
     virtual void initialize(HWND hwnd, 
                             bool isFullScreen, 
-                            const GraphicsConfiguration& configs) { }
+                            const GpuConfiguration& configs) { }
     virtual void cleanUp() { }
 
-    virtual void adjust(GraphicsConfiguration& config) { }
+    virtual void adjust(GpuConfiguration& config) { }
 
-    virtual void submit(RendererT queue, RendererT* cmdList, U32 numCmdLists) { }
+    virtual void submit(RendererT queue,  CommandList** cmdLists, U32 numCmdLists) { }
 
     virtual void present() { }
 
-    virtual void signalFence(RendererT queue, HANDLE fence) { }
+    virtual void signalFence(RendererT queue, Fence* fence) { }
+    virtual void waitFence(Fence* fence) { }
 
-    virtual void createBuffer(Buffer** buffer, 
+    virtual void createBuffer(Buffer** buffer,
                               BufferUsage usage,
                               BufferBindFlags binds, 
                               BufferDimension dimension, 
                               U32 width, 
                               U32 height = 1,
                               U32 depth = 1,
-                              DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN) { }
+                              U32 structureByteStride = 1,
+                              DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
+                              const TCHAR* debugName = nullptr) { }
+
     virtual void createTexture2D() { }
-    virtual void createVertexBuffer() { }
-    virtual void createIndexBuffer() { }
     virtual void createQueue() { }
-    virtual void createGraphicsPipelineState() { }
-    virtual void createComputePipelineState() { }
+    virtual void createRenderTargetView(RenderTargetView** rtv, Buffer* buffer) { }
+    virtual void createUnorderedAccessView(UnorderedAccessView** uav, Buffer* buffer) { }
+    virtual void createShaderResourceView(ShaderResourceView** srv, 
+                                          Buffer* buffer, 
+                                          U32 firstElement, 
+                                          U32 numElements) { }
+    virtual void createDepthStencilView(DepthStencilView** dsv, Buffer* buffer) { }
+    virtual void createGraphicsPipelineState(GraphicsPipeline** pipline) { }
+    virtual void createComputePipelineState(ComputePipeline** pipeline) { }
     virtual void createRayTracingPipelineState() { }
-    virtual void createRenderPass(RenderPass** pPass) { }
+    virtual void createVertexBufferView(VertexBufferView** view,
+                                        Buffer* buffer, 
+                                        U32 vertexStride, 
+                                        U32 bufferSzBytes) { }
+    virtual void createIndexBufferView(IndexBufferView** view) { }
+    virtual void createRenderPass(RenderPass** pPass, 
+                                  U32 rtvSize, 
+                                  B32 hasDepthStencil) { }
 
     virtual void destroyBuffer(Buffer* buffer) { }
     virtual void destroyCommandList(CommandList* pCmdList) { }
-    virtual void destoryRenderPass(RenderPass pPass) { }
+    virtual void destroyRenderPass(RenderPass* pPass) { }
 
-    virtual void createCommandList(CommandList** pList) { }
+    virtual RendererT getSwapchainQueue() { return 0; }
+
+    virtual void createCommandList(CommandList** pList, CommandListRecordUsage usage) { }
+
+    virtual RenderPass* getBackbufferRenderPass() { return nullptr; }
+    virtual Fence* getSwapchainFence() { return nullptr; }
+    virtual RenderTargetView* getSwapchainRenderTargetVew() { return nullptr; }
 
 protected:
 

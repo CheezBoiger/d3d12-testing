@@ -1,10 +1,29 @@
 #pragma once
 
 #include "Renderer.h"
-
+#include <vector>
 
 namespace jcl {
 
+
+typedef U64 RenderUUID;
+
+struct RenderCommand 
+{
+  RenderUUID _meshDescriptor;
+  RenderUUID _materialDescriptor;
+};
+
+
+struct RenderGroup
+{
+  // The given pipeline used for this render group.
+  RenderUUID _pipeline;
+  // Render in deferred lighting flow.
+  B32 _isDeferred;
+  // All render commands to be processed.
+  std::vector<RenderCommand> _renderCommands;
+};
 
 /*/
     Jackal Renderer is the front end rendering engine, whose sole responsibility
@@ -12,31 +31,34 @@ namespace jcl {
     work here with freedom of the hardware graphics API, solely to implement lighting
     techniques, animation, particles, physics, gobos, shadows, post-processing, etc; in short,
     figure out what they should be rendering. Different renderers can be implemented for different
-    games, but the underlying workhorse will always be the BackendRenderer.
+    games, but the underlying workhorse will always be the BackendRenderer handling the hardware implementation.
 */
 class JackalRenderer
 {
 public:
 
-    void init() {
-    }
+    enum RendererRHI {
+      RENDERER_RHI_NULL,
+      RENDERER_RHI_D3D_11,
+      RENDERER_RHI_D3D_12
+    };
 
-    void cleanUp() { }
+    void init(HWND winHandle, RendererRHI rhi);
 
-    void render() {
-        beginFrame();
-        endFrame();
-    }
+    void cleanUp();
+
+    void render();
     
-    void update() { }
+    void update(R32 dt) { }
 
-    void pushCommandsCommands() { }
+    void pushRenderGroups(RenderGroup& group) { }
 
 private:
 
-    void beginFrame() { }
-    void endFrame() { }
+    void beginFrame();
+    void endFrame();
 
     gfx::BackendRenderer* m_pBackend;
+    gfx::CommandList* m_pList;
 };
 } //

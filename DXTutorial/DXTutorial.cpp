@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "DXTutorial.h"
+#include "JackalRenderer.h"
 
 #define MAX_LOADSTRING 100
 
@@ -12,10 +13,38 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 // Forward declarations of functions included in this code module:
+HWND                windowHandle;
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+BOOL                bShouldClose;
+jcl::JackalRenderer* pRenderer;
+
+
+void pollEvent()
+{
+  MSG msg;
+  // Main message loop:
+  while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+  }
+}
+
+
+void initializeEngine(HWND window)
+{
+  pRenderer = new jcl::JackalRenderer();
+  pRenderer->init(window, jcl::JackalRenderer::RENDERER_RHI_D3D_12);
+}
+
+
+void cleanUpEngine()
+{
+  pRenderer->cleanUp();
+  delete pRenderer;
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -31,6 +60,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_DXTUTORIAL, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
+    bShouldClose = false;
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
@@ -38,21 +68,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
+    initializeEngine(windowHandle);
+
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DXTUTORIAL));
 
-    MSG msg;
-
-    // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+    while (!bShouldClose) {
+      pollEvent();
+      pRenderer->update(0.0f);
+      pRenderer->render();
     }
 
-    return (int) msg.wParam;
+    cleanUpEngine();
+    return 0;
 }
 
 
@@ -107,7 +134,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
-
+    windowHandle = hWnd;
    return TRUE;
 }
 
@@ -152,6 +179,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
+        bShouldClose = true;
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

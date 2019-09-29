@@ -22,21 +22,28 @@ struct BufferD3D11 : public Buffer
     BufferBindFlags _flags;
 };
 
+struct VertexBufferViewD3D11 : public TargetView
+{
+  RendererT _buffer;
+  U32 _stride;
+};
+
 class D3D11Backend : public BackendRenderer
 {
 public:
 
-    void initialize(HWND handle, bool isFullScreen, const GraphicsConfiguration& configs) override;
-    void cleanUp() override;
+    void initialize(HWND handle, bool isFullScreen, const GpuConfiguration& configs) override;
+    void cleanUp() override { }
 
     void present() override { m_pSwapChain->Present(1, 0); }
 
-    void submit(RendererT queue, RendererT* cmdLists, U32 numCmdLists) override;
+    void submit(RendererT queue,  CommandList** cmdLists, U32 numCmdLists) override { }
 
-    void createCommandList(CommandList** pList) override;
-    void destroyCommandList(CommandList* pList) override;
+    void createCommandList(CommandList** pList,
+                           CommandListRecordUsage usage) override { }
+    void destroyCommandList(CommandList* pList) override { }
 
-    void createTexture2D() override;
+    void createTexture2D() override { }
     void createBuffer(Buffer** buffer, 
                       BufferUsage usage,
                       BufferBindFlags binds, 
@@ -44,26 +51,40 @@ public:
                       U32 width, 
                       U32 height = 1,
                       U32 depth = 1,
-                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN) override;
-    void destroyBuffer(Buffer* buffer) override;
+                      U32 structureByteStride = 1,
+                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
+                      const TCHAR* debugName = nullptr) override;
+    virtual void createVertexBufferView(VertexBufferView** view,
+                                        Buffer* buffer, 
+                                        U32 vertexStride, 
+                                        U32 bufferSzBytes) override { }
+    virtual void createIndexBufferView(IndexBufferView** view) override { }
+    void destroyBuffer(Buffer* buffer) override { }
 
-    void createGraphicsPipelineState() override;
-    void createComputePipelineState() override;
-    void createRayTracingPipelineState() override;
+    void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
+    void createComputePipelineState(ComputePipeline** pipeline) override { }
 
     void createRayTracingPipelineState() override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
     }
 
+    ID3D11Buffer* getBuffer(RendererT buff) {
+      return m_buffers[buff];
+    }
+
 private:
+
+    IDXGIFactory2* createFactory();
+    void createDevice(IDXGIFactory2* pFactory);
 
     ID3D11Device2* m_pDevice;
     ID3D11DeviceContext* m_pImmediateCtx;
     std::unordered_map<RendererT, GraphicsCommandListDeferredD3D11> m_deferredCmdLists;
     std::unordered_map<RendererT, GraphicsCommandListImmediateD3D11> m_immediateCmdLists;
-    std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
-    std::unordered_map<RendererT, ID3D11RenderTargetView*> m_renderTargetViews;
     std::unordered_map<RendererT, ID3D11Buffer*> m_buffers;
+    std::unordered_map<RendererT, ID3D11RenderTargetView*> m_renderTargetViews;
+    std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
+    std::unordered_map<RendererT, ID3D11DepthStencilView*> m_depthStencilViews;
     std::unordered_map<RendererT, ID3D11UnorderedAccessView*> m_unorderedAccessViews;
 };
 } // gfx
