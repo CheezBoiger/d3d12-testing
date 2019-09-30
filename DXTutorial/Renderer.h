@@ -32,6 +32,8 @@ typedef U32 BufferBindFlags;
 
 enum BufferUsage
 {
+    // Default usage.
+    BUFFER_USAGE_DEFAULT,
     // Gpu read back from device memory to system memory.
     BUFFER_USAGE_GPU_TO_CPU,
     // Cpu upload from system memory to device memory. This is fast data transfer.
@@ -204,6 +206,7 @@ public:
 class BackendRenderer 
 {
 public:
+    static const U64 kGraphicsQueueId = 0;
 
     virtual ~BackendRenderer() { }
 
@@ -228,7 +231,7 @@ public:
                               U32 width, 
                               U32 height = 1,
                               U32 depth = 1,
-                              U32 structureByteStride = 1,
+                              U32 structureByteStride = 0,
                               DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
                               const TCHAR* debugName = nullptr) { }
 
@@ -263,7 +266,7 @@ public:
 
     virtual RenderPass* getBackbufferRenderPass() { return nullptr; }
     virtual Fence* getSwapchainFence() { return nullptr; }
-    virtual RenderTargetView* getSwapchainRenderTargetVew() { return nullptr; }
+    virtual RenderTargetView* getSwapchainRenderTargetView() { return nullptr; }
 
 protected:
 

@@ -2,12 +2,13 @@
 
 #include "D3D12Backend.h"
 #include "CommandListD3D12.h"
+#include "D3D12MemAlloc.h"
 #include <string>
 
 namespace gfx
 {
 
-
+D3D12MA::Allocator* pAllocator = nullptr;
 
 D3D12_RESOURCE_DIMENSION getDimension(BufferDimension dimension)
 {
@@ -20,6 +21,33 @@ D3D12_RESOURCE_DIMENSION getDimension(BufferDimension dimension)
 }
 
 
+D3D12_RESOURCE_STATES getNativeBindFlags(BufferBindFlags binds,
+                                         D3D12_HEAP_TYPE type)
+{
+  D3D12_RESOURCE_STATES flags = D3D12_RESOURCE_STATE_COMMON;
+  if (type == D3D12_HEAP_TYPE_READBACK)
+    return D3D12_RESOURCE_STATE_COPY_DEST;
+  if (type == D3D12_HEAP_TYPE_UPLOAD) 
+    return D3D12_RESOURCE_STATE_GENERIC_READ;
+
+  if (binds & BUFFER_BIND_RENDER_TARGET)
+    flags |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+  if (binds & BUFFER_BIND_SHADER_RESOURCE)
+    flags |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+  if (binds & BUFFER_BIND_UNORDERED_ACCESS)
+    flags |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+  if (binds & BUFFER_BIND_DEPTH_STENCIL)
+    flags |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+  if (binds & BUFFER_BIND_CONSTANT_BUFFER)
+    flags |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  if (binds & BUFFER_BIND_INDEX_BUFFER)
+    flags |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+  if (flags & BUFFER_BIND_VERTEX_BUFFER)
+    flags |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  return flags;
+}
+
+
 void* BufferD3D12::map(U64 start, U64 sz)
 {
   void* pData =  nullptr;
@@ -27,8 +55,9 @@ void* BufferD3D12::map(U64 start, U64 sz)
   range.Begin = start;
   range.End = start + sz;
   ID3D12Resource* pResource = pBackend->getResource(getUUID());
-  DX12ASSERT(pResource->Map(0, &range, &pData));
-  return &pData;
+  HRESULT result = pResource->Map(0, &range, &pData); 
+  DX12ASSERT(result);
+  return pData;
 }
 
 
@@ -110,6 +139,12 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
         DEBUG("Failed to create d3d12 device!");
         return;
     }
+
+    D3D12MA::ALLOCATOR_DESC allocDesc = { };
+    allocDesc.pDevice = m_pDevice;
+    allocDesc.PreferredBlockSize = 1 * GB_1;
+    allocDesc.Flags = D3D12MA::ALLOCATOR_FLAG_NONE;
+    D3D12MA::CreateAllocator(&allocDesc, &pAllocator);
 }
 
 
@@ -238,8 +273,29 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     desc.DepthOrArraySize = depth;
     desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     desc.Format = format;
+    desc.MipLevels = 1;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+
+    D3D12MA::Allocation* alloc;
+    D3D12MA::ALLOCATION_DESC allocDesc = { };
+    allocDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
+    if (usage == BUFFER_USAGE_GPU_TO_CPU)
+      allocDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
+    else if (usage == BUFFER_USAGE_CPU_TO_GPU)
+      allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+    else if (usage == BUFFER_USAGE_DEFAULT)
+      allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+
+    D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
     
-    pResource = m_memAllocator.allocate(m_pDevice, usage, desc);
+    DX12ASSERT(pAllocator->CreateResource(&allocDesc, 
+                               &desc, 
+                               state, 
+                               NULL, 
+                               &alloc, 
+                               __uuidof(ID3D12Resource), 
+                               (void**)&pResource));
 
     if (debugName) {
       pResource->SetName(debugName);
@@ -248,6 +304,7 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     BufferD3D12* pNativeBuffer = new BufferD3D12(this,
                                                  usage,
                                                  structureByteStride);
+    pNativeBuffer->pAllocation = alloc;
 
     *buffer = pNativeBuffer; 
 

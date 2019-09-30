@@ -54,10 +54,10 @@ public:
     }
 
     virtual void drawIndexedInstanced(U32 indexCountPerInstance, 
-                              U32 instanceCount, 
-                              U32 startIndexLocation, 
-                              U32 baseVertexLocation, 
-                              U32 startInstanceLocation) override {
+                                      U32 instanceCount, 
+                                      U32 startIndexLocation, 
+                                      U32 baseVertexLocation, 
+                                      U32 startInstanceLocation) override {
         m_pCmdList[pBackend->getFrameIndex()]->DrawIndexedInstanced(indexCountPerInstance, 
                                                                     instanceCount, 
                                                                     startIndexLocation, 
@@ -76,6 +76,8 @@ public:
     }
 
     virtual void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {
+      if (!pPipeline) return;
+
       ID3D12PipelineState* pso = pBackend->getPipelineState(pPipeline->getUUID());
       m_pCmdList[pBackend->getFrameIndex()]->SetPipelineState(pso);
     }
@@ -347,7 +349,7 @@ public:
     void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) override { }
 
     void clearRenderTarget(RenderTargetView* view, R32* rgba, U32 numRects, RECT* rects) override {
-      if (view == pBackend->getSwapchainRenderTargetVew()) {
+      if (view == pBackend->getSwapchainRenderTargetView()) {
         RenderPassD3D12* rp = static_cast<RenderPassD3D12*>(pBackend->getBackbufferRenderPass());
         for (U32 i = 0; i < m_pCmdList.size(); ++i) {
           m_pCmdList[i]->ClearRenderTargetView(pBackend->getViewHandle(rp->_renderTargetResourceIds[i]),

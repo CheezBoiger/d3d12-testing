@@ -9,6 +9,7 @@
 
 #define KB_1 (1024)
 #define MB_1 (1024 * 1024)
+#define GB_1 (1024 * 1024 * 1024)
 #define ALIGN(p, alignment) (( p ) + (( alignment ) - 1)) & (~(( alignment ) - 1))
 
 namespace gfx {

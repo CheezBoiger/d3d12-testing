@@ -3,6 +3,7 @@
 
 #include "CommonsD3D12.h"
 #include "MemoryAllocatorD3D12.h"
+#include "D3D12MemAlloc.h"
 #include "RenderPassD3D12.h"
 #include "../Renderer.h"
 
@@ -54,6 +55,7 @@ struct BufferD3D12 : public Buffer
   BufferUsage _usage;
   D3D12Backend* pBackend;
   U32 _structureByteStride;
+  D3D12MA::Allocation* pAllocation;
 };
 
 struct ViewHandleD3D12 : public TargetView
@@ -72,7 +74,6 @@ struct VertexBufferViewD3D12 : public TargetView
 class D3D12Backend : public BackendRenderer
 {
 public:
-    static const U64 kGraphicsQueueId = 0;
 
     D3D12Backend();
 
@@ -145,7 +146,7 @@ public:
 
     RenderPass* getBackbufferRenderPass() override { return m_pSwapchainPass; }
 
-    RenderTargetView* getSwapchainRenderTargetVew() override { 
+    RenderTargetView* getSwapchainRenderTargetView() override { 
       return &m_frameResources[m_frameIndex]._rtv;
     }
 

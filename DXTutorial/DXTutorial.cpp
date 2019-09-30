@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "DXTutorial.h"
+#include "Math/Vector4.h"
 #include "JackalRenderer.h"
 
 #define MAX_LOADSTRING 100
@@ -36,7 +37,7 @@ void pollEvent()
 void initializeEngine(HWND window)
 {
   pRenderer = new jcl::JackalRenderer();
-  pRenderer->init(window, jcl::JackalRenderer::RENDERER_RHI_D3D_12);
+  pRenderer->init(window, jcl::JackalRenderer::RENDERER_RHI_D3D_11);
 }
 
 

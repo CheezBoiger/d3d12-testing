@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include <vector>
+#include "GlobalDef.h"
 
 namespace jcl {
 
@@ -60,5 +61,7 @@ private:
 
     gfx::BackendRenderer* m_pBackend;
     gfx::CommandList* m_pList;
+    gfx::Buffer* pBuffer;
+    Globals m_globals;
 };
 } //
