@@ -35,30 +35,31 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   if (m_pList)
     m_pList->init();
 
-  pBuffer = nullptr;
-  pAlbedo = nullptr;
-  m_pBackend->createBuffer(&pBuffer, 
-                           gfx::BUFFER_USAGE_CPU_TO_GPU,
-                           gfx::BUFFER_BIND_CONSTANT_BUFFER,
-                           gfx::BUFFER_DIMENSION_BUFFER,
+  pGlobalsBuffer = nullptr;
+  pAlbedoTexture = nullptr;
+  m_pBackend->createBuffer(&pGlobalsBuffer, 
+                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                            sizeof(Globals),
-                           1, 1, 0, DXGI_FORMAT_UNKNOWN, TEXT("Globals"));
+                           0, TEXT("Globals"));
 
 
-  void* ptr = pBuffer->map(0, sizeof(Globals));
+  void* ptr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(ptr, &m_globals, sizeof(Globals));
-  pBuffer->unmap(0, sizeof(Globals));
+  pGlobalsBuffer->unmap(0, sizeof(Globals));
 
-  m_pBackend->createBuffer(&pAlbedo,
-                           gfx::BUFFER_USAGE_DEFAULT,
-                           gfx::BUFFER_BIND_RENDER_TARGET,
-                           gfx::BUFFER_DIMENSION_2D,
+  m_pBackend->createTexture(&pAlbedoTexture,
+                           gfx::RESOURCE_DIMENSION_2D,
+                           gfx::RESOURCE_USAGE_DEFAULT,
+                           gfx::RESOURCE_BIND_RENDER_TARGET,
+                           DXGI_FORMAT_R8G8B8A8_UNORM,
                            1920,
-                           1080, 1,
-                           0, DXGI_FORMAT_R8G8B8A8_UNORM,
+                           1080, 
+                           1,
+                           0,
                            TEXT("_gbufferAlbedo"));
   m_pBackend->createRenderTargetView(&m_pAlbedoRenderTargetView,
-                                     pAlbedo);
+                                     pAlbedoTexture);
 }
 
 
@@ -80,7 +81,7 @@ void JackalRenderer::render()
     m_pList->reset();
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
-    m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 4, &rect);
+    m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
 
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);

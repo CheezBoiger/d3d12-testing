@@ -61,8 +61,15 @@ private:
 
     gfx::BackendRenderer* m_pBackend;
     gfx::CommandList* m_pList;
-    gfx::Buffer* pBuffer;
-    gfx::Buffer* pAlbedo;
+
+    gfx::Resource* pGlobalsBuffer;
+
+    gfx::Resource* pAlbedoTexture;
+    gfx::Resource* pMaterialTexture;
+    gfx::Resource* pNormalTexture;
+    gfx::Resource* pEmissiveTexture;
+    gfx::Resource* pVelocityTexture;
+
     gfx::RenderTargetView* m_pAlbedoRenderTargetView;
     gfx::ShaderResourceView* m_pAlebdoShaderResourceView;
     Globals m_globals;

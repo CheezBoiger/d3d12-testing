@@ -3,5 +3,5 @@
 
 namespace gfx {
 
-RendererT GraphicsObject::assignmentOperator = 0;
+RendererT GPUObject::assignmentOperator = 0;
 } // gfx

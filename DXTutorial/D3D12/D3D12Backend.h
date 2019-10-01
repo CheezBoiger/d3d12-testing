@@ -50,17 +50,20 @@ enum DescriptorHeapType
 
 typedef U32 DescriptorHeapT;
 
-struct BufferD3D12 : public Buffer
+struct BufferD3D12 : public Resource
 {
   BufferD3D12(D3D12Backend* backend,
-              BufferUsage usage,
+              ResourceDimension dimension,
+              ResourceUsage usage,
+              ResourceBindFlags flags,
               U32 structureByteStride)
     : pBackend(backend)
     , _structureByteStride(structureByteStride)
-    , _usage(usage) { }
+    , Resource(dimension, usage, flags) { }
+
   void* map(U64 start, U64 sz) override;
   void unmap(U64 start, U64 sz) override;
-  BufferUsage _usage;
+
   D3D12Backend* pBackend;
   U32 _structureByteStride;
   D3D12_RESOURCE_STATES _currentResourceState;
@@ -98,31 +101,37 @@ public:
                                   U32 rtvSize, 
                                   B32 hasDepthStencil) override;
     void destroyRenderPass(RenderPass* pass) override;
-    void createBuffer(Buffer** buffer, 
-                      BufferUsage usage,
-                      BufferBindFlags binds, 
-                      BufferDimension dimension, 
-                      U32 width, 
-                      U32 height = 1,
-                      U32 depth = 1,
-                      U32 structureByteStride = 1,
-                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
-                      const TCHAR* debugName = nullptr) override;
-    void destroyBuffer(Buffer* buffer) override;
-    void createRenderTargetView(RenderTargetView** rtv, Buffer* buffer) override;
-    void createUnorderedAccessView(UnorderedAccessView** uav, Buffer* buffer) override;
+    void createBuffer(Resource** buffer, 
+                            ResourceUsage usage,
+                            ResourceBindFlags binds, 
+                            U32 widthBytes,
+                            U32 structureByteStride,
+                            const TCHAR* debugName) override;
+    void createTexture(Resource** texture,
+                       ResourceDimension dimension,
+                       ResourceUsage usage,
+                       ResourceBindFlags binds,
+                       DXGI_FORMAT format,
+                       U32 width,
+                       U32 height,
+                       U32 depth,
+                       U32 structureByteStride,
+                       const TCHAR* debugName = nullptr) override;
+    void destroyResource(Resource* resource) override;
+    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
+    void createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer) override;
     void createShaderResourceView(ShaderResourceView** srv, 
-                                  Buffer* buffer, 
+                                  Resource* buffer, 
                                   U32 firstElement, 
                                   U32 numElements) override;
 
     virtual void createVertexBufferView(VertexBufferView** view,
-                                        Buffer* buffer, 
+                                        Resource* buffer, 
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) override { }
     virtual void createIndexBufferView(IndexBufferView** view) override { }
 
-    void createDepthStencilView(DepthStencilView** dsv, Buffer* buffer) override;
+    void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
 
     ID3D12Resource* getResource(RendererT uuid) { 

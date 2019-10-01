@@ -17,38 +17,38 @@ struct GpuConfiguration
 };
 
 
-enum BufferBind
+enum ResourceBind
 {
-    BUFFER_BIND_CONSTANT_BUFFER = (1 << 0),
-    BUFFER_BIND_RENDER_TARGET = (1 << 1),
-    BUFFER_BIND_SHADER_RESOURCE = (1 << 2),
-    BUFFER_BIND_VERTEX_BUFFER = (1 << 3),
-    BUFFER_BIND_INDEX_BUFFER = (1 << 4),
-    BUFFER_BIND_UNORDERED_ACCESS = (1 << 5),
-    BUFFER_BIND_DEPTH_STENCIL = (1 << 6)
+    RESOURCE_BIND_CONSTANT_BUFFER = (1 << 0),
+    RESOURCE_BIND_RENDER_TARGET = (1 << 1),
+    RESOURCE_BIND_SHADER_RESOURCE = (1 << 2),
+    RESOURCE_BIND_VERTEX_BUFFER = (1 << 3),
+    RESOURCE_BIND_INDEX_BUFFER = (1 << 4),
+    RESOURCE_BIND_UNORDERED_ACCESS = (1 << 5),
+    RESOURCE_BIND_DEPTH_STENCIL = (1 << 6)
 };
 
-typedef U32 BufferBindFlags;
+typedef U32 ResourceBindFlags;
 
-enum BufferUsage
+enum ResourceUsage
 {
     // Default usage.
-    BUFFER_USAGE_DEFAULT,
+    RESOURCE_USAGE_DEFAULT,
     // Gpu read back from device memory to system memory.
-    BUFFER_USAGE_GPU_TO_CPU,
+    RESOURCE_USAGE_GPU_TO_CPU,
     // Cpu upload from system memory to device memory. This is fast data transfer.
-    BUFFER_USAGE_CPU_TO_GPU,
+    RESOURCE_USAGE_CPU_TO_GPU,
 };
 
-enum BufferDimension
+enum ResourceDimension
 {
-    BUFFER_DIMENSION_BUFFER,
-    BUFFER_DIMENSION_2D,
-    BUFFER_DIMENSION_3D,
-    BUFFER_DIMENSION_2D_ARRAY,
-    BUFFER_DIMENSION_3D_ARRAY,
-    BUFFER_DIMENSION_TEXTURE_CUBE,
-    BUFFER_DIMENSION_TEXTURE_CUBE_ARRAY
+    RESOURCE_DIMENSION_BUFFER,
+    RESOURCE_DIMENSION_2D,
+    RESOURCE_DIMENSION_3D,
+    RESOURCE_DIMENSION_2D_ARRAY,
+    RESOURCE_DIMENSION_3D_ARRAY,
+    RESOURCE_DIMENSION_TEXTURE_CUBE,
+    RESOURCE_DIMENSION_TEXTURE_CUBE_ARRAY
 };
 
 typedef U64 RendererT;
@@ -61,11 +61,11 @@ typedef U64 RendererT;
   code remains clean, and we don't have to check for these events, other than performing one function call
   to reinit these gpu handles.
 */
-class GraphicsObject
+class GPUObject
 {
     static RendererT assignmentOperator;
 public:
-    GraphicsObject()
+    GPUObject()
         : m_uuid(++assignmentOperator) { }
 
     RendererT getUUID() const { return m_uuid; }
@@ -74,7 +74,22 @@ private:
 };
 
 
-class Fence : public GraphicsObject
+class Resource : public GPUObject
+{
+public:
+  ResourceDimension _dimension;
+  ResourceUsage _usage;
+  ResourceBindFlags _bindFlags;
+  Resource(ResourceDimension dimension, ResourceUsage usage, ResourceBindFlags flags) 
+    : _dimension(dimension)
+    , _usage(usage)
+    , _bindFlags(flags) { }
+  virtual void* map(U64 start, U64 sz) { return nullptr; }
+  virtual void unmap(U64 start, U64 sz) { }
+};
+
+
+class Fence : public GPUObject
 {
 };
 
@@ -92,42 +107,35 @@ struct Scissor
 };
 
 
-class Buffer : public GraphicsObject {
- public:
-  virtual void* map(U64 start, U64 sz) { return nullptr; }
-  virtual void unmap(U64 start, U64 sz) {}
-};
-
-
-class DescriptorTable : public GraphicsObject
+class DescriptorTable : public GPUObject
 {
 public:
     virtual ~DescriptorTable() { }
-    virtual void setShaderResourceViews(Buffer** buffers, U32 bufferCount) { }
-    virtual void setUnorderedAccessViews(Buffer** buffers, U32 bufferCount) { }
-    virtual void setConstantBuffers(Buffer** buffers, U32 bufferCount) { }
+    virtual void setShaderResourceViews(Resource** resources, U32 bufferCount) { }
+    virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
+    virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
     virtual void finalize() { }
 };
 
 
-class GraphicsPipeline : public GraphicsObject
+class GraphicsPipeline : public GPUObject
 {
 public:
 };
 
 
-class ComputePipeline : public GraphicsObject
+class ComputePipeline : public GPUObject
 {
 public:
 };
 
 
-class RayTracingPipeline : public GraphicsObject
+class RayTracingPipeline : public GPUObject
 {
 public:
 };
 
-class TargetView : public GraphicsObject
+class TargetView : public GPUObject
 {
 };
 
@@ -138,7 +146,7 @@ typedef TargetView UnorderedAccessView;
 typedef TargetView VertexBufferView;
 typedef TargetView IndexBufferView;
 
-class RenderPass : public GraphicsObject
+class RenderPass : public GPUObject
 {
 public:
     virtual void setRenderTargets(RenderTargetView** pRenderTargets, U32 renderTargetCount) { }
@@ -147,7 +155,7 @@ public:
 };
 
 
-class CommandList : public GraphicsObject
+class CommandList : public GPUObject
 {
 public:
     static const U64 kSwapchainRenderTargetId = 0xffffffffffffffff;
@@ -223,31 +231,36 @@ public:
     virtual void signalFence(RendererT queue, Fence* fence) { }
     virtual void waitFence(Fence* fence) { }
 
-    virtual void createBuffer(Buffer** buffer,
-                              BufferUsage usage,
-                              BufferBindFlags binds, 
-                              BufferDimension dimension, 
-                              U32 width, 
-                              U32 height = 1,
-                              U32 depth = 1,
+    virtual void createBuffer(Resource** buffer,
+                              ResourceUsage usage,
+                              ResourceBindFlags binds,
+                              U32 widthBytes,
                               U32 structureByteStride = 0,
-                              DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
                               const TCHAR* debugName = nullptr) { }
 
-    virtual void createTexture2D() { }
+    virtual void createTexture(Resource** texture,
+                               ResourceDimension dimension,
+                               ResourceUsage usage,
+                               ResourceBindFlags binds,
+                               DXGI_FORMAT format,
+                               U32 width,
+                               U32 height,
+                               U32 depth = 1,
+                               U32 structureByteStride = 0,
+                               const TCHAR* debugName = nullptr) { }
     virtual void createQueue() { }
-    virtual void createRenderTargetView(RenderTargetView** rtv, Buffer* buffer) { }
-    virtual void createUnorderedAccessView(UnorderedAccessView** uav, Buffer* buffer) { }
+    virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture) { }
+    virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture) { }
     virtual void createShaderResourceView(ShaderResourceView** srv, 
-                                          Buffer* buffer, 
+                                          Resource* resource, 
                                           U32 firstElement, 
                                           U32 numElements) { }
-    virtual void createDepthStencilView(DepthStencilView** dsv, Buffer* buffer) { }
+    virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture) { }
     virtual void createGraphicsPipelineState(GraphicsPipeline** pipline) { }
     virtual void createComputePipelineState(ComputePipeline** pipeline) { }
     virtual void createRayTracingPipelineState() { }
     virtual void createVertexBufferView(VertexBufferView** view,
-                                        Buffer* buffer, 
+                                        Resource* buffer, 
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) { }
     virtual void createIndexBufferView(IndexBufferView** view) { }
@@ -255,7 +268,7 @@ public:
                                   U32 rtvSize, 
                                   B32 hasDepthStencil) { }
 
-    virtual void destroyBuffer(Buffer* buffer) { }
+    virtual void destroyResource(Resource* resource) { }
     virtual void destroyCommandList(CommandList* pCmdList) { }
     virtual void destroyRenderPass(RenderPass* pPass) { }
 

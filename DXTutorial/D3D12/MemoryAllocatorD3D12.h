@@ -80,7 +80,7 @@ public:
     }
 
 
-    ID3D12Resource* allocate(ID3D12Device* pDevice, BufferUsage usage, const D3D12_RESOURCE_DESC& desc) {
+    ID3D12Resource* allocate(ID3D12Device* pDevice, ResourceUsage usage, const D3D12_RESOURCE_DESC& desc) {
         ID3D12Resource* pResource = nullptr;
         D3D12_RESOURCE_ALLOCATION_INFO info = pDevice->GetResourceAllocationInfo(0, 1, &desc);
 

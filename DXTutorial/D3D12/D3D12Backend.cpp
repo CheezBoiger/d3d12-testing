@@ -10,18 +10,17 @@ namespace gfx
 
 D3D12MA::Allocator* pAllocator = nullptr;
 
-D3D12_RESOURCE_DIMENSION getDimension(BufferDimension dimension)
+D3D12_RESOURCE_DIMENSION getDimension(ResourceDimension dimension)
 {
     switch (dimension) {
-        case BUFFER_DIMENSION_BUFFER: return D3D12_RESOURCE_DIMENSION_BUFFER;
-        case BUFFER_DIMENSION_2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-        case BUFFER_DIMENSION_3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        case RESOURCE_DIMENSION_2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        case RESOURCE_DIMENSION_3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
         default: return D3D12_RESOURCE_DIMENSION_UNKNOWN;
     }
 }
 
 
-D3D12_RESOURCE_STATES getNativeBindFlags(BufferBindFlags binds,
+D3D12_RESOURCE_STATES getNativeBindFlags(ResourceBindFlags binds,
                                          D3D12_HEAP_TYPE type)
 {
   D3D12_RESOURCE_STATES flags = D3D12_RESOURCE_STATE_COMMON;
@@ -30,32 +29,32 @@ D3D12_RESOURCE_STATES getNativeBindFlags(BufferBindFlags binds,
   if (type == D3D12_HEAP_TYPE_UPLOAD) 
     return D3D12_RESOURCE_STATE_GENERIC_READ;
 
-  if (binds & BUFFER_BIND_RENDER_TARGET)
+  if (binds & RESOURCE_BIND_RENDER_TARGET)
     flags |= D3D12_RESOURCE_STATE_RENDER_TARGET;
-  if (binds & BUFFER_BIND_SHADER_RESOURCE)
+  if (binds & RESOURCE_BIND_SHADER_RESOURCE)
     flags |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-  if (binds & BUFFER_BIND_UNORDERED_ACCESS)
+  if (binds & RESOURCE_BIND_UNORDERED_ACCESS)
     flags |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-  if (binds & BUFFER_BIND_DEPTH_STENCIL)
+  if (binds & RESOURCE_BIND_DEPTH_STENCIL)
     flags |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
-  if (binds & BUFFER_BIND_CONSTANT_BUFFER)
+  if (binds & RESOURCE_BIND_CONSTANT_BUFFER)
     flags |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-  if (binds & BUFFER_BIND_INDEX_BUFFER)
+  if (binds & RESOURCE_BIND_INDEX_BUFFER)
     flags |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
-  if (flags & BUFFER_BIND_VERTEX_BUFFER)
+  if (flags & RESOURCE_BIND_VERTEX_BUFFER)
     flags |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
   return flags;
 }
 
 
-D3D12_RESOURCE_FLAGS getNativeAllowFlags(BufferBindFlags binds)
+D3D12_RESOURCE_FLAGS getNativeAllowFlags(ResourceBindFlags binds)
 {
   D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-  if (binds & BUFFER_BIND_RENDER_TARGET)
+  if (binds & RESOURCE_BIND_RENDER_TARGET)
     flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-  if (binds & BUFFER_BIND_UNORDERED_ACCESS)
+  if (binds & RESOURCE_BIND_UNORDERED_ACCESS)
     flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-  if (binds & BUFFER_BIND_DEPTH_STENCIL)
+  if (binds & RESOURCE_BIND_DEPTH_STENCIL)
     flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
   return flags;
 }
@@ -283,30 +282,25 @@ void D3D12Backend::createGraphicsQueue()
 }
 
 
-void D3D12Backend::createBuffer(Buffer** buffer, 
-                                BufferUsage usage,
-                                BufferBindFlags binds, 
-                                BufferDimension dimension, 
-                                U32 width, 
-                                U32 height,
-                                U32 depth,
+void D3D12Backend::createBuffer(Resource** buffer, 
+                                ResourceUsage usage,
+                                ResourceBindFlags binds, 
+                                U32 widthBytes, 
                                 U32 structureByteStride,
-                                DXGI_FORMAT format,
                                 const TCHAR* debugName)
 {
     D3D12_CLEAR_VALUE clearValue;
-    clearValue.Format = format;
+    clearValue.Format = DXGI_FORMAT_UNKNOWN;
 
     ID3D12Resource* pResource = nullptr;
     D3D12_RESOURCE_DESC desc = { };
     desc.Alignment = 0;
-    desc.Dimension = getDimension(dimension);
-    desc.Width = width;
-    desc.Height = height;
-    desc.DepthOrArraySize = depth;
-    desc.Layout = desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER ? D3D12_TEXTURE_LAYOUT_ROW_MAJOR : 
-                                                                      D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    desc.Format = format;
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    desc.Width = widthBytes;
+    desc.Height = 1;
+    desc.DepthOrArraySize = 1;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    desc.Format = DXGI_FORMAT_UNKNOWN;
     desc.MipLevels = 1;
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
@@ -315,11 +309,11 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     D3D12MA::Allocation* alloc;
     D3D12MA::ALLOCATION_DESC allocDesc = { };
     allocDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
-    if (usage == BUFFER_USAGE_GPU_TO_CPU)
+    if (usage == RESOURCE_USAGE_GPU_TO_CPU)
       allocDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
-    else if (usage == BUFFER_USAGE_CPU_TO_GPU)
+    else if (usage == RESOURCE_USAGE_CPU_TO_GPU)
       allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-    else if (usage == BUFFER_USAGE_DEFAULT)
+    else if (usage == RESOURCE_USAGE_DEFAULT)
       allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
     D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
@@ -330,16 +324,6 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     } else {
       D3D12_RESOURCE_ALLOCATION_INFO rAllocInfo = m_pDevice->GetResourceAllocationInfo(0, 1, &desc);
       (void)rAllocInfo;
-    }
-
-    if (binds & BUFFER_BIND_RENDER_TARGET) {
-      clearValue.Color[0] = 0.0f;
-      clearValue.Color[1] = 0.0f;
-      clearValue.Color[2] = 0.0f;
-      clearValue.Color[3] = 0.0f;
-    } else if (binds & BUFFER_BIND_DEPTH_STENCIL) {
-      clearValue.DepthStencil.Depth = 0.0f;
-      clearValue.DepthStencil.Stencil = 0;
     }
     
     HRESULT result = pAllocator->CreateResource(&allocDesc, 
@@ -356,7 +340,9 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     }
 
     BufferD3D12* pNativeBuffer = new BufferD3D12(this,
+                                                 RESOURCE_DIMENSION_BUFFER,
                                                  usage,
+                                                 binds,
                                                  structureByteStride);
     pNativeBuffer->pAllocation = alloc;
     pNativeBuffer->_currentResourceState = state;
@@ -367,7 +353,90 @@ void D3D12Backend::createBuffer(Buffer** buffer,
 }
 
 
-void D3D12Backend::destroyBuffer(Buffer* buffer)
+void D3D12Backend::createTexture(Resource** texture,
+                                 ResourceDimension dimension,
+                                 ResourceUsage usage,
+                                 ResourceBindFlags binds,
+                                 DXGI_FORMAT format,
+                                 U32 width,
+                                 U32 height,
+                                 U32 depth,
+                                 U32 structureByteStride,
+                                 const TCHAR* debugName)
+{
+  D3D12_CLEAR_VALUE clearValue;
+  clearValue.Format = format;
+
+  ID3D12Resource* pResource = nullptr;
+  D3D12_RESOURCE_DESC desc = {};
+  desc.Alignment = 0;
+  desc.Dimension = getDimension(dimension);
+  desc.Width = width;
+  desc.Height = height;
+  desc.DepthOrArraySize = depth;
+  desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+  desc.Format = format;
+  desc.MipLevels = 1;
+  desc.SampleDesc.Count = 1;
+  desc.SampleDesc.Quality = 0;
+  desc.Flags = getNativeAllowFlags(binds);
+
+  D3D12MA::Allocation* alloc;
+  D3D12MA::ALLOCATION_DESC allocDesc = {};
+  allocDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
+  if (usage == RESOURCE_USAGE_GPU_TO_CPU)
+    allocDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
+  else if (usage == RESOURCE_USAGE_CPU_TO_GPU)
+    allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+  else if (usage == RESOURCE_USAGE_DEFAULT)
+    allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+
+  D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
+
+  D3D12_CLEAR_VALUE* pClearValue = &clearValue;
+  if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
+    pClearValue = NULL;
+  } else {
+    D3D12_RESOURCE_ALLOCATION_INFO rAllocInfo =
+        m_pDevice->GetResourceAllocationInfo(0, 1, &desc);
+    (void)rAllocInfo;
+  }
+
+  if (binds & RESOURCE_BIND_RENDER_TARGET) {
+    clearValue.Color[0] = 0.0f;
+    clearValue.Color[1] = 0.0f;
+    clearValue.Color[2] = 0.0f;
+    clearValue.Color[3] = 0.0f;
+  } else if (binds & RESOURCE_BIND_DEPTH_STENCIL) {
+    clearValue.DepthStencil.Depth = 0.0f;
+    clearValue.DepthStencil.Stencil = 0;
+  }
+
+  HRESULT result =
+      pAllocator->CreateResource(&allocDesc, 
+                                 &desc, 
+                                 state, 
+                                 pClearValue, 
+                                 &alloc,
+                                 __uuidof(ID3D12Resource), 
+                                (void**)&pResource);
+  DX12ASSERT(result);
+
+  if (debugName) {
+    pResource->SetName(debugName);
+  }
+
+  BufferD3D12* pNativeBuffer = new BufferD3D12(this, dimension, usage, binds, structureByteStride);
+  pNativeBuffer->pAllocation = alloc;
+  pNativeBuffer->_currentResourceState = state;
+
+  *texture = pNativeBuffer;
+
+  m_resources[(*texture)->getUUID()] = pResource;
+}
+
+
+void D3D12Backend::destroyResource(Resource* buffer)
 {
   m_memAllocator.free(m_resources[buffer->getUUID()]);
   delete buffer;
@@ -388,7 +457,7 @@ void D3D12Backend::destroyRenderPass(RenderPass* pass)
 }
 
 
-void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer)
+void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
 
@@ -417,20 +486,20 @@ void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer
 }
 
 
-void D3D12Backend::createUnorderedAccessView(UnorderedAccessView** uav, Buffer* buffer)
+void D3D12Backend::createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer)
 {
 }
 
 
 void D3D12Backend::createShaderResourceView(ShaderResourceView** srv,
-                                            Buffer* buffer, 
+                                            Resource* buffer, 
                                             U32 firstElement,
                                             U32 numElements) 
 {
 }
 
 
-void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Buffer* buffer)
+void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Resource* buffer)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
   *dsv = pView;

@@ -20,18 +20,27 @@ struct FrameResourceD3D11 {
   TargetView _view;
 };
 
-struct BufferD3D11 : public Buffer
+struct BufferD3D11 : public Resource
 {
+    BufferD3D11(ResourceDimension dimension,
+                ResourceUsage usage,
+                ResourceBindFlags flags) 
+    : Resource(dimension, usage, flags) { }
     virtual void* map(U64 start, U64 sz) override;
     virtual void unmap(U64 start, U64 sz) override;
     U32 _width;
-    U32 _height;
-    U32 _depth;
-    BufferDimension _dimension;
-    DXGI_FORMAT _format;
-    BufferBindFlags _flags;
-    BufferUsage _usage;
+    ResourceBindFlags _flags;
     D3D11Backend* _pBackend;
+};
+
+struct TextureD3D11 : public BufferD3D11
+{
+  TextureD3D11(ResourceDimension dimension, ResourceUsage usage, ResourceBindFlags flags)
+    : BufferD3D11(dimension, usage, flags)
+    { }
+  DXGI_FORMAT _format;
+  U32 _height;
+  U32 _depth;
 };
 
 struct VertexBufferViewD3D11 : public TargetView
@@ -54,24 +63,29 @@ public:
     void createCommandList(CommandList** pList) override;
     void destroyCommandList(CommandList* pList) override { }
 
-    void createTexture2D() override { }
-    void createBuffer(Buffer** buffer, 
-                      BufferUsage usage,
-                      BufferBindFlags binds, 
-                      BufferDimension dimension, 
-                      U32 width, 
-                      U32 height = 1,
-                      U32 depth = 1,
+    void createTexture(Resource** texture,
+                       ResourceDimension dimension,
+                       ResourceUsage usage,
+                       ResourceBindFlags binds,
+                       DXGI_FORMAT format,
+                       U32 width,
+                       U32 height,
+                       U32 depth = 1,
+                       U32 structureByteStride = 0,
+                       const TCHAR* debugName = nullptr) override;
+    void createBuffer(Resource** buffer, 
+                      ResourceUsage usage,
+                      ResourceBindFlags binds,
+                      U32 widthBytes, 
                       U32 structureByteStride = 0,
-                      DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN,
                       const TCHAR* debugName = nullptr) override;
     virtual void createVertexBufferView(VertexBufferView** view,
-                                        Buffer* buffer, 
+                                        Resource* buffer, 
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) override { }
     virtual void createIndexBufferView(IndexBufferView** view) override { }
-    void createRenderTargetView(RenderTargetView** rtv, Buffer* buffer) override;
-    void destroyBuffer(Buffer* buffer) override { }
+    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
+    void destroyResource(Resource* buffer) override { }
 
     void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
     void createComputePipelineState(ComputePipeline** pipeline) override { }
@@ -81,7 +95,7 @@ public:
     }
 
     ID3D11Buffer* getBuffer(RendererT buff) {
-      return m_buffers[buff];
+      return static_cast<ID3D11Buffer*>(m_resources[buff]);
     }
 
     ID3D11DeviceContext* getImmediateCtx() { return m_pImmediateCtx; }
@@ -112,7 +126,7 @@ private:
 
     ID3D11Device* m_pDevice;
     ID3D11DeviceContext* m_pImmediateCtx;
-    std::unordered_map<RendererT, ID3D11Buffer*> m_buffers;
+    std::unordered_map<RendererT, ID3D11Resource*> m_resources;
     std::unordered_map<RendererT, ID3D11RenderTargetView*> m_renderTargetViews;
     std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
     std::unordered_map<RendererT, ID3D11DepthStencilView*> m_depthStencilViews;
