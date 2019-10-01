@@ -51,8 +51,7 @@ public:
 
     void submit(RendererT queue,  CommandList** cmdLists, U32 numCmdLists) override;
 
-    void createCommandList(CommandList** pList,
-                           CommandListRecordUsage usage) override;
+    void createCommandList(CommandList** pList) override;
     void destroyCommandList(CommandList* pList) override { }
 
     void createTexture2D() override { }

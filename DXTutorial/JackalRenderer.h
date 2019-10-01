@@ -62,6 +62,9 @@ private:
     gfx::BackendRenderer* m_pBackend;
     gfx::CommandList* m_pList;
     gfx::Buffer* pBuffer;
+    gfx::Buffer* pAlbedo;
+    gfx::RenderTargetView* m_pAlbedoRenderTargetView;
+    gfx::ShaderResourceView* m_pAlebdoShaderResourceView;
     Globals m_globals;
 };
 } //

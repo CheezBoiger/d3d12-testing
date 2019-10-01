@@ -48,6 +48,19 @@ D3D12_RESOURCE_STATES getNativeBindFlags(BufferBindFlags binds,
 }
 
 
+D3D12_RESOURCE_FLAGS getNativeAllowFlags(BufferBindFlags binds)
+{
+  D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+  if (binds & BUFFER_BIND_RENDER_TARGET)
+    flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+  if (binds & BUFFER_BIND_UNORDERED_ACCESS)
+    flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+  if (binds & BUFFER_BIND_DEPTH_STENCIL)
+    flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+  return flags;
+}
+
+
 void* BufferD3D12::map(U64 start, U64 sz)
 {
   void* pData =  nullptr;
@@ -96,6 +109,12 @@ void D3D12Backend::initialize(HWND handle,
     if (!handle) return;
     IDXGIFactory4* factory = createFactory();
 
+#if _DEBUG
+    D3D12GetDebugInterface(__uuidof(ID3D12Debug), (void**)&debug0);
+    debug0->EnableDebugLayer();
+    debug0->QueryInterface<ID3D12Debug1>(&debug1);
+    debug1->SetEnableGPUBasedValidation(true);
+#endif
     queryForDevice(factory);
     createCommandAllocators();
     createGraphicsQueue();
@@ -197,15 +216,25 @@ void D3D12Backend::querySwapChain()
         FrameResource& resource = m_frameResources[i];
         ID3D12Resource* pResource = nullptr;
         HRESULT result = m_pSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&pResource);
+        m_resources[m_frameResources[i]._rtv.getUUID()] = pResource;
+        m_frameResources[i]._rtv._currentState = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
         if (FAILED(result)) {
             DEBUG("Failed to query from swapchain buffer!");
             continue;
         }
         resource._swapImage = pResource;
         
-        m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, 
+        DX12ASSERT(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, 
                                           __uuidof(ID3D12CommandAllocator), 
-                                          (void**)&resource._pAllocator);
+                                          (void**)&resource._pAllocator));
+        DX12ASSERT(m_pDevice->CreateCommandList(0, 
+                                                 D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                 resource._pAllocator, 
+                                                 nullptr, 
+                                                 __uuidof(ID3D12GraphicsCommandList), 
+                                                 (void**)&resource._cmdList));
+        resource._cmdList->Close();
 
         // Create fences.
         m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&resource._pSignalFence);
@@ -228,13 +257,14 @@ void D3D12Backend::querySwapChain()
         m_fences[m_frameResources[i]._pSignalFence.getUUID()] = pFence;
         m_fenceEvents[m_frameResources[i]._pSignalFence.getUUID()] = fenceEvent;
         m_fenceValues[m_frameResources[i]._pSignalFence.getUUID()] = 0;
+        m_frameResources[i]._swapImage->SetName(TEXT("_swapchainBuffer"));
     }
 
     {
       m_pSwapchainPass = new RenderPassD3D12();
-      m_pSwapchainPass->_renderTargetResourceIds.resize(m_frameResources.size());
+      m_pSwapchainPass->_renderTargetViews.resize(m_frameResources.size());
       for (U32 i = 0; i < m_frameResources.size(); ++i) {
-        m_pSwapchainPass->_renderTargetResourceIds[i] = m_frameResources[i]._rtv.getUUID();
+        m_pSwapchainPass->_renderTargetViews[i] = &m_frameResources[i]._rtv;
       }
     }
 }
@@ -264,6 +294,9 @@ void D3D12Backend::createBuffer(Buffer** buffer,
                                 DXGI_FORMAT format,
                                 const TCHAR* debugName)
 {
+    D3D12_CLEAR_VALUE clearValue;
+    clearValue.Format = format;
+
     ID3D12Resource* pResource = nullptr;
     D3D12_RESOURCE_DESC desc = { };
     desc.Alignment = 0;
@@ -271,11 +304,13 @@ void D3D12Backend::createBuffer(Buffer** buffer,
     desc.Width = width;
     desc.Height = height;
     desc.DepthOrArraySize = depth;
-    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    desc.Layout = desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER ? D3D12_TEXTURE_LAYOUT_ROW_MAJOR : 
+                                                                      D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc.Format = format;
     desc.MipLevels = 1;
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
+    desc.Flags = getNativeAllowFlags(binds);
 
     D3D12MA::Allocation* alloc;
     D3D12MA::ALLOCATION_DESC allocDesc = { };
@@ -288,14 +323,33 @@ void D3D12Backend::createBuffer(Buffer** buffer,
       allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
     D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
+
+    D3D12_CLEAR_VALUE* pClearValue = &clearValue;
+    if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
+      pClearValue = NULL;
+    } else {
+      D3D12_RESOURCE_ALLOCATION_INFO rAllocInfo = m_pDevice->GetResourceAllocationInfo(0, 1, &desc);
+      (void)rAllocInfo;
+    }
+
+    if (binds & BUFFER_BIND_RENDER_TARGET) {
+      clearValue.Color[0] = 0.0f;
+      clearValue.Color[1] = 0.0f;
+      clearValue.Color[2] = 0.0f;
+      clearValue.Color[3] = 0.0f;
+    } else if (binds & BUFFER_BIND_DEPTH_STENCIL) {
+      clearValue.DepthStencil.Depth = 0.0f;
+      clearValue.DepthStencil.Stencil = 0;
+    }
     
-    DX12ASSERT(pAllocator->CreateResource(&allocDesc, 
-                               &desc, 
-                               state, 
-                               NULL, 
-                               &alloc, 
-                               __uuidof(ID3D12Resource), 
-                               (void**)&pResource));
+    HRESULT result = pAllocator->CreateResource(&allocDesc, 
+                                                 &desc, 
+                                                 state, 
+                                                 pClearValue, 
+                                                 &alloc, 
+                                                 __uuidof(ID3D12Resource), 
+                                                 (void**)&pResource); 
+    DX12ASSERT(result);
 
     if (debugName) {
       pResource->SetName(debugName);
@@ -305,6 +359,7 @@ void D3D12Backend::createBuffer(Buffer** buffer,
                                                  usage,
                                                  structureByteStride);
     pNativeBuffer->pAllocation = alloc;
+    pNativeBuffer->_currentResourceState = state;
 
     *buffer = pNativeBuffer; 
 
@@ -352,7 +407,10 @@ void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer
   
   m_pDevice->CreateRenderTargetView(pResource, &rtvDesc, cpuHandle);
   m_viewHandles[pView->getUUID()] = cpuHandle;
+  m_resources[pView->getUUID()] = pResource;
 
+  // Set to current state, in order to transition.
+  pView->_currentState = static_cast<BufferD3D12*>(buffer)->_currentResourceState;
   cpuHandle.ptr += incSz;
 }
 
@@ -395,9 +453,28 @@ void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Buffer* buffer
 
 void D3D12Backend::present()
 {
+#if 1
+  if (m_frameResources[m_frameIndex]._rtv._currentState != D3D12_RESOURCE_STATE_PRESENT) {
+    D3D12_RESOURCE_BARRIER barrier = { };
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = m_frameResources[m_frameIndex]._swapImage;
+    barrier.Transition.StateBefore = m_frameResources[m_frameIndex]._rtv._currentState;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    m_frameResources[m_frameIndex]._cmdList->Reset(m_frameResources[m_frameIndex]._pAllocator, nullptr);
+    m_frameResources[m_frameIndex]._cmdList->ResourceBarrier(1, &barrier);
+    HRESULT hr = m_frameResources[m_frameIndex]._cmdList->Close(); 
+    DX12ASSERT(hr);
+    
+    ID3D12CommandList* cmd[] = { m_frameResources[m_frameIndex]._cmdList };
+
+    m_pCommandQueues[kGraphicsQueueId]->ExecuteCommandLists(1, cmd);
+    m_frameResources[m_frameIndex]._rtv._currentState = D3D12_RESOURCE_STATE_COMMON;
+    
+  }
+#endif
   HRESULT result = m_pD3D12Swapchain->Present(1, 0); 
   DX12ASSERT(result);
-  
   m_frameIndex = m_pD3D12Swapchain->GetCurrentBackBufferIndex();
 }
 
@@ -470,30 +547,17 @@ void D3D12Backend::createDescriptorHeaps()
 }
 
 
-void D3D12Backend::createCommandList(CommandList** pList,
-                                     CommandListRecordUsage usage) 
+void D3D12Backend::createCommandList(CommandList** pList) 
 {
   std::vector<ID3D12CommandAllocator*> allocs(m_frameResources.size());
-
   for (U32 i = 0; i < m_frameResources.size(); ++i)
     allocs[i] = m_frameResources[i]._pAllocator;
 
   CommandList* pNativeList = nullptr;
-
-  switch (usage) {
-      case COMMAND_LIST_RECORD_USAGE_SIMULTANEOUS:
-         pNativeList = new GraphicsCommandListD3D12(this,
-                                                    D3D12_COMMAND_LIST_TYPE_DIRECT, 
-                                                    allocs.data(), 
-                                                    static_cast<U32>(allocs.size()));
-      break;
-      case COMMAND_LIST_RECORD_USAGE_ONE_TIME_ONLY:
-      default:
-        pNativeList = new StaticGraphicsCommandListD3D12(this,
-                                                         D3D12_COMMAND_LIST_TYPE_DIRECT, 
-                                                         allocs.data(), 
-                                                         static_cast<U32>(allocs.size()));
-  }
+  pNativeList = new GraphicsCommandListD3D12(this,
+                                            D3D12_COMMAND_LIST_TYPE_DIRECT, 
+                                            allocs.data(), 
+                                            static_cast<U32>(allocs.size()));
 
   *pList = pNativeList;
   
@@ -512,7 +576,11 @@ void D3D12Backend::submit(RendererT queue, CommandList** cmdLists, U32 numCmdLis
   static ID3D12CommandList* pNativeLists[64];
 
   for (U32 i = 0; i < numCmdLists; ++i) {
-    pNativeLists[i] = static_cast<GraphicsCommandListD3D12*>(cmdLists[i])->getNativeList(m_frameIndex);
+    GraphicsCommandListD3D12* pCmdList = static_cast<GraphicsCommandListD3D12*>(cmdLists[i]); 
+    pNativeLists[i] = pCmdList->getNativeList(m_frameIndex);
+    if (pCmdList->isRecording()) {
+      ASSERT(false && "Cmd list submitted for execution, when it is still in record mode!");
+    }
   }
 
   pQueue->ExecuteCommandLists(numCmdLists, pNativeLists);
@@ -536,5 +604,7 @@ void D3D12Backend::waitFence(Fence* fence)
   pFence->SetEventOnCompletion(m_fenceValues[f], m_fenceEvents[f]);
   WaitForSingleObject(m_fenceEvents[f], INFINITE);
   m_fenceValues[f]++;
+  // No resetting the allocator can lead to mem leaks.
+  DX12ASSERT(m_frameResources[m_frameIndex]._pAllocator->Reset());
 }
 } // gfx

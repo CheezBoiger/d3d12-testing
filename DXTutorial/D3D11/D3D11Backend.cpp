@@ -159,7 +159,7 @@ void D3D11Backend::createBuffer(Buffer** buffer,
     }
 
     if (usage == BUFFER_USAGE_DEFAULT) {
-      bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+      bufferDesc.CPUAccessFlags = 0;
       bufferDesc.Usage = D3D11_USAGE_DEFAULT;
     }
     pBuffer->_usage = usage;
@@ -179,16 +179,10 @@ void D3D11Backend::createBuffer(Buffer** buffer,
 }
 
 
-void D3D11Backend::createCommandList(CommandList** pList,
-                                     CommandListRecordUsage usage)
+void D3D11Backend::createCommandList(CommandList** pList)
 {
   GraphicsCommandListD3D11* pNativeList = nullptr;
-  switch (usage) {
-    case COMMAND_LIST_RECORD_USAGE_ONE_TIME_ONLY:
-      pNativeList = new StaticGraphicsCommandListD3D11(this);
-    case COMMAND_LIST_RECORD_USAGE_SIMULTANEOUS:
-      pNativeList = new GraphicsCommandListD3D11(this);
-  }
+  pNativeList = new GraphicsCommandListD3D11(this);
 
   *pList = pNativeList;
 }

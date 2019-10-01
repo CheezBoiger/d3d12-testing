@@ -12,5 +12,7 @@ using namespace m;
 
 struct Globals {
   Vector4 _cameraPos;
+  Matrix44 _viewToWorld;
+  Matrix44 _worldToView;
 };
 } // jcl

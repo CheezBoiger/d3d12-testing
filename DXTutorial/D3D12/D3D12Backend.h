@@ -15,14 +15,22 @@ namespace gfx
 
 class D3D12Backend;
 
+struct ViewHandleD3D12 : public TargetView
+{
+  D3D12_RESOURCE_STATES _currentState;
+};
+
+
 // Frame Resources.
 struct FrameResource
 {
+    // This allocator resets often.
     ID3D12CommandAllocator* _pAllocator;
+    ID3D12GraphicsCommandList* _cmdList;
     ID3D12Resource* _swapImage;
     Fence _pSignalFence;
     HANDLE _signalEvent;
-    RenderTargetView _rtv;
+    ViewHandleD3D12 _rtv;
 };
 
 
@@ -55,11 +63,8 @@ struct BufferD3D12 : public Buffer
   BufferUsage _usage;
   D3D12Backend* pBackend;
   U32 _structureByteStride;
+  D3D12_RESOURCE_STATES _currentResourceState;
   D3D12MA::Allocation* pAllocation;
-};
-
-struct ViewHandleD3D12 : public TargetView
-{
 };
 
 
@@ -87,8 +92,7 @@ public:
     void signalFence(RendererT queue, Fence* fence) override;
     void waitFence(Fence* fence) override;
 
-    void createCommandList(CommandList** pList,
-                           CommandListRecordUsage usage) override;
+    void createCommandList(CommandList** pList) override;
     
     void createRenderPass(RenderPass** pass,
                                   U32 rtvSize, 
@@ -150,6 +154,8 @@ public:
       return &m_frameResources[m_frameIndex]._rtv;
     }
 
+    ID3D12Resource* getFrameResourceNative() { return m_frameResources[m_frameIndex]._swapImage; }
+
     RendererT getSwapchainQueue() override { return kGraphicsQueueId; }
     Fence* getSwapchainFence() override { return &m_frameResources[m_frameIndex]._pSignalFence; }
 
@@ -192,5 +198,10 @@ private:
     RenderPassD3D12* m_pSwapchainPass;
     std::vector<FrameResource> m_frameResources; 
     U32 m_frameIndex;
+
+#if _DEBUG
+    ID3D12Debug* debug0;
+    ID3D12Debug1* debug1;
+#endif
 };
 } // gfx

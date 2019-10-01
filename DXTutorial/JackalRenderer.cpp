@@ -30,12 +30,13 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   config._renderWidth = 1920;
   config._windowed = true;
   m_pBackend->initialize(handle, false, config);
-  m_pBackend->createCommandList(&m_pList, gfx::COMMAND_LIST_RECORD_USAGE_SIMULTANEOUS);
+  m_pBackend->createCommandList(&m_pList);
 
   if (m_pList)
     m_pList->init();
 
   pBuffer = nullptr;
+  pAlbedo = nullptr;
   m_pBackend->createBuffer(&pBuffer, 
                            gfx::BUFFER_USAGE_CPU_TO_GPU,
                            gfx::BUFFER_BIND_CONSTANT_BUFFER,
@@ -47,6 +48,15 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   void* ptr = pBuffer->map(0, sizeof(Globals));
   memcpy(ptr, &m_globals, sizeof(Globals));
   pBuffer->unmap(0, sizeof(Globals));
+
+  m_pBackend->createBuffer(&pAlbedo,
+                           gfx::BUFFER_USAGE_DEFAULT,
+                           gfx::BUFFER_BIND_RENDER_TARGET,
+                           gfx::BUFFER_DIMENSION_2D,
+                           1920,
+                           1080, 1,
+                           0, DXGI_FORMAT_R8G8B8A8_UNORM,
+                           TEXT("_gbufferAlbedo"));
 }
 
 
@@ -57,21 +67,21 @@ void JackalRenderer::render()
     static R32 t = 0.0f;
     R32 v = sinf(t * 0.05f);
     R32 s = -sinf(t * 0.05f);
-      ++t;
+    ++t;
     R32 rgba[] = {s, v, 0.f, 0.f};
     RECT rect = {};
     rect.bottom = 1080;
     rect.left = 0;
     rect.right = 1920;
     rect.top = 0;
-  
+
     m_pList->reset();
-    m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba, 1,
-                               &rect);
+    m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
+                               1, &rect);
 
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);
-    
+
     m_pList->setRenderPass(nullptr);
     m_pList->setGraphicsPipeline(nullptr);
     m_pList->setVertexBuffers(nullptr, 0);
@@ -80,7 +90,6 @@ void JackalRenderer::render()
 
     m_pList->close();
   }
-
   m_pBackend->submit(m_pBackend->getSwapchainQueue(), &m_pList, 1);
   endFrame();
 }
@@ -88,6 +97,7 @@ void JackalRenderer::render()
 
 void JackalRenderer::beginFrame()
 {
+  m_pBackend->waitFence(m_pBackend->getSwapchainFence());
 }
 
 
@@ -96,7 +106,6 @@ void JackalRenderer::endFrame()
   m_pBackend->present();
   m_pBackend->signalFence(m_pBackend->getSwapchainQueue(),
                           m_pBackend->getSwapchainFence());
-  m_pBackend->waitFence(m_pBackend->getSwapchainFence());
 }
 
 

@@ -53,7 +53,7 @@ public:
   ID3D11CommandList* m_pCmdList;
 };
 
-
+#if 0
 class StaticGraphicsCommandListD3D11 : public GraphicsCommandListD3D11
 {
 public:
@@ -76,4 +76,5 @@ public:
 
 private:
 };
+#endif
 } // gfx

@@ -40,6 +40,8 @@ public:
                                                      nullptr, 
                                                      __uuidof(ID3D12GraphicsCommandList), 
                                                      (void**)&m_pCmdList[i]));
+          m_pCmdList[i]->Close();
+          _isRecording = false;
         }
     }
 
@@ -51,6 +53,7 @@ public:
     virtual void reset() override {
         U32 frameIndex = pBackend->getFrameIndex();
         m_pCmdList[frameIndex]->Reset(m_pAllocatorRef[frameIndex], nullptr);
+        _isRecording = true;
     }
 
     virtual void drawIndexedInstanced(U32 indexCountPerInstance, 
@@ -94,15 +97,15 @@ public:
       static D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT];
       static D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
       RenderPassD3D12* nativePass = static_cast<RenderPassD3D12*>(pass);
-      U32 rtvCount = static_cast<U32>(nativePass->_renderTargetResourceIds.size());
+      U32 rtvCount = static_cast<U32>(nativePass->_renderTargetViews.size());
 
       if (nativePass != pBackend->getBackbufferRenderPass()) {
         for (U32 i = 0; i < rtvCount; ++i) {
-          rtvHandles[i] = pBackend->getViewHandle(nativePass->_renderTargetResourceIds[i]);
+          rtvHandles[i] = pBackend->getViewHandle(nativePass->_renderTargetViews[i]->getUUID());
         }
 
         if (nativePass->_depthStencilResourceId) {
-          dsvHandle = pBackend->getViewHandle(nativePass->_depthStencilResourceId); 
+          dsvHandle = pBackend->getViewHandle(nativePass->_depthStencilResourceId->getUUID()); 
         } else {
           dsvHandle = { 0 };
         }
@@ -115,7 +118,7 @@ public:
         rtvCount = 1;
         m_pCmdList[pBackend->getFrameIndex()]->OMSetRenderTargets(
             rtvCount,
-            &pBackend->getViewHandle(nativePass->_renderTargetResourceIds[pBackend->getFrameIndex()]),
+            &pBackend->getViewHandle(nativePass->_renderTargetViews[pBackend->getFrameIndex()]->getUUID()),
             FALSE, nullptr);
       }
     }
@@ -139,6 +142,7 @@ public:
 
     virtual void close() override {
         m_pCmdList[pBackend->getFrameIndex()]->Close();
+        _isRecording = false;
     }
 
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) override {  
@@ -176,6 +180,19 @@ public:
                            R32* rgba, 
                            U32 numRects,
                            RECT* rects) override {
+      ViewHandleD3D12* pNativeView = static_cast<ViewHandleD3D12*>(view); 
+        if (pNativeView->_currentState != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+          D3D12_RESOURCE_BARRIER barrier = {};
+          barrier.Transition.pResource = pBackend->getResource(view->getUUID());
+          barrier.Transition.StateBefore = pNativeView->_currentState;
+          barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+          barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+          barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION; 
+          barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+          m_pCmdList[pBackend->getFrameIndex()]->ResourceBarrier(1, &barrier);
+          pNativeView->_currentState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        }
+
         m_pCmdList[pBackend->getFrameIndex()]->ClearRenderTargetView(pBackend->getViewHandle(view->getUUID()),
                                                                      rgba,
                                                                      numRects,
@@ -189,7 +206,7 @@ protected:
     D3D12_COMMAND_LIST_TYPE m_type;
 };
 
-
+#if 0
 class StaticGraphicsCommandListD3D12 : public GraphicsCommandListD3D12
 {
 public:
@@ -212,6 +229,7 @@ public:
                                                      nullptr, 
                                                      __uuidof(ID3D12GraphicsCommandList), 
                                                      (void**)&m_pCmdList[i]));
+          m_pCmdList[i]->Close();
         }
     }
 
@@ -250,6 +268,9 @@ public:
     }
 
     void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {
+      if (!pPipeline) {
+        return;
+      }
       ID3D12PipelineState* pso = pBackend->getPipelineState(pPipeline->getUUID());
       for (U32 i = 0; i < m_pCmdList.size(); ++i)
         m_pCmdList[i]->SetPipelineState(pso);
@@ -271,14 +292,14 @@ public:
       RenderPassD3D12* nativePass = static_cast<RenderPassD3D12*>(pass);
 
       if (nativePass != pBackend->getBackbufferRenderPass()) {
-        rtvCount = static_cast<U32>(nativePass->_renderTargetResourceIds.size());
+        rtvCount = static_cast<U32>(nativePass->_renderTargetViews.size());
 
         for (U32 i = 0; i < rtvCount; ++i) {
-          rtvHandles[i] = pBackend->getViewHandle(nativePass->_renderTargetResourceIds[i]);
+          rtvHandles[i] = pBackend->getViewHandle(nativePass->_renderTargetViews[i]->getUUID());
         }
 
         if (nativePass->_depthStencilResourceId) {
-          dsvHandle = pBackend->getViewHandle(nativePass->_depthStencilResourceId); 
+          dsvHandle = pBackend->getViewHandle(nativePass->_depthStencilResourceId->getUUID()); 
         } else {
           dsvHandle = { 0 };
         }
@@ -292,7 +313,7 @@ public:
         for (U32 i = 0; i < m_pCmdList.size(); ++i) {
           rtvCount = 1;
           m_pCmdList[i]->OMSetRenderTargets(rtvCount,
-                                            &pBackend->getViewHandle(nativePass->_renderTargetResourceIds[i]),
+                                            &pBackend->getViewHandle(nativePass->_renderTargetViews[i]->getUUID()),
                                             FALSE,
                                             nullptr);
         }
@@ -313,7 +334,7 @@ public:
 
     void close() override {
       for (U32 i = 0; i < m_pCmdList.size(); ++i)
-        m_pCmdList[i]->Close();
+        DX12ASSERT(m_pCmdList[i]->Close());
     }
 
     void setViewports(Viewport* pViewports, U32 viewportCount) override {  
@@ -352,7 +373,19 @@ public:
       if (view == pBackend->getSwapchainRenderTargetView()) {
         RenderPassD3D12* rp = static_cast<RenderPassD3D12*>(pBackend->getBackbufferRenderPass());
         for (U32 i = 0; i < m_pCmdList.size(); ++i) {
-          m_pCmdList[i]->ClearRenderTargetView(pBackend->getViewHandle(rp->_renderTargetResourceIds[i]),
+          ViewHandleD3D12* pNativeView = static_cast<ViewHandleD3D12*>(rp->_renderTargetViews[i]); 
+          if (pNativeView->_currentState != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+            D3D12_RESOURCE_BARRIER barrier = {};
+            barrier.Transition.pResource = pBackend->getResource(pNativeView->getUUID());
+            barrier.Transition.StateBefore = pNativeView->_currentState;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION; 
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            m_pCmdList[i]->ResourceBarrier(1, &barrier);
+            pNativeView->_currentState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+          }
+          m_pCmdList[i]->ClearRenderTargetView(pBackend->getViewHandle(rp->_renderTargetViews[i]->getUUID()),
                                                rgba, 
                                                numRects, 
                                                rects);
@@ -367,5 +400,6 @@ public:
         }
       }
     }
-};
+}
+#endif
 } // gfx

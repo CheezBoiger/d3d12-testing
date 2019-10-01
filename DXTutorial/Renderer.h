@@ -51,12 +51,6 @@ enum BufferDimension
     BUFFER_DIMENSION_TEXTURE_CUBE_ARRAY
 };
 
-enum CommandListRecordUsage
-{
-  COMMAND_LIST_RECORD_USAGE_SIMULTANEOUS,
-  COMMAND_LIST_RECORD_USAGE_ONE_TIME_ONLY
-};
-
 typedef U64 RendererT;
 
 /*
@@ -191,6 +185,11 @@ public:
     virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
     virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
     virtual void clearDepthStencil(DepthStencilView* dsv) { }
+
+    B32 isRecording() const { return _isRecording; }
+
+protected:
+    B32 _isRecording;
 };
 
 /*
@@ -262,7 +261,7 @@ public:
 
     virtual RendererT getSwapchainQueue() { return 0; }
 
-    virtual void createCommandList(CommandList** pList, CommandListRecordUsage usage) { }
+    virtual void createCommandList(CommandList** pList) { }
 
     virtual RenderPass* getBackbufferRenderPass() { return nullptr; }
     virtual Fence* getSwapchainFence() { return nullptr; }
