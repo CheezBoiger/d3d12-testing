@@ -57,6 +57,8 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                            1080, 1,
                            0, DXGI_FORMAT_R8G8B8A8_UNORM,
                            TEXT("_gbufferAlbedo"));
+  m_pBackend->createRenderTargetView(&m_pAlbedoRenderTargetView,
+                                     pAlbedo);
 }
 
 
@@ -78,6 +80,7 @@ void JackalRenderer::render()
     m_pList->reset();
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
+    m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 4, &rect);
 
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);

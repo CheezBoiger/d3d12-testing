@@ -84,11 +84,15 @@ void D3D11Backend::createDevice(IDXGIFactory2* pFactory)
       break;
   }
 
-    D3D_FEATURE_LEVEL feature = D3D_FEATURE_LEVEL_11_0;
+    D3D_FEATURE_LEVEL feature = D3D_FEATURE_LEVEL_11_1;
+    UINT flags = 0;
+#if _DEBUG
+    flags = D3D11_CREATE_DEVICE_DEBUG;
+#endif
     HRESULT result = D3D11CreateDevice(pTempAdapter, 
                                  D3D_DRIVER_TYPE_UNKNOWN, 
                                  nullptr, 
-                                 0, 
+                                 flags, 
                                  &feature, 
                                  1, 
                                  D3D11_SDK_VERSION, 
@@ -221,5 +225,26 @@ void D3D11Backend::queryFromSwapchain()
 void D3D11Backend::present()
 {
   m_pSwapChain->Present(1, 0);
+}
+
+void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer)
+{
+    ID3D11RenderTargetView* pNativeView = nullptr;
+    TargetView* pView = new TargetView();
+    
+    BufferD3D11*  pBuffer = static_cast<BufferD3D11*>(buffer);
+    ID3D11Buffer* pNative = m_buffers[buffer->getUUID()];
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = { };
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_BUFFER;
+    rtvDesc.Buffer.ElementWidth = pBuffer->_width * pBuffer->_height * pBuffer->_depth;
+    rtvDesc.Buffer.FirstElement = 0;
+    //rtvDesc.Buffer.NumElements = ;
+    rtvDesc.Format = pBuffer->_format;
+
+    HRESULT result = m_pDevice->CreateRenderTargetView(pNative, &rtvDesc, &pNativeView);
+    DX11ASSERT(result);
+
+    m_renderTargetViews[pView->getUUID()] = pNativeView;
+    *rtv = pView;
 }
 } // gfx

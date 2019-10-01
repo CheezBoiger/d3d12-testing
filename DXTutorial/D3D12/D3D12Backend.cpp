@@ -391,7 +391,7 @@ void D3D12Backend::destroyRenderPass(RenderPass* pass)
 void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
-  *rtv = pView;
+
   ID3D12Resource* pResource = getResource(buffer->getUUID());
   D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
   ID3D12DescriptorHeap* rtvHeap = getDescriptorHeap(DESCRIPTOR_HEAP_RENDER_TARGET_VIEWS);
@@ -412,6 +412,8 @@ void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Buffer* buffer
   // Set to current state, in order to transition.
   pView->_currentState = static_cast<BufferD3D12*>(buffer)->_currentResourceState;
   cpuHandle.ptr += incSz;
+
+  *rtv = pView;
 }
 
 

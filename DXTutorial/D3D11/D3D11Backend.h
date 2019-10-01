@@ -70,6 +70,7 @@ public:
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) override { }
     virtual void createIndexBufferView(IndexBufferView** view) override { }
+    void createRenderTargetView(RenderTargetView** rtv, Buffer* buffer) override;
     void destroyBuffer(Buffer* buffer) override { }
 
     void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
