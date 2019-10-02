@@ -173,9 +173,6 @@ public:
         m_pCmdList[pBackend->getFrameIndex()]->RSSetScissorRects(scissorCount, kNativeScissors);
     }
 
-    virtual void setDescriptorTables(DescriptorTable** pTables,
-                                     U32 tableCount) override {}
-
     virtual void clearRenderTarget(RenderTargetView* view, 
                            R32* rgba, 
                            U32 numRects,
@@ -197,6 +194,26 @@ public:
                                                                      rgba,
                                                                      numRects,
                                                                      rects);
+    }
+
+
+    virtual void setDescriptorTables(DescriptorTable** tables, U32 tableCount, B32 compute) override {
+      U32 frameIdx = pBackend->getFrameIndex();
+      if (!tables || !tableCount) {
+        m_pCmdList[frameIdx]->SetDescriptorHeaps(0, nullptr);
+        m_pCmdList[frameIdx]->SetGraphicsRootSignature(nullptr);
+        m_pCmdList[frameIdx]->SetComputeRootSignature(nullptr);
+      }
+
+      ID3D12RootSignature* pRootSignature = pBackend->getRootSignature(tables[0]->getUUID());
+      ID3D12DescriptorHeap* pHeap = pBackend->getDescriptorHeap(tables[0]->getUUID());
+
+      m_pCmdList[frameIdx]->SetDescriptorHeaps(1, &pHeap);
+      if (compute) {
+        m_pCmdList[frameIdx]->SetComputeRootSignature(pRootSignature);
+      } else {
+        m_pCmdList[frameIdx]->SetGraphicsRootSignature(pRootSignature);
+      }
     }
 
 protected:

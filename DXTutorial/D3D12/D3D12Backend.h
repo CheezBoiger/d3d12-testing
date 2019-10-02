@@ -40,15 +40,13 @@ enum DescriptorHeapType
 
   DESCRIPTOR_HEAP_RENDER_TARGET_VIEWS = DESCRIPTOR_HEAP_START,
   DESCRIPTOR_HEAP_DEPTH_STENCIL_VIEWS,
-  DESCRIPTOR_HEAP_SHADER_RESOURCE_VIEWS,
-  DESCRIPTOR_HEAP_CONSTANT_BUFFER_VIEWS,
-  DESCRIPTOR_HEAP_UNORDERD_ACCESS_VIEWS,
+  DESCRIPTOR_HEAP_SRV_UAV_CBV,
   DESCRIPTOR_HEAP_SAMPLER,
 
   DESCRIPTOR_HEAP_END
 };
 
-typedef U32 DescriptorHeapT;
+typedef RendererT DescriptorHeapT;
 
 struct BufferD3D12 : public Resource
 {
@@ -125,14 +123,19 @@ public:
                                   U32 firstElement, 
                                   U32 numElements) override;
 
-    virtual void createVertexBufferView(VertexBufferView** view,
+    void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) override { }
-    virtual void createIndexBufferView(IndexBufferView** view) override { }
+    void createIndexBufferView(IndexBufferView** view) override { }
 
     void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
+
+    void createSampler(Sampler** sampler) override { }
+    void destroySampler(Sampler* sampler) override { }
+    void createDescriptorTable(DescriptorTable** table) override;
+    void destroyDescriptorTable(DescriptorTable* table) override { }
 
     ID3D12Resource* getResource(RendererT uuid) { 
       return m_resources[uuid];
@@ -153,6 +156,18 @@ public:
 
     D3D12_CPU_DESCRIPTOR_HANDLE getViewHandle(RendererT uuid) {
       return m_viewHandles[uuid];
+    }
+
+    ID3D12RootSignature* getRootSignature(RendererT uuid) {
+      return m_pRootSignatures[uuid];
+    }
+    
+    void setRootSignature(RendererT uuid, ID3D12RootSignature* rootSig) {
+      m_pRootSignatures[uuid] = rootSig;
+    }
+
+    void setDescriptorHeap(RendererT uuid, ID3D12DescriptorHeap* pHeap) {
+      m_pDescriptorHeaps[uuid] = pHeap;
     }
 
     U32 getFrameIndex() const { return m_frameIndex; }

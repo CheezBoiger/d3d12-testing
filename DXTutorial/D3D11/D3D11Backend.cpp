@@ -1,5 +1,6 @@
 #include "D3D11Backend.h"
 #include "CommandListD3D11.h"
+#include "DescriptorTableD3D11.h"
 
 namespace gfx {
 
@@ -294,5 +295,12 @@ void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
 
     m_renderTargetViews[pView->getUUID()] = pNativeView;
     *rtv = pView;
+}
+
+
+void D3D11Backend::createDescriptorTable(DescriptorTable** table)
+{
+  DescriptorTableD3D11* pNative = new DescriptorTableD3D11();
+  *table = pNative;
 }
 } // gfx

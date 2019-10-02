@@ -86,6 +86,7 @@ public:
     virtual void createIndexBufferView(IndexBufferView** view) override { }
     void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
     void destroyResource(Resource* buffer) override { }
+    void createDescriptorTable(DescriptorTable** table) override;
 
     void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
     void createComputePipelineState(ComputePipeline** pipeline) override { }

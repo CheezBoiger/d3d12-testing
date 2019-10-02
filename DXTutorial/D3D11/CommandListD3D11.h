@@ -3,6 +3,7 @@
 #include "CommonsD3D11.h"
 #include "../Renderer.h"
 #include "D3D11Backend.h"
+#include "DescriptorTableD3D11.h"
 
 namespace gfx {
 
@@ -46,6 +47,20 @@ public:
                          RECT* rects) override {
     ID3D11RenderTargetView* pView = pBackend->getRenderTargetView(view->getUUID());
     m_ctx->ClearRenderTargetView(pView, rgba);
+  }
+
+  void setDescriptorTables(DescriptorTable** tables, U32 tableCount, B32 compute) override {
+    static ID3D11Buffer* kConstantBuffersVS[32];
+    static ID3D11Buffer* kConstantBuffersPS[32];
+    U32 vsConstBufferCount = 0;
+    U32 psConstBufferCount = 0;
+    DescriptorTableD3D11* descTable = static_cast<DescriptorTableD3D11*>(tables[0]);
+    for (U32 i = 0; i < descTable->_constantBuffers.size(); ++i) {
+      if (descTable->visibilityFlags & SHADER_VISIBILITY_VERTEX) {
+        kConstantBuffersVS[vsConstBufferCount++] = pBackend->getBuffer(descTable->_constantBuffers[i]->getUUID());
+      }
+    }
+    m_ctx->VSSetConstantBuffers(0, vsConstBufferCount, kConstantBuffersVS);
   }
 
   ID3D11DeviceContext* m_ctx;

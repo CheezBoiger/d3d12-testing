@@ -3,6 +3,7 @@
 #include "D3D12Backend.h"
 #include "CommandListD3D12.h"
 #include "D3D12MemAlloc.h"
+#include "DescriptorTableD3D12.h"
 #include <string>
 
 namespace gfx
@@ -488,6 +489,7 @@ void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
 
 void D3D12Backend::createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer)
 {
+
 }
 
 
@@ -611,7 +613,9 @@ void D3D12Backend::createDescriptorHeaps()
     }
 
     ID3D12DescriptorHeap* pDescHeap = nullptr;
-    DX12ASSERT(m_pDevice->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), (void**)&pDescHeap));
+    DX12ASSERT(m_pDevice->CreateDescriptorHeap(&desc, 
+                                               __uuidof(ID3D12DescriptorHeap), 
+                                               (void**)&pDescHeap));
     m_pDescriptorHeaps[i] = pDescHeap;
     m_descriptorHeapCurrentOffset[i] = pDescHeap->GetCPUDescriptorHandleForHeapStart();
   }
@@ -677,5 +681,13 @@ void D3D12Backend::waitFence(Fence* fence)
   m_fenceValues[f]++;
   // No resetting the allocator can lead to mem leaks.
   DX12ASSERT(m_frameResources[m_frameIndex]._pAllocator->Reset());
+}
+
+
+
+void D3D12Backend::createDescriptorTable(DescriptorTable** table)
+{
+  DescriptorTableD3D12* pHeap = new DescriptorTableD3D12(this);
+  *table = pHeap;
 }
 } // gfx

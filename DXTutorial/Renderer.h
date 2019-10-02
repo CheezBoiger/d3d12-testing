@@ -28,6 +28,18 @@ enum ResourceBind
     RESOURCE_BIND_DEPTH_STENCIL = (1 << 6)
 };
 
+
+enum ShaderVisibility {
+  SHADER_VISIBILITY_VERTEX = 0x1,
+  SHADER_VISIBILITY_HULL = 0x2,
+  SHADER_VISIBILITY_DOMAIN = 0x4,
+  SHADER_VISIBILITY_GEOMETRY = 0x8,
+  SHADER_VISIBILITY_PIXEL = 0x10,
+  SHADER_VISIBILITY_END,
+  SHADER_VISIBILITY_ALL = 0x1F,
+};
+
+typedef U32 ShaderVisibilityFlags;
 typedef U32 ResourceBindFlags;
 
 enum ResourceUsage
@@ -107,6 +119,11 @@ struct Scissor
 };
 
 
+class Sampler : public GPUObject 
+{
+};
+
+
 class DescriptorTable : public GPUObject
 {
 public:
@@ -114,7 +131,9 @@ public:
     virtual void setShaderResourceViews(Resource** resources, U32 bufferCount) { }
     virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
     virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
-    virtual void finalize() { }
+    virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
+    virtual void finalize(ShaderVisibilityFlags visibleFlags) { }
+    virtual void update() { }
 };
 
 
@@ -135,9 +154,11 @@ class RayTracingPipeline : public GPUObject
 public:
 };
 
+
 class TargetView : public GPUObject
 {
 };
+
 
 typedef TargetView RenderTargetView;
 typedef TargetView DepthStencilView;
@@ -190,7 +211,7 @@ public:
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
-    virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
+    virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount, B32 compute) { }
     virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
     virtual void clearDepthStencil(DepthStencilView* dsv) { }
 
@@ -264,6 +285,7 @@ public:
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) { }
     virtual void createIndexBufferView(IndexBufferView** view) { }
+    virtual void createDescriptorTable(DescriptorTable** table) { }
     virtual void createRenderPass(RenderPass** pPass, 
                                   U32 rtvSize, 
                                   B32 hasDepthStencil) { }
@@ -271,6 +293,10 @@ public:
     virtual void destroyResource(Resource* resource) { }
     virtual void destroyCommandList(CommandList* pCmdList) { }
     virtual void destroyRenderPass(RenderPass* pPass) { }
+
+    virtual void createSampler(Sampler** sampler) { }
+    virtual void destroySampler(Sampler* sampler) { }
+    virtual void destroyDescriptorTable(DescriptorTable* table) { }
 
     virtual RendererT getSwapchainQueue() { return 0; }
 

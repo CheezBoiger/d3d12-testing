@@ -36,19 +36,14 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
     m_pList->init();
 
   pGlobalsBuffer = nullptr;
-  pAlbedoTexture = nullptr;
+  m_gbuffer.pAlbedoTexture = nullptr;
   m_pBackend->createBuffer(&pGlobalsBuffer, 
                            gfx::RESOURCE_USAGE_CPU_TO_GPU,
                            gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                            sizeof(Globals),
                            0, TEXT("Globals"));
 
-
-  void* ptr = pGlobalsBuffer->map(0, sizeof(Globals));
-  memcpy(ptr, &m_globals, sizeof(Globals));
-  pGlobalsBuffer->unmap(0, sizeof(Globals));
-
-  m_pBackend->createTexture(&pAlbedoTexture,
+  m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
                            gfx::RESOURCE_DIMENSION_2D,
                            gfx::RESOURCE_USAGE_DEFAULT,
                            gfx::RESOURCE_BIND_RENDER_TARGET,
@@ -59,7 +54,16 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                            0,
                            TEXT("_gbufferAlbedo"));
   m_pBackend->createRenderTargetView(&m_pAlbedoRenderTargetView,
-                                     pAlbedoTexture);
+                                     m_gbuffer.pAlbedoTexture);
+
+  m_pBackend->createDescriptorTable(&m_pConstBufferTable);
+
+  m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
+  m_pConstBufferTable->finalize(gfx::SHADER_VISIBILITY_VERTEX | gfx::SHADER_VISIBILITY_PIXEL);
+
+  void* ptr = pGlobalsBuffer->map(0, sizeof(Globals));
+  memcpy(ptr, &m_globals, sizeof(Globals));
+  pGlobalsBuffer->unmap(0, sizeof(Globals));
 }
 
 
@@ -86,6 +90,7 @@ void JackalRenderer::render()
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);
 
+    m_pList->setDescriptorTables(&m_pConstBufferTable, 1, false);
     m_pList->setRenderPass(nullptr);
     m_pList->setGraphicsPipeline(nullptr);
     m_pList->setVertexBuffers(nullptr, 0);
