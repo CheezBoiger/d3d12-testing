@@ -132,20 +132,38 @@ public:
     virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
     virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
     virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
-    virtual void finalize(ShaderVisibilityFlags visibleFlags) { }
+    virtual void finalize() { }
     virtual void update() { }
 };
 
 
+struct PipelineLayout
+{
+  U32 numConstantBuffers;
+  U32 numSamplers;
+  U32 numUnorderedAcessViews;
+  U32 numShaderResourceViews;
+};
+
+class RootSignature : public GPUObject
+{
+public:
+  virtual void initialize(ShaderVisibilityFlags visibleFlags,
+                          PipelineLayout* pLayouts, 
+                          U32 numLayouts) { }
+};
+
 class GraphicsPipeline : public GPUObject
 {
 public:
+  virtual void initialize() { }
 };
 
 
 class ComputePipeline : public GPUObject
 {
 public:
+  virtual void initialize() { }
 };
 
 
@@ -207,11 +225,13 @@ public:
     virtual void setRenderPass(RenderPass* pass) { }
     virtual void dispatch(U32 x, U32 y, U32 z) { }
     virtual void setVertexBuffers(VertexBufferView** vbvs, U32 vertexBufferCount) { }
+    virtual void setGraphicsRootSignature(RootSignature* pRootSignature) { }
+    virtual void setComputeRootSignature(RootSignature* pRootSignature) { }
     virtual void setIndexBuffer(IndexBufferView* buffer) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
-    virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount, B32 compute) { }
+    virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
     virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
     virtual void clearDepthStencil(DepthStencilView* dsv) { }
 
@@ -289,7 +309,9 @@ public:
     virtual void createRenderPass(RenderPass** pPass, 
                                   U32 rtvSize, 
                                   B32 hasDepthStencil) { }
+    virtual void createRootSignature(RootSignature** pRootSignature) { }
 
+    virtual void destroyRootSignature(RootSignature* pRootSig) { }
     virtual void destroyResource(Resource* resource) { }
     virtual void destroyCommandList(CommandList* pCmdList) { }
     virtual void destroyRenderPass(RenderPass* pPass) { }

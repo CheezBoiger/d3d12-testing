@@ -4,6 +4,7 @@
 #include "../Renderer.h"
 #include "D3D11Backend.h"
 #include "DescriptorTableD3D11.h"
+#include "RootSignatureD3D11.h"
 
 namespace gfx {
 
@@ -49,23 +50,34 @@ public:
     m_ctx->ClearRenderTargetView(pView, rgba);
   }
 
-  void setDescriptorTables(DescriptorTable** tables, U32 tableCount, B32 compute) override {
-    static ID3D11Buffer* kConstantBuffersVS[32];
-    static ID3D11Buffer* kConstantBuffersPS[32];
-    U32 vsConstBufferCount = 0;
-    U32 psConstBufferCount = 0;
-    DescriptorTableD3D11* descTable = static_cast<DescriptorTableD3D11*>(tables[0]);
-    for (U32 i = 0; i < descTable->_constantBuffers.size(); ++i) {
-      if (descTable->visibilityFlags & SHADER_VISIBILITY_VERTEX) {
-        kConstantBuffersVS[vsConstBufferCount++] = pBackend->getBuffer(descTable->_constantBuffers[i]->getUUID());
-      }
+  void setDescriptorTables(DescriptorTable** tables, U32 tableCount) override {
+    numDescriptorCount = tableCount;
+    for (U32 i = 0; i < tableCount; ++i) {
+      DescriptorTableD3D11* descTable = static_cast<DescriptorTableD3D11*>(tables[i]);
+      _pCurrentDescriptorTableBinds[i] = descTable;
     }
-    m_ctx->VSSetConstantBuffers(0, vsConstBufferCount, kConstantBuffersVS);
+    isDirty = true;
+  }
+
+  void setGraphicsRootSignature(RootSignature* pRootSignature) override {
+    if (!pRootSignature) return;
+    _pCurrentGraphicsRootSignatureBind = static_cast<RootSignatureD3D11*>(pRootSignature);
+  }
+
+  void setComputeRootSignature(RootSignature* pRootSignature) override {
+    if (!pRootSignature) return;
+    _pCurrentComputeRootSignatureBind = static_cast<RootSignatureD3D11*>(pRootSignature);
   }
 
   ID3D11DeviceContext* m_ctx;
   D3D11Backend* pBackend;
   ID3D11CommandList* m_pCmdList;
+  DescriptorTableD3D11* _pCurrentDescriptorTableBinds[32];
+  size_t numDescriptorCount;
+  RootSignatureD3D11* _pCurrentGraphicsRootSignatureBind;
+  RootSignatureD3D11* _pCurrentComputeRootSignatureBind;
+  SIZEB isDirty;
+  
 };
 
 #if 0

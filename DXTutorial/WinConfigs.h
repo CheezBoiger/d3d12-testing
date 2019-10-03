@@ -23,6 +23,7 @@ typedef long long I64;
 
 typedef I32 B32;
 typedef I8 B8;
+typedef size_t SIZEB;
 
 typedef float R32;
 typedef double R64;

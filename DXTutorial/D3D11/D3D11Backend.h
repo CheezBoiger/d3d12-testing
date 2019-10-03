@@ -88,6 +88,8 @@ public:
     void destroyResource(Resource* buffer) override { }
     void createDescriptorTable(DescriptorTable** table) override;
 
+    void createRootSignature(RootSignature** ppRootSig) override;
+    void destroyRootSignature(RootSignature* pRootSig) override { }
     void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
     void createComputePipelineState(ComputePipeline** pipeline) override { }
 
@@ -135,4 +137,6 @@ private:
 
     FrameResourceD3D11 m_frameResource;
 };
+
+D3D11Backend* getBackendD3D11();
 } // gfx

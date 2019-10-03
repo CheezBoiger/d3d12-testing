@@ -12,10 +12,10 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   {
     switch (rhi) {
       case RENDERER_RHI_D3D_11:
-        m_pBackend = new gfx::D3D11Backend();
+        m_pBackend = gfx::getBackendD3D11();
         break;
       case RENDERER_RHI_D3D_12:
-        m_pBackend = new gfx::D3D12Backend();
+        m_pBackend = gfx::getBackendD3D12();
         break;
       case RENDERER_RHI_NULL:
       default:
@@ -59,11 +59,22 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   m_pBackend->createDescriptorTable(&m_pConstBufferTable);
 
   m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
-  m_pConstBufferTable->finalize(gfx::SHADER_VISIBILITY_VERTEX | gfx::SHADER_VISIBILITY_PIXEL);
+  m_pConstBufferTable->finalize();
 
   void* ptr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(ptr, &m_globals, sizeof(Globals));
   pGlobalsBuffer->unmap(0, sizeof(Globals));
+
+  m_pRootSignature = nullptr;
+  m_pBackend->createRootSignature(&m_pRootSignature);
+  gfx::PipelineLayout layout = { };
+  layout.numConstantBuffers = 1;
+  layout.numSamplers = 0;
+  layout.numShaderResourceViews = 0;
+  layout.numUnorderedAcessViews = 0;
+  m_pRootSignature->initialize(gfx::SHADER_VISIBILITY_PIXEL | gfx::SHADER_VISIBILITY_VERTEX, 
+                               &layout, 
+                               1);
 }
 
 
@@ -90,7 +101,8 @@ void JackalRenderer::render()
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);
 
-    m_pList->setDescriptorTables(&m_pConstBufferTable, 1, false);
+    m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
+    m_pList->setGraphicsRootSignature(m_pRootSignature);
     m_pList->setRenderPass(nullptr);
     m_pList->setGraphicsPipeline(nullptr);
     m_pList->setVertexBuffers(nullptr, 0);

@@ -128,6 +128,8 @@ public:
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) override { }
     void createIndexBufferView(IndexBufferView** view) override { }
+    void createRootSignature(RootSignature** pRootSignature) override;
+    void destroyRootSignature(RootSignature* pRootSig) override {}
 
     void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
@@ -228,4 +230,7 @@ private:
     ID3D12Debug1* debug1;
 #endif
 };
+
+
+D3D12Backend* getBackendD3D12();
 } // gfx

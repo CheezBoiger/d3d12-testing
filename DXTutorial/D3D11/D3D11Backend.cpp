@@ -5,6 +5,12 @@
 namespace gfx {
 
 
+D3D11Backend* getBackendD3D11()
+{
+  static D3D11Backend backend;
+  return &backend;
+}
+
 U32 getNativeBindFlags(ResourceBindFlags binds)
 {
   U32 flags = 0;
@@ -302,5 +308,12 @@ void D3D11Backend::createDescriptorTable(DescriptorTable** table)
 {
   DescriptorTableD3D11* pNative = new DescriptorTableD3D11();
   *table = pNative;
+}
+
+
+void D3D11Backend::createRootSignature(RootSignature** ppRootSig)
+{
+  RootSignatureD3D11* pRootSig = new RootSignatureD3D11();
+  *ppRootSig = pRootSig;
 }
 } // gfx

@@ -24,12 +24,12 @@ struct DescriptorTableD3D11 : public DescriptorTable
   }
   
   void setSamplers(Sampler** samplers, U32 samplerCount) override {}
-  void finalize(ShaderVisibilityFlags visibleFlags) override { visibilityFlags = visibleFlags; }
+  void finalize() override { isFinalized = true; }
   virtual void update() {}
 
   std::vector<Resource*> _constantBuffers;
   std::vector<Resource*> _shaderResourceViews;
   std::vector<Resource*> _unorderedAccessViews;
-  ShaderVisibilityFlags visibilityFlags;
+  B32 isFinalized;
 };
 } // gfx

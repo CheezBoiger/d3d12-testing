@@ -3,11 +3,18 @@
 #include "D3D12Backend.h"
 #include "CommandListD3D12.h"
 #include "D3D12MemAlloc.h"
+#include "RootSignatureD3D12.h"
 #include "DescriptorTableD3D12.h"
 #include <string>
 
 namespace gfx
 {
+
+D3D12Backend* getBackendD3D12()
+{
+  static D3D12Backend backend;
+  return &backend;
+}
 
 D3D12MA::Allocator* pAllocator = nullptr;
 
@@ -629,8 +636,7 @@ void D3D12Backend::createCommandList(CommandList** pList)
     allocs[i] = m_frameResources[i]._pAllocator;
 
   CommandList* pNativeList = nullptr;
-  pNativeList = new GraphicsCommandListD3D12(this,
-                                            D3D12_COMMAND_LIST_TYPE_DIRECT, 
+  pNativeList = new GraphicsCommandListD3D12(D3D12_COMMAND_LIST_TYPE_DIRECT, 
                                             allocs.data(), 
                                             static_cast<U32>(allocs.size()));
 
@@ -679,7 +685,7 @@ void D3D12Backend::waitFence(Fence* fence)
   pFence->SetEventOnCompletion(m_fenceValues[f], m_fenceEvents[f]);
   WaitForSingleObject(m_fenceEvents[f], INFINITE);
   m_fenceValues[f]++;
-  // No resetting the allocator can lead to mem leaks.
+  // NOTE: Not resetting the allocator can lead to mem leaks.
   DX12ASSERT(m_frameResources[m_frameIndex]._pAllocator->Reset());
 }
 
@@ -687,7 +693,14 @@ void D3D12Backend::waitFence(Fence* fence)
 
 void D3D12Backend::createDescriptorTable(DescriptorTable** table)
 {
-  DescriptorTableD3D12* pHeap = new DescriptorTableD3D12(this);
+  DescriptorTableD3D12* pHeap = new DescriptorTableD3D12();
   *table = pHeap;
+}
+
+
+void D3D12Backend::createRootSignature(RootSignature** ppRootSig)
+{
+  RootSignatureD3D12* pRootSignature = new RootSignatureD3D12();
+  *ppRootSig = pRootSignature;
 }
 } // gfx

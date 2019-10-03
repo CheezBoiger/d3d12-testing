@@ -64,6 +64,7 @@ private:
     GBuffer m_gbuffer;
     gfx::Resource* pGlobalsBuffer;
     gfx::DescriptorTable* m_pConstBufferTable;
+    gfx::RootSignature* m_pRootSignature;
 
     gfx::RenderTargetView* m_pAlbedoRenderTargetView;
     gfx::ShaderResourceView* m_pAlebdoShaderResourceView;

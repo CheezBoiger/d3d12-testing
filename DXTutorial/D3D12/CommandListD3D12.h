@@ -12,12 +12,10 @@ namespace gfx {
 class GraphicsCommandListD3D12 : public CommandList
 {
 public:
-    GraphicsCommandListD3D12(D3D12Backend* pRenderer, 
-                             D3D12_COMMAND_LIST_TYPE type, 
+    GraphicsCommandListD3D12(D3D12_COMMAND_LIST_TYPE type, 
                              ID3D12CommandAllocator** pAllocs, U32 allocCount)
         : m_pAllocatorRef(allocCount)
         , m_type(type)
-        , pBackend(pRenderer)
         , CommandList()
     {
       for (U32 i = 0; i < allocCount; ++i)
@@ -34,7 +32,7 @@ public:
         m_pCmdList.resize(m_pAllocatorRef.size());
         for (U32 i = 0; i < m_pAllocatorRef.size(); ++i) {
           DX12ASSERT(
-            pBackend->getDevice()->CreateCommandList(0, 
+            getBackendD3D12()->getDevice()->CreateCommandList(0, 
                                                      m_type, 
                                                      m_pAllocatorRef[i], 
                                                      nullptr, 
@@ -51,7 +49,7 @@ public:
     }
 
     virtual void reset() override {
-        U32 frameIndex = pBackend->getFrameIndex();
+        U32 frameIndex = getBackendD3D12()->getFrameIndex();
         m_pCmdList[frameIndex]->Reset(m_pAllocatorRef[frameIndex], nullptr);
         _isRecording = true;
     }
@@ -61,7 +59,7 @@ public:
                                       U32 startIndexLocation, 
                                       U32 baseVertexLocation, 
                                       U32 startInstanceLocation) override {
-        m_pCmdList[pBackend->getFrameIndex()]->DrawIndexedInstanced(indexCountPerInstance, 
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->DrawIndexedInstanced(indexCountPerInstance, 
                                                                     instanceCount, 
                                                                     startIndexLocation, 
                                                                     baseVertexLocation, 
@@ -72,7 +70,7 @@ public:
                        U32 instanceCount, 
                        U32 startVertexLocation, 
                        U32 startInstanceLocation) override {
-        m_pCmdList[pBackend->getFrameIndex()]->DrawInstanced(vertexCountPerInstance, 
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->DrawInstanced(vertexCountPerInstance, 
                                                              instanceCount, 
                                                              startVertexLocation, 
                                                              startInstanceLocation);
@@ -81,13 +79,14 @@ public:
     virtual void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {
       if (!pPipeline) return;
 
-      ID3D12PipelineState* pso = pBackend->getPipelineState(pPipeline->getUUID());
-      m_pCmdList[pBackend->getFrameIndex()]->SetPipelineState(pso);
+      ID3D12PipelineState* pso = getBackendD3D12()->getPipelineState(pPipeline->getUUID());
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetPipelineState(pso);
     }
 
     virtual void setRenderPass(RenderPass* pass) override { 
       if (!pass) { 
-        m_pCmdList[pBackend->getFrameIndex()]->OMSetRenderTargets(0,
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->OMSetRenderTargets(
+            0,
                                                                   nullptr,
                                                                   FALSE,
                                                                   nullptr);
@@ -99,32 +98,32 @@ public:
       RenderPassD3D12* nativePass = static_cast<RenderPassD3D12*>(pass);
       U32 rtvCount = static_cast<U32>(nativePass->_renderTargetViews.size());
 
-      if (nativePass != pBackend->getBackbufferRenderPass()) {
+      if (nativePass != getBackendD3D12()->getBackbufferRenderPass()) {
         for (U32 i = 0; i < rtvCount; ++i) {
-          rtvHandles[i] = pBackend->getViewHandle(nativePass->_renderTargetViews[i]->getUUID());
+          rtvHandles[i] = getBackendD3D12()->getViewHandle(nativePass->_renderTargetViews[i]->getUUID());
         }
 
         if (nativePass->_depthStencilResourceId) {
-          dsvHandle = pBackend->getViewHandle(nativePass->_depthStencilResourceId->getUUID()); 
+          dsvHandle = getBackendD3D12()->getViewHandle(nativePass->_depthStencilResourceId->getUUID()); 
         } else {
           dsvHandle = { 0 };
         }
       
-        m_pCmdList[pBackend->getFrameIndex()]->OMSetRenderTargets(rtvCount,
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->OMSetRenderTargets(rtvCount,
                                        rtvHandles,
                                        FALSE,
                                        &dsvHandle);
       } else {
         rtvCount = 1;
-        m_pCmdList[pBackend->getFrameIndex()]->OMSetRenderTargets(
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->OMSetRenderTargets(
             rtvCount,
-            &pBackend->getViewHandle(nativePass->_renderTargetViews[pBackend->getFrameIndex()]->getUUID()),
+            &getBackendD3D12()->getViewHandle(nativePass->_renderTargetViews[getBackendD3D12()->getFrameIndex()]->getUUID()),
             FALSE, nullptr);
       }
     }
 
     virtual void dispatch(U32 x, U32 y, U32 z) override {
-        m_pCmdList[pBackend->getFrameIndex()]->Dispatch(x, y, z);
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->Dispatch(x, y, z);
     }
 
     virtual void setVertexBuffers(VertexBufferView** buffers,
@@ -135,13 +134,13 @@ public:
           
         }
 
-        m_pCmdList[pBackend->getFrameIndex()];
+        m_pCmdList[getBackendD3D12()->getFrameIndex()];
     }
 
     virtual void setIndexBuffer(IndexBufferView* buffer) override {}
 
     virtual void close() override {
-        m_pCmdList[pBackend->getFrameIndex()]->Close();
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->Close();
         _isRecording = false;
     }
 
@@ -157,7 +156,8 @@ public:
                                     vp.maxd };
         }
 
-        m_pCmdList[pBackend->getFrameIndex()]->RSSetViewports(viewportCount, kNativeViewports);
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->RSSetViewports(
+            viewportCount, kNativeViewports);
     }
 
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) override {
@@ -170,7 +170,8 @@ public:
                                     static_cast<LONG>(sr.bottom) };
         }
 
-        m_pCmdList[pBackend->getFrameIndex()]->RSSetScissorRects(scissorCount, kNativeScissors);
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->RSSetScissorRects(
+            scissorCount, kNativeScissors);
     }
 
     virtual void clearRenderTarget(RenderTargetView* view, 
@@ -180,46 +181,64 @@ public:
       ViewHandleD3D12* pNativeView = static_cast<ViewHandleD3D12*>(view); 
         if (pNativeView->_currentState != D3D12_RESOURCE_STATE_RENDER_TARGET) {
           D3D12_RESOURCE_BARRIER barrier = {};
-          barrier.Transition.pResource = pBackend->getResource(view->getUUID());
+          barrier.Transition.pResource =
+              getBackendD3D12()->getResource(view->getUUID());
           barrier.Transition.StateBefore = pNativeView->_currentState;
           barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
           barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
           barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION; 
           barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-          m_pCmdList[pBackend->getFrameIndex()]->ResourceBarrier(1, &barrier);
+          m_pCmdList[getBackendD3D12()->getFrameIndex()]->ResourceBarrier(
+              1, &barrier);
           pNativeView->_currentState = D3D12_RESOURCE_STATE_RENDER_TARGET;
         }
 
-        m_pCmdList[pBackend->getFrameIndex()]->ClearRenderTargetView(pBackend->getViewHandle(view->getUUID()),
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->ClearRenderTargetView(
+            getBackendD3D12()->getViewHandle(view->getUUID()),
                                                                      rgba,
                                                                      numRects,
                                                                      rects);
     }
 
 
-    virtual void setDescriptorTables(DescriptorTable** tables, U32 tableCount, B32 compute) override {
-      U32 frameIdx = pBackend->getFrameIndex();
+    virtual void setDescriptorTables(DescriptorTable** tables, U32 tableCount) override {
+      U32 frameIdx = getBackendD3D12()->getFrameIndex();
       if (!tables || !tableCount) {
         m_pCmdList[frameIdx]->SetDescriptorHeaps(0, nullptr);
+      }
+
+      static ID3D12DescriptorHeap* pHeaps[32];
+      for (U32 i = 0; i < tableCount; ++i)
+        pHeaps[i] = getBackendD3D12()->getDescriptorHeap(tables[i]->getUUID());
+
+      m_pCmdList[frameIdx]->SetDescriptorHeaps(tableCount, pHeaps);
+    }
+
+    virtual void setGraphicsRootSignature(RootSignature* pRootSignature) override {
+      U32 frameIdx = getBackendD3D12()->getFrameIndex();
+      if (!pRootSignature) {
         m_pCmdList[frameIdx]->SetGraphicsRootSignature(nullptr);
+      }
+
+      ID3D12RootSignature* pNativeRootSig =
+          getBackendD3D12()->getRootSignature(pRootSignature->getUUID());
+      m_pCmdList[frameIdx]->SetGraphicsRootSignature(pNativeRootSig);
+    }
+
+    virtual void setComputeRootSignature(RootSignature* pRootSignature) override {
+      U32 frameIdx = getBackendD3D12()->getFrameIndex();
+      if (!pRootSignature) {
         m_pCmdList[frameIdx]->SetComputeRootSignature(nullptr);
       }
 
-      ID3D12RootSignature* pRootSignature = pBackend->getRootSignature(tables[0]->getUUID());
-      ID3D12DescriptorHeap* pHeap = pBackend->getDescriptorHeap(tables[0]->getUUID());
-
-      m_pCmdList[frameIdx]->SetDescriptorHeaps(1, &pHeap);
-      if (compute) {
-        m_pCmdList[frameIdx]->SetComputeRootSignature(pRootSignature);
-      } else {
-        m_pCmdList[frameIdx]->SetGraphicsRootSignature(pRootSignature);
-      }
+      ID3D12RootSignature* pNativeRootSig =
+          getBackendD3D12()->getRootSignature(pRootSignature->getUUID());
+      m_pCmdList[frameIdx]->SetComputeRootSignature(pNativeRootSig);
     }
 
 protected:
    std::vector<ID3D12GraphicsCommandList*> m_pCmdList;
     std::vector<ID3D12CommandAllocator*> m_pAllocatorRef;
-    D3D12Backend* pBackend;
     D3D12_COMMAND_LIST_TYPE m_type;
 };
 
