@@ -243,10 +243,6 @@ void D3D12Backend::querySwapChain()
                                                  (void**)&resource._cmdList));
         resource._cmdList->Close();
 
-        // Create fences.
-        m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&resource._pSignalFence);
-        resource._signalEvent = CreateEvent(0, false, false, nullptr);
-
         D3D12_RENDER_TARGET_VIEW_DESC renderTargetViewDesc = { };
         renderTargetViewDesc.Format = swapchainDesc.BufferDesc.Format;
         renderTargetViewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
@@ -256,15 +252,8 @@ void D3D12Backend::querySwapChain()
         m_viewHandles[m_frameResources[i]._rtv.getUUID()] = rtvHandle;
 
         rtvHandle.ptr += incSz;
-
-        ID3D12Fence* pFence = nullptr;
-        HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        DX12ASSERT(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&pFence));
-
-        m_fences[m_frameResources[i]._pSignalFence.getUUID()] = pFence;
-        m_fenceEvents[m_frameResources[i]._pSignalFence.getUUID()] = fenceEvent;
-        m_fenceValues[m_frameResources[i]._pSignalFence.getUUID()] = 0;
         m_frameResources[i]._swapImage->SetName(TEXT("_swapchainBuffer"));
+        m_frameResources[i]._fenceValue = 0;
     }
 
     {
@@ -274,6 +263,9 @@ void D3D12Backend::querySwapChain()
         m_pSwapchainPass->_renderTargetViews[i] = &m_frameResources[i]._rtv;
       }
     }
+
+    DX12ASSERT(m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_pPresentFence));
+    m_pPresentEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 
@@ -313,7 +305,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
     desc.Flags = getNativeAllowFlags(binds);
-
+  
     D3D12MA::Allocation* alloc;
     D3D12MA::ALLOCATION_DESC allocDesc = { };
     allocDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
@@ -446,7 +438,8 @@ void D3D12Backend::createTexture(Resource** texture,
 
 void D3D12Backend::destroyResource(Resource* buffer)
 {
-  m_memAllocator.free(m_resources[buffer->getUUID()]);
+  m_resources[buffer->getUUID()]->Release();
+  m_resources[buffer->getUUID()] = nullptr;
   delete buffer;
 }
 
@@ -555,7 +548,18 @@ void D3D12Backend::present()
 #endif
   HRESULT result = m_pD3D12Swapchain->Present(1, 0); 
   DX12ASSERT(result);
+
+  U32 currFenceValue = m_frameResources[m_frameIndex]._fenceValue;
+  m_pCommandQueues[kGraphicsQueueId]->Signal(m_pPresentFence, currFenceValue);
   m_frameIndex = m_pD3D12Swapchain->GetCurrentBackBufferIndex();
+  if (m_pPresentFence->GetCompletedValue() < m_frameResources[m_frameIndex]._fenceValue) {
+    m_pPresentFence->SetEventOnCompletion(m_frameResources[m_frameIndex]._fenceValue, m_pPresentEvent);
+    WaitForSingleObjectEx(m_pPresentEvent, INFINITE, FALSE);
+  }
+
+  m_frameResources[m_frameIndex]._fenceValue = currFenceValue + 1;
+
+  DX12ASSERT(m_frameResources[m_frameIndex]._pAllocator->Reset());
 }
 
 
@@ -648,6 +652,7 @@ void D3D12Backend::createCommandList(CommandList** pList)
 void D3D12Backend::destroyCommandList(CommandList* pList)
 {
   pList->destroy();
+  delete pList;
 }
 
 
@@ -682,11 +687,9 @@ void D3D12Backend::waitFence(Fence* fence)
 {
   RendererT f = fence->getUUID();
   ID3D12Fence* pFence = m_fences[f];
+
   pFence->SetEventOnCompletion(m_fenceValues[f], m_fenceEvents[f]);
-  WaitForSingleObject(m_fenceEvents[f], INFINITE);
-  m_fenceValues[f]++;
-  // NOTE: Not resetting the allocator can lead to mem leaks.
-  DX12ASSERT(m_frameResources[m_frameIndex]._pAllocator->Reset());
+  WaitForSingleObject(m_fenceEvents[f], INFINITE);  
 }
 
 
@@ -702,5 +705,54 @@ void D3D12Backend::createRootSignature(RootSignature** ppRootSig)
 {
   RootSignatureD3D12* pRootSignature = new RootSignatureD3D12();
   *ppRootSig = pRootSignature;
+}
+
+
+void D3D12Backend::createVertexBufferView(VertexBufferView** ppView,
+                                          Resource* pBuffer,
+                                          U32 vertexStride,
+                                          U32 bufferSzBytes)
+{
+  VertexBufferViewD3D12* pNativeView = new VertexBufferViewD3D12();
+  *ppView = pNativeView;
+  pNativeView->_buffer = pBuffer->getUUID();
+  pNativeView->_szInBytes = bufferSzBytes;
+  pNativeView->_vertexStrideBytes = vertexStride;
+}
+
+
+void D3D12Backend::createIndexBufferView(IndexBufferView** ppView,
+                                         Resource* pBuffer,
+                                         DXGI_FORMAT format,
+                                         U32 szBytes)
+{
+  IndexBufferViewD3D12* pNativeView = new IndexBufferViewD3D12();
+  *ppView = pNativeView;
+  pNativeView->_buffer = pBuffer->getUUID();
+  pNativeView->_format = format;
+  pNativeView->_szBytes = szBytes;
+}
+
+
+void D3D12Backend::createFence(Fence** ppFence)
+{
+  Fence* pFence = new Fence();
+  ID3D12Fence* pNativeFence = nullptr;
+  DX12ASSERT(m_pDevice->CreateFence(0, 
+                                    D3D12_FENCE_FLAG_NONE,
+                                    __uuidof(ID3D12Fence), 
+                                    (void**)&pNativeFence));
+  *ppFence = pFence;
+  m_fences[pFence->getUUID()] = pNativeFence;
+  m_fenceEvents[pFence->getUUID()] = CreateEvent(NULL, FALSE, FALSE, NULL);
+  m_fenceValues[pFence->getUUID()] = 1;
+}
+
+
+void D3D12Backend::destroyFence(Fence* pFence)
+{
+  m_fences[pFence->getUUID()]->Release();
+  m_fences[pFence->getUUID()] = nullptr;
+  delete pFence;
 }
 } // gfx

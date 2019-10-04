@@ -26,7 +26,7 @@ U32 getNativeBindFlags(ResourceBindFlags binds)
     flags |= D3D11_BIND_CONSTANT_BUFFER;
   if (binds & RESOURCE_BIND_INDEX_BUFFER)
     flags |= D3D11_BIND_INDEX_BUFFER;
-  if (flags & RESOURCE_BIND_VERTEX_BUFFER)
+  if (binds & RESOURCE_BIND_VERTEX_BUFFER)
     flags |= D3D11_BIND_VERTEX_BUFFER;
   return flags;
 }
@@ -54,7 +54,7 @@ void getNativeAccessAndUsage(ResourceUsage usage,
 
 void* BufferD3D11::map(U64 start, U64 end)
 {
-  ID3D11Buffer* pBuffer = _pBackend->getBuffer(getUUID());
+  ID3D11Buffer* pBuffer = static_cast<ID3D11Buffer*>(_pBackend->getResource(getUUID()));
   D3D11_MAPPED_SUBRESOURCE mapped = { };
   HRESULT result = _pBackend->getImmediateCtx()->Map(pBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped); 
   DX11ASSERT(result);
@@ -64,7 +64,7 @@ void* BufferD3D11::map(U64 start, U64 end)
 
 void BufferD3D11::unmap(U64 start, U64 end)
 {
-  ID3D11Buffer* pBuffer = _pBackend->getBuffer(getUUID());
+  ID3D11Buffer* pBuffer = static_cast<ID3D11Buffer*>(_pBackend->getResource(getUUID()));
   _pBackend->getImmediateCtx()->Unmap(pBuffer, 0);
 }
 
@@ -315,5 +315,31 @@ void D3D11Backend::createRootSignature(RootSignature** ppRootSig)
 {
   RootSignatureD3D11* pRootSig = new RootSignatureD3D11();
   *ppRootSig = pRootSig;
+}
+
+
+void D3D11Backend::createVertexBufferView(VertexBufferView** ppBufferView,
+                                          Resource* buffer,
+                                          U32 vertexStride,
+                                          U32 bufferSzBytes)
+{
+  VertexBufferViewD3D11* pView = new VertexBufferViewD3D11();
+  *ppBufferView = pView;
+  pView->_buffer = buffer->getUUID();
+  pView->_stride = vertexStride;
+  pView->_szBytes = bufferSzBytes;
+}
+
+
+void D3D11Backend::createIndexBufferView(IndexBufferView** ppIndexView,
+                                         Resource* pBuffer,
+                                         DXGI_FORMAT format,
+                                         U32 szBytes)
+{
+  IndexBufferViewD3D11* pView = new IndexBufferViewD3D11();
+  *ppIndexView = pView;
+  pView->_buffer = pBuffer->getUUID();
+  pView->_format = format;
+  pView->_szBytes = szBytes;
 }
 } // gfx

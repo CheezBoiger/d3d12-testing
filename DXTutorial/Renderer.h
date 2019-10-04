@@ -29,7 +29,8 @@ enum ResourceBind
 };
 
 
-enum ShaderVisibility {
+enum ShaderVisibility 
+{
   SHADER_VISIBILITY_VERTEX = 0x1,
   SHADER_VISIBILITY_HULL = 0x2,
   SHADER_VISIBILITY_DOMAIN = 0x4,
@@ -106,6 +107,11 @@ class Fence : public GPUObject
 };
 
 
+class CommandQueue : public GPUObject
+{
+};
+
+
 struct Viewport
 {
     R32 x, y, w, h;
@@ -153,17 +159,38 @@ public:
                           U32 numLayouts) { }
 };
 
+
+struct GraphicsPipelineInfo 
+{
+  void* _pVertexByteCode;
+  size_t _vertLengthBytes;
+  void* _pHullByteCode;
+  size_t _hullLengthBytes;
+  void* _pDomainByteCode;
+  size_t _domainLengthBytes;
+  void* _pGeometryByteCode;
+  size_t _geometryLengthBytes;
+  void* _pPixelByteCode;
+  size_t _pixelLengthBytes;
+};
+
+
+struct ComputePipelineInfo 
+{
+  void* _pComputeByteCode;
+};
+
 class GraphicsPipeline : public GPUObject
 {
 public:
-  virtual void initialize() { }
+  virtual void initialize(const GraphicsPipelineInfo* pInfo) { }
 };
 
 
 class ComputePipeline : public GPUObject
 {
 public:
-  virtual void initialize() { }
+  virtual void initialize(const ComputePipelineInfo* pInfo) { }
 };
 
 
@@ -224,7 +251,7 @@ public:
     virtual void setAccelerationStructure() { }
     virtual void setRenderPass(RenderPass* pass) { }
     virtual void dispatch(U32 x, U32 y, U32 z) { }
-    virtual void setVertexBuffers(VertexBufferView** vbvs, U32 vertexBufferCount) { }
+    virtual void setVertexBuffers(U32 startSlot, VertexBufferView** vbvs, U32 vertexBufferCount) { }
     virtual void setGraphicsRootSignature(RootSignature* pRootSignature) { }
     virtual void setComputeRootSignature(RootSignature* pRootSignature) { }
     virtual void setIndexBuffer(IndexBufferView* buffer) { }
@@ -234,6 +261,7 @@ public:
     virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
     virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
     virtual void clearDepthStencil(DepthStencilView* dsv) { }
+    virtual void copyResource(Resource* pDst, Resource* pSrc) { }
 
     B32 isRecording() const { return _isRecording; }
 
@@ -289,7 +317,7 @@ public:
                                U32 depth = 1,
                                U32 structureByteStride = 0,
                                const TCHAR* debugName = nullptr) { }
-    virtual void createQueue() { }
+    virtual void createQueue(CommandQueue** ppQueue) { }
     virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture) { }
     virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture) { }
     virtual void createShaderResourceView(ShaderResourceView** srv, 
@@ -304,7 +332,10 @@ public:
                                         Resource* buffer, 
                                         U32 vertexStride, 
                                         U32 bufferSzBytes) { }
-    virtual void createIndexBufferView(IndexBufferView** view) { }
+    virtual void createIndexBufferView(IndexBufferView** view,
+                                       Resource* buffer,
+                                       DXGI_FORMAT format,
+                                       U32 szBytes) { }
     virtual void createDescriptorTable(DescriptorTable** table) { }
     virtual void createRenderPass(RenderPass** pPass, 
                                   U32 rtvSize, 
@@ -325,8 +356,9 @@ public:
     virtual void createCommandList(CommandList** pList) { }
 
     virtual RenderPass* getBackbufferRenderPass() { return nullptr; }
-    virtual Fence* getSwapchainFence() { return nullptr; }
     virtual RenderTargetView* getSwapchainRenderTargetView() { return nullptr; }
+    virtual void createFence(Fence** ppFence) { }
+    virtual void destroyFence(Fence* pFence) { }
 
 protected:
 

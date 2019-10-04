@@ -7,6 +7,20 @@
 namespace jcl {
 
 
+struct Vertex {
+  Vector4 pos;
+  Vector4 texCoords;
+  Vector4 color;
+};
+
+
+Vertex triangle[3] = {
+  { { 1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { 0.0f, -1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { 0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+};
+
+
 void JackalRenderer::init(HWND handle, RendererRHI rhi)
 {
   {
@@ -52,7 +66,7 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                            1080, 
                            1,
                            0,
-                           TEXT("_gbufferAlbedo"));
+                           TEXT("GBufferAlbedo"));
   m_pBackend->createRenderTargetView(&m_pAlbedoRenderTargetView,
                                      m_gbuffer.pAlbedoTexture);
 
@@ -75,6 +89,45 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   m_pRootSignature->initialize(gfx::SHADER_VISIBILITY_PIXEL | gfx::SHADER_VISIBILITY_VERTEX, 
                                &layout, 
                                1);
+
+  m_pBackend->createBuffer(&m_pTriangleVertexBuffer, 
+                           gfx::RESOURCE_USAGE_DEFAULT,
+                           gfx::RESOURCE_BIND_VERTEX_BUFFER, 
+                           sizeof(triangle), 
+                           sizeof(Vertex), 
+                           TEXT("Triangle"));
+
+  m_pBackend->createVertexBufferView(&m_pTriangleVertexBufferView,
+                                     m_pTriangleVertexBuffer,
+                                     sizeof(Vertex),
+                                     sizeof(triangle));
+#if 1
+  {
+    gfx::Fence* pFence = nullptr;
+    gfx::Resource* pStaging = nullptr;
+    gfx::CommandList* pList = nullptr;
+    m_pBackend->createBuffer(&pStaging,
+                             gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                             gfx::RESOURCE_BIND_VERTEX_BUFFER,
+                             sizeof(triangle),
+                             sizeof(Vertex),
+                             TEXT("staging"));
+    m_pBackend->createFence(&pFence);
+    m_pBackend->createCommandList(&pList);
+    pList->init();
+    pList->reset();
+    pList->copyResource(m_pTriangleVertexBuffer, pStaging);
+    pList->close();
+    
+    m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
+    m_pBackend->signalFence(m_pBackend->getSwapchainQueue(), pFence);
+
+    m_pBackend->waitFence(pFence);
+    m_pBackend->destroyResource(pStaging);
+    m_pBackend->destroyFence(pFence);
+    m_pBackend->destroyCommandList(pList);
+  }
+#endif
 }
 
 
@@ -105,7 +158,7 @@ void JackalRenderer::render()
     m_pList->setGraphicsRootSignature(m_pRootSignature);
     m_pList->setRenderPass(nullptr);
     m_pList->setGraphicsPipeline(nullptr);
-    m_pList->setVertexBuffers(nullptr, 0);
+    m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
     m_pList->setIndexBuffer(nullptr);
     m_pList->drawIndexedInstanced(0, 0, 0, 0, 0);
 
@@ -118,15 +171,12 @@ void JackalRenderer::render()
 
 void JackalRenderer::beginFrame()
 {
-  m_pBackend->waitFence(m_pBackend->getSwapchainFence());
 }
 
 
 void JackalRenderer::endFrame()
 {
   m_pBackend->present();
-  m_pBackend->signalFence(m_pBackend->getSwapchainQueue(),
-                          m_pBackend->getSwapchainFence());
 }
 
 

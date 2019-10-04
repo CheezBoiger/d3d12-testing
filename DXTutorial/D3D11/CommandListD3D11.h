@@ -69,6 +69,42 @@ public:
     _pCurrentComputeRootSignatureBind = static_cast<RootSignatureD3D11*>(pRootSignature);
   }
 
+  void setVertexBuffers(U32 startSlot, 
+                        VertexBufferView** ppBuffers,
+                        U32 vertexBufferCount) override {
+    static U32 strides[16];
+    static U32 offsets[16];
+    static ID3D11Buffer* buffers[16];
+
+    for (U32 i = 0; i < vertexBufferCount; ++i) {
+        VertexBufferViewD3D11* pView = static_cast<VertexBufferViewD3D11*>(ppBuffers[i]);
+        ID3D11Buffer* pBuff = static_cast<ID3D11Buffer*>(getBackendD3D11()->getResource(pView->_buffer));
+        buffers[i] = pBuff;
+        strides[i] = pView->_stride;
+        offsets[i] = 0;
+    }
+
+    m_ctx->IASetVertexBuffers(startSlot, vertexBufferCount, buffers, strides, offsets );
+  }
+
+
+  void setIndexBuffer(IndexBufferView* pIndexBuffer) override {
+    if (!pIndexBuffer) {
+      return;
+    } 
+    IndexBufferViewD3D11* pView = static_cast<IndexBufferViewD3D11*>(pIndexBuffer);
+    ID3D11Buffer* pBuffer = static_cast<ID3D11Buffer*>(getBackendD3D11()->getResource(pView->_buffer));
+    m_ctx->IASetIndexBuffer(pBuffer, pView->_format, 0);
+  }
+
+
+  void copyResource(Resource* pDst, Resource* pSrc) override {
+    if (!pDst || !pSrc) return;
+    ID3D11Resource* pNativeSrc = getBackendD3D11()->getResource(pSrc->getUUID());
+    ID3D11Resource* pNativeDst = getBackendD3D11()->getResource(pDst->getUUID());
+    m_ctx->CopyResource(pNativeDst, pNativeSrc);
+  }
+
   ID3D11DeviceContext* m_ctx;
   D3D11Backend* pBackend;
   ID3D11CommandList* m_pCmdList;

@@ -34,8 +34,8 @@ class GraphicsPipelineStateD3D12 : public GraphicsPipeline
   GraphicsPipelineStateD3D12(D3D12Backend* backend)
     : _pBackend(backend) { }
 
-  void initialize() override {
-
+  void initialize(const GraphicsPipelineInfo* pInfo) override {
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { };
   }
 
   D3D12Backend* _pBackend;
@@ -48,8 +48,8 @@ class ComputePipelineStateD3D12 : public ComputePipeline
     : _pBackend(backend) { }
 
 
-  void initialize() override {
-  
+  void initialize(const ComputePipelineInfo* pInfo) override {
+    D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { };
   }
 
   D3D12Backend* _pBackend;

@@ -20,6 +20,7 @@ struct FrameResourceD3D11 {
   TargetView _view;
 };
 
+
 struct BufferD3D11 : public Resource
 {
     BufferD3D11(ResourceDimension dimension,
@@ -33,6 +34,7 @@ struct BufferD3D11 : public Resource
     D3D11Backend* _pBackend;
 };
 
+
 struct TextureD3D11 : public BufferD3D11
 {
   TextureD3D11(ResourceDimension dimension, ResourceUsage usage, ResourceBindFlags flags)
@@ -43,11 +45,22 @@ struct TextureD3D11 : public BufferD3D11
   U32 _depth;
 };
 
+
 struct VertexBufferViewD3D11 : public TargetView
 {
   RendererT _buffer;
   U32 _stride;
+  U32 _szBytes;
 };
+
+
+struct IndexBufferViewD3D11 : public TargetView
+{
+  RendererT _buffer;
+  DXGI_FORMAT _format;  
+  U32 _szBytes;
+};
+
 
 class D3D11Backend : public BackendRenderer
 {
@@ -82,8 +95,11 @@ public:
     virtual void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 
                                         U32 vertexStride, 
-                                        U32 bufferSzBytes) override { }
-    virtual void createIndexBufferView(IndexBufferView** view) override { }
+                                        U32 bufferSzBytes) override;
+    virtual void createIndexBufferView(IndexBufferView** view,
+                                       Resource* buffer,
+                                       DXGI_FORMAT format,
+                                       U32 szBytes) override;
     void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
     void destroyResource(Resource* buffer) override { }
     void createDescriptorTable(DescriptorTable** table) override;
@@ -97,8 +113,8 @@ public:
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
     }
 
-    ID3D11Buffer* getBuffer(RendererT buff) {
-      return static_cast<ID3D11Buffer*>(m_resources[buff]);
+    ID3D11Resource* getResource(RendererT res) {
+      return m_resources[res];
     }
 
     ID3D11DeviceContext* getImmediateCtx() { return m_pImmediateCtx; }

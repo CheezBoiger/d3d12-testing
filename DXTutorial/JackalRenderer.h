@@ -69,5 +69,8 @@ private:
     gfx::RenderTargetView* m_pAlbedoRenderTargetView;
     gfx::ShaderResourceView* m_pAlebdoShaderResourceView;
     Globals m_globals;
+
+    gfx::Resource* m_pTriangleVertexBuffer;
+    gfx::VertexBufferView* m_pTriangleVertexBufferView;
 };
 } //

@@ -28,8 +28,7 @@ struct FrameResource
     ID3D12CommandAllocator* _pAllocator;
     ID3D12GraphicsCommandList* _cmdList;
     ID3D12Resource* _swapImage;
-    Fence _pSignalFence;
-    HANDLE _signalEvent;
+    U32 _fenceValue;
     ViewHandleD3D12 _rtv;
 };
 
@@ -74,6 +73,14 @@ struct VertexBufferViewD3D12 : public TargetView
   RendererT _buffer;
   U32 _szInBytes;
   U32 _vertexStrideBytes;
+};
+
+
+struct IndexBufferViewD3D12 : public TargetView
+{
+  RendererT _buffer;
+  DXGI_FORMAT _format;
+  U32 _szBytes;
 };
 
 
@@ -126,10 +133,13 @@ public:
     void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 
                                         U32 vertexStride, 
-                                        U32 bufferSzBytes) override { }
-    void createIndexBufferView(IndexBufferView** view) override { }
+                                        U32 bufferSzBytes) override;
+    void createIndexBufferView(IndexBufferView** view,
+                               Resource* buffer,
+                               DXGI_FORMAT format,
+                               U32 szBytes) override;
     void createRootSignature(RootSignature** pRootSignature) override;
-    void destroyRootSignature(RootSignature* pRootSig) override {}
+    void destroyRootSignature(RootSignature* pRootSig) override { }
 
     void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
@@ -138,6 +148,8 @@ public:
     void destroySampler(Sampler* sampler) override { }
     void createDescriptorTable(DescriptorTable** table) override;
     void destroyDescriptorTable(DescriptorTable* table) override { }
+    void createFence(Fence** ppFence) override;
+    void destroyFence(Fence* pFence) override;
 
     ID3D12Resource* getResource(RendererT uuid) { 
       return m_resources[uuid];
@@ -183,7 +195,6 @@ public:
     ID3D12Resource* getFrameResourceNative() { return m_frameResources[m_frameIndex]._swapImage; }
 
     RendererT getSwapchainQueue() override { return kGraphicsQueueId; }
-    Fence* getSwapchainFence() override { return &m_frameResources[m_frameIndex]._pSignalFence; }
 
 private:
 
@@ -223,6 +234,8 @@ private:
     DXGI_SWAP_CHAIN_DESC1 m_swapchainDesc;
     RenderPassD3D12* m_pSwapchainPass;
     std::vector<FrameResource> m_frameResources; 
+    ID3D12Fence* m_pPresentFence;
+    HANDLE m_pPresentEvent;
     U32 m_frameIndex;
 
 #if _DEBUG

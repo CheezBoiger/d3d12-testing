@@ -126,18 +126,32 @@ public:
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->Dispatch(x, y, z);
     }
 
-    virtual void setVertexBuffers(VertexBufferView** buffers,
+    virtual void setVertexBuffers(U32 startSlot,
+                                  VertexBufferView** buffers,
                                   U32 vertexBufferCount) override {
-        static D3D12_VERTEX_BUFFER_VIEW* kVertexBuffers[16];
+        static D3D12_VERTEX_BUFFER_VIEW kVertexBuffers[16];
         //m_pCmdList->IASetVertexBuffers
         for (U32 i = 0; i < vertexBufferCount; ++i) {
-          
+          VertexBufferViewD3D12* pView = static_cast<VertexBufferViewD3D12*>(buffers[i]);
+          kVertexBuffers[i].BufferLocation = getBackendD3D12()->getResource(pView->_buffer)->GetGPUVirtualAddress();
+          kVertexBuffers[i].SizeInBytes = pView->_szInBytes;
+          kVertexBuffers[i].StrideInBytes = pView->_vertexStrideBytes;
         }
 
-        m_pCmdList[getBackendD3D12()->getFrameIndex()];
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->IASetVertexBuffers(startSlot, 
+                                                                           vertexBufferCount, 
+                                                                           kVertexBuffers);
     }
 
-    virtual void setIndexBuffer(IndexBufferView* buffer) override {}
+    virtual void setIndexBuffer(IndexBufferView* buffer) override {
+      if (!buffer) return;
+      static D3D12_INDEX_BUFFER_VIEW kIndexBuffer;
+      IndexBufferViewD3D12* pView = static_cast<IndexBufferViewD3D12*>(buffer);
+      kIndexBuffer.BufferLocation = getBackendD3D12()->getResource(pView->_buffer)->GetGPUVirtualAddress();
+      kIndexBuffer.Format = pView->_format;
+      kIndexBuffer.SizeInBytes = pView->_szBytes;
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->IASetIndexBuffer(&kIndexBuffer);
+    }
 
     virtual void close() override {
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->Close();
@@ -234,6 +248,14 @@ public:
       ID3D12RootSignature* pNativeRootSig =
           getBackendD3D12()->getRootSignature(pRootSignature->getUUID());
       m_pCmdList[frameIdx]->SetComputeRootSignature(pNativeRootSig);
+    }
+
+    void copyResource(Resource* pDst, Resource* pSrc) override {
+      if (!pSrc || !pDst) return;
+
+      ID3D12Resource* pNativeSrc = getBackendD3D12()->getResource(pSrc->getUUID());
+      ID3D12Resource* pNativeDst = getBackendD3D12()->getResource(pDst->getUUID());
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->CopyResource(pNativeDst, pNativeSrc);  
     }
 
 protected:
