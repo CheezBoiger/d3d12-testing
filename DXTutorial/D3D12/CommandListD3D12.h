@@ -9,6 +9,17 @@
 
 namespace gfx {
 
+
+D3D12_CLEAR_FLAGS getDepthClearFlags(ClearFlags flags)
+{
+  D3D12_CLEAR_FLAGS clearFlags = D3D12_CLEAR_FLAGS(0);
+  if (flags & CLEAR_FLAG_DEPTH)
+    clearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+  if (flags & CLEAR_FLAG_STENCIL)
+    clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+  return clearFlags;
+}
+
 class GraphicsCommandListD3D12 : public CommandList
 {
 public:
@@ -196,7 +207,7 @@ public:
         if (pNativeView->_currentState != D3D12_RESOURCE_STATE_RENDER_TARGET) {
           D3D12_RESOURCE_BARRIER barrier = {};
           barrier.Transition.pResource =
-              getBackendD3D12()->getResource(view->getUUID());
+              getBackendD3D12()->getResource(pNativeView->_buffer);
           barrier.Transition.StateBefore = pNativeView->_currentState;
           barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
           barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -212,6 +223,25 @@ public:
                                                                      rgba,
                                                                      numRects,
                                                                      rects);
+    }
+
+    virtual void clearDepthStencil(DepthStencilView* view, 
+                                   ClearFlags flags, 
+                                   R32 depth, 
+                                   U8 stencil, 
+                                   U32 numRects, 
+                                   const RECT* rects) override {
+      U32 frameIdx = getBackendD3D12()->getFrameIndex();
+      ViewHandleD3D12* pView = static_cast<ViewHandleD3D12*>(view);
+      ID3D12Resource* pResource = getBackendD3D12()->getResource(pView->_buffer);
+      D3D12_CPU_DESCRIPTOR_HANDLE handle = getBackendD3D12()->getViewHandle(view->getUUID());
+      D3D12_CLEAR_FLAGS clearFlags = getDepthClearFlags(flags);
+      m_pCmdList[frameIdx]->ClearDepthStencilView(handle, 
+                                                  clearFlags, 
+                                                  depth, 
+                                                  stencil, 
+                                                  numRects, 
+                                                  rects);
     }
 
 

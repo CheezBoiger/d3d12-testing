@@ -223,7 +223,7 @@ void D3D12Backend::querySwapChain()
         FrameResource& resource = m_frameResources[i];
         ID3D12Resource* pResource = nullptr;
         HRESULT result = m_pSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&pResource);
-        m_resources[m_frameResources[i]._rtv.getUUID()] = pResource;
+        m_resources[FrameResource::kFrameResourceId].push_back(pResource);
         m_frameResources[i]._rtv._currentState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
         if (FAILED(result)) {
@@ -249,11 +249,12 @@ void D3D12Backend::querySwapChain()
         renderTargetViewDesc.Texture2D.MipSlice = 0;
         renderTargetViewDesc.Texture2D.PlaneSlice = 0;
         m_pDevice->CreateRenderTargetView(pResource, &renderTargetViewDesc, rtvHandle);
-        m_viewHandles[m_frameResources[i]._rtv.getUUID()] = rtvHandle;
+        m_viewHandles[m_frameResources[i]._rtv.getUUID()].push_back(rtvHandle);
 
         rtvHandle.ptr += incSz;
         m_frameResources[i]._swapImage->SetName(TEXT("_swapchainBuffer"));
         m_frameResources[i]._fenceValue = 0;
+        m_frameResources[i]._rtv._buffer = FrameResource::kFrameResourceId;
     }
 
     {
@@ -349,7 +350,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
 
     *buffer = pNativeBuffer; 
 
-    m_resources[(*buffer)->getUUID()] = pResource;
+    m_resources[(*buffer)->getUUID()].push_back(pResource);
 }
 
 
@@ -432,14 +433,16 @@ void D3D12Backend::createTexture(Resource** texture,
 
   *texture = pNativeBuffer;
 
-  m_resources[(*texture)->getUUID()] = pResource;
+  m_resources[(*texture)->getUUID()].push_back(pResource);
 }
 
 
 void D3D12Backend::destroyResource(Resource* buffer)
 {
-  m_resources[buffer->getUUID()]->Release();
-  m_resources[buffer->getUUID()] = nullptr;
+  for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
+    m_resources[buffer->getUUID()][i]->Release();
+    m_resources[buffer->getUUID()][i] = nullptr;
+  }
   delete buffer;
 }
 
@@ -461,27 +464,31 @@ void D3D12Backend::destroyRenderPass(RenderPass* pass)
 void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
-
-  ID3D12Resource* pResource = getResource(buffer->getUUID());
-  D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
   ID3D12DescriptorHeap* rtvHeap = getDescriptorHeap(DESCRIPTOR_HEAP_RENDER_TARGET_VIEWS);
   D3D12_CPU_DESCRIPTOR_HANDLE& cpuHandle = m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_RENDER_TARGET_VIEWS];
 
   U32 incSz = m_pDevice->GetDescriptorHandleIncrementSize(rtvHeap->GetDesc().Type);
 
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = { };
-  rtvDesc.Format = resourceDesc.Format;
+
   rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
   rtvDesc.Texture2D.MipSlice = 0;
   rtvDesc.Texture2D.PlaneSlice = 0;
   
-  m_pDevice->CreateRenderTargetView(pResource, &rtvDesc, cpuHandle);
-  m_viewHandles[pView->getUUID()] = cpuHandle;
-  m_resources[pView->getUUID()] = pResource;
+  m_viewHandles[pView->getUUID()].resize(m_resources[buffer->getUUID()].size());
+
+  for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
+    ID3D12Resource* pResource = getResource(buffer->getUUID(), i);
+    D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
+    rtvDesc.Format = resourceDesc.Format;
+    m_pDevice->CreateRenderTargetView(pResource, &rtvDesc, cpuHandle);
+    m_viewHandles[pView->getUUID()][i] = cpuHandle;
+    cpuHandle.ptr += incSz;
+  }
 
   // Set to current state, in order to transition.
   pView->_currentState = static_cast<BufferD3D12*>(buffer)->_currentResourceState;
-  cpuHandle.ptr += incSz;
+  pView->_buffer = buffer->getUUID();
 
   *rtv = pView;
 }
@@ -505,22 +512,26 @@ void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Resource* buff
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
   *dsv = pView;
-  ID3D12Resource* pResource = getResource(buffer->getUUID());
-  D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
+  pView->_buffer = buffer->getUUID();
+
   ID3D12DescriptorHeap* rtvHeap = getDescriptorHeap(DESCRIPTOR_HEAP_DEPTH_STENCIL_VIEWS);
   D3D12_CPU_DESCRIPTOR_HANDLE& cpuHandle = m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_DEPTH_STENCIL_VIEWS];
 
   U32 incSz = m_pDevice->GetDescriptorHandleIncrementSize(rtvHeap->GetDesc().Type);
 
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = { };
-  dsvDesc.Format = resourceDesc.Format;
   dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-  dsvDesc.Texture2D.MipSlice = 1;
+  dsvDesc.Texture2D.MipSlice = 0;
   
-  m_pDevice->CreateDepthStencilView(pResource, &dsvDesc, cpuHandle);
-  m_viewHandles[pView->getUUID()] = cpuHandle;
-
-  cpuHandle.ptr += incSz;
+  m_viewHandles[pView->getUUID()].resize(m_resources[buffer->getUUID()].size());
+  for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
+    ID3D12Resource* pResource = getResource(buffer->getUUID(), i);
+    D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
+    dsvDesc.Format = resourceDesc.Format;
+    m_pDevice->CreateDepthStencilView(pResource, &dsvDesc, cpuHandle);
+    m_viewHandles[pView->getUUID()][i] = cpuHandle;
+    cpuHandle.ptr += incSz;
+  }
 }
 
 

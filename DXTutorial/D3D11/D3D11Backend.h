@@ -101,6 +101,7 @@ public:
                                        DXGI_FORMAT format,
                                        U32 szBytes) override;
     void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
+    void createDepthStencilView(DepthStencilView** ppDsv, Resource* buffer) override;
     void destroyResource(Resource* buffer) override { }
     void createDescriptorTable(DescriptorTable** table) override;
 
@@ -129,6 +130,10 @@ public:
 
     ID3D11RenderTargetView* getRenderTargetView(RendererT uuid) {
       return m_renderTargetViews[uuid];
+    }
+
+    ID3D11DepthStencilView* getDepthStencilView(RendererT uuid) {
+      return m_depthStencilViews[uuid];
     }
 
 private:

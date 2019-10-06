@@ -64,6 +64,14 @@ enum ResourceDimension
     RESOURCE_DIMENSION_TEXTURE_CUBE_ARRAY
 };
 
+
+enum ClearFlag
+{
+  CLEAR_FLAG_DEPTH = (1 << 0),
+  CLEAR_FLAG_STENCIL = (1 << 1)
+};
+
+typedef U32 ClearFlags;
 typedef U64 RendererT;
 
 /*
@@ -260,7 +268,12 @@ public:
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
     virtual void setDescriptorTables(DescriptorTable** pTables, U32 tableCount) { }
     virtual void clearRenderTarget(RenderTargetView* rtv, R32* rgba, U32 numRects, RECT* rects) { }
-    virtual void clearDepthStencil(DepthStencilView* dsv) { }
+    virtual void clearDepthStencil(DepthStencilView* dsv, 
+                                   ClearFlags flags,
+                                   R32 depth, 
+                                   U8 stencil, 
+                                   U32 numRects,
+                                   const RECT* rects) {}
     virtual void copyResource(Resource* pDst, Resource* pSrc) { }
 
     B32 isRecording() const { return _isRecording; }

@@ -304,6 +304,29 @@ void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
 }
 
 
+void D3D11Backend::createDepthStencilView(DepthStencilView** pDsv, Resource* buffer)
+{
+  ID3D11DepthStencilView* pDepthStencil = nullptr;
+  TargetView* pView = new TargetView();
+
+  ID3D11Resource* pResource = m_resources[buffer->getUUID()];
+  D3D11_DEPTH_STENCIL_VIEW_DESC desc = { };
+  switch (buffer->_dimension) {
+    case RESOURCE_DIMENSION_2D: 
+      TextureD3D11* pTex = static_cast<TextureD3D11*>(buffer);
+      desc.Format = pTex->_format;
+      desc.Texture2D.MipSlice = 0;
+      desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+      break;
+  }
+  
+  HRESULT result = m_pDevice->CreateDepthStencilView(pResource, &desc, &pDepthStencil);
+  DX11ASSERT(result);
+  m_depthStencilViews[pView->getUUID()] = pDepthStencil;
+  *pDsv = pView;
+}
+
+
 void D3D11Backend::createDescriptorTable(DescriptorTable** table)
 {
   DescriptorTableD3D11* pNative = new DescriptorTableD3D11();

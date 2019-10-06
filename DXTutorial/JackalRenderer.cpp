@@ -101,6 +101,17 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                                      m_pTriangleVertexBuffer,
                                      sizeof(Vertex),
                                      sizeof(triangle));
+
+  m_pBackend->createTexture(&m_pSceneDepth,
+                            gfx::RESOURCE_DIMENSION_2D,
+                            gfx::RESOURCE_USAGE_DEFAULT,
+                            gfx::RESOURCE_BIND_DEPTH_STENCIL,
+                            DXGI_FORMAT_D24_UNORM_S8_UINT,
+                            1920,
+                            1080, 1, 0, TEXT("SceneDepth"));
+  m_pBackend->createDepthStencilView(&m_pSceneDepthResourceView, 
+                                     m_pSceneDepth);
+  
 #if 1
   {
     gfx::Fence* pFence = nullptr;
@@ -150,6 +161,10 @@ void JackalRenderer::render()
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
     m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
+    m_pList->clearDepthStencil(m_pSceneDepthResourceView, 
+                               gfx::CLEAR_FLAG_DEPTH | gfx::CLEAR_FLAG_STENCIL,
+                               0.0f, 
+                               0, 1, &rect);
 
     m_pList->setComputePipeline(nullptr);
     m_pList->dispatch(16, 16, 1);

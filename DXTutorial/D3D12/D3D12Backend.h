@@ -18,12 +18,14 @@ class D3D12Backend;
 struct ViewHandleD3D12 : public TargetView
 {
   D3D12_RESOURCE_STATES _currentState;
+  RendererT _buffer;
 };
 
 
 // Frame Resources.
 struct FrameResource
 {
+    static const RendererT kFrameResourceId = 0xffffffffffffffffull;
     // This allocator resets often.
     ID3D12CommandAllocator* _pAllocator;
     ID3D12GraphicsCommandList* _cmdList;
@@ -151,8 +153,9 @@ public:
     void createFence(Fence** ppFence) override;
     void destroyFence(Fence* pFence) override;
 
-    ID3D12Resource* getResource(RendererT uuid) { 
-      return m_resources[uuid];
+    ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
+      size_t resourceMax = m_resources[uuid].size(); 
+      return m_resources[uuid][ (resourceIdx == 0xffffffffffffffffull ? m_frameIndex : resourceIdx) % resourceMax];
     }
 
 
@@ -168,8 +171,9 @@ public:
       return m_pDescriptorHeaps[uuid];
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE getViewHandle(RendererT uuid) {
-      return m_viewHandles[uuid];
+    D3D12_CPU_DESCRIPTOR_HANDLE getViewHandle(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
+      size_t viewMax = m_viewHandles[uuid].size();
+      return m_viewHandles[uuid][ (resourceIdx == 0xffffffffffffffffull ? m_frameIndex : resourceIdx) % viewMax];
     }
 
     ID3D12RootSignature* getRootSignature(RendererT uuid) {
@@ -213,7 +217,7 @@ private:
     void createCommandAllocators() { }
 
     std::unordered_map<RendererT, CommandList*> m_cmdLists;
-    std::unordered_map<RendererT, ID3D12Resource*> m_resources;
+    std::unordered_map<RendererT, std::vector<ID3D12Resource*>> m_resources;
     std::unordered_map<DescriptorHeapT, ID3D12Heap*> m_pHeaps;
     std::unordered_map<DescriptorHeapT, ID3D12DescriptorHeap*> m_pDescriptorHeaps;
     std::unordered_map<RendererT, ID3D12RootSignature*> m_pRootSignatures;
@@ -223,7 +227,7 @@ private:
     std::unordered_map<RendererT, ID3D12Fence*> m_fences;
     std::unordered_map<RendererT, HANDLE> m_fenceEvents;
     std::unordered_map<RendererT, U64> m_fenceValues;
-    std::unordered_map<RendererT, D3D12_CPU_DESCRIPTOR_HANDLE> m_viewHandles;
+    std::unordered_map<RendererT, std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>> m_viewHandles;
     std::unordered_map<DescriptorHeapT, D3D12_CPU_DESCRIPTOR_HANDLE> m_descriptorHeapCurrentOffset; 
     std::unordered_map<RendererT, D3D12_VERTEX_BUFFER_VIEW> m_vertexBufferViews;
     std::unordered_map<RendererT, D3D12_INDEX_BUFFER_VIEW> m_indexBufferViews;

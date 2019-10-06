@@ -8,6 +8,18 @@
 
 namespace gfx {
 
+
+U32 getDepth11ClearFlags(ClearFlags flags)
+{
+  U32 clearFlags = 0;
+  if (flags & CLEAR_FLAG_DEPTH)
+    clearFlags |= D3D11_CLEAR_DEPTH;
+  if (flags & CLEAR_FLAG_STENCIL)
+    clearFlags |= D3D11_CLEAR_STENCIL;
+  return clearFlags;
+}
+
+
 class GraphicsCommandListD3D11 : public CommandList
 {
 public:
@@ -48,6 +60,17 @@ public:
                          RECT* rects) override {
     ID3D11RenderTargetView* pView = pBackend->getRenderTargetView(view->getUUID());
     m_ctx->ClearRenderTargetView(pView, rgba);
+  }
+
+ void clearDepthStencil(DepthStencilView* view, 
+                        ClearFlags flags, 
+                        R32 depth,
+                         U8 stencil, 
+                         U32 numRects, 
+                         const RECT* rects) override {
+    ID3D11DepthStencilView* pView = pBackend->getDepthStencilView(view->getUUID());
+    U32 clearFlags = getDepth11ClearFlags(flags);
+    m_ctx->ClearDepthStencilView(pView, clearFlags, depth, stencil );
   }
 
   void setDescriptorTables(DescriptorTable** tables, U32 tableCount) override {

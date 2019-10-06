@@ -63,11 +63,15 @@ private:
     gfx::CommandList* m_pList;
     GBuffer m_gbuffer;
     gfx::Resource* pGlobalsBuffer;
+    gfx::Resource* m_pSceneDepth;
+
     gfx::DescriptorTable* m_pConstBufferTable;
     gfx::RootSignature* m_pRootSignature;
 
     gfx::RenderTargetView* m_pAlbedoRenderTargetView;
     gfx::ShaderResourceView* m_pAlebdoShaderResourceView;
+    gfx::DepthStencilView* m_pSceneDepthView;
+    gfx::ShaderResourceView* m_pSceneDepthResourceView;
     Globals m_globals;
 
     gfx::Resource* m_pTriangleVertexBuffer;
