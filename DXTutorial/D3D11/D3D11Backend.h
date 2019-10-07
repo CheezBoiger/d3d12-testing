@@ -155,6 +155,13 @@ private:
     std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
     std::unordered_map<RendererT, ID3D11DepthStencilView*> m_depthStencilViews;
     std::unordered_map<RendererT, ID3D11UnorderedAccessView*> m_unorderedAccessViews;
+    std::unordered_map<RendererT, ID3D11VertexShader*> m_pVertexShaders;
+    std::unordered_map<RendererT, ID3D11PixelShader*> m_pPixelShaders;
+    std::unordered_map<RendererT, ID3D11GeometryShader*> m_pGeometryShaders;
+    std::unordered_map<RendererT, ID3D11HullShader*> m_pHullShaders;
+    std::unordered_map<RendererT, ID3D11DomainShader*> m_pDomainShaders;
+    std::unordered_map<RendererT, ID3D11ComputeShader*> m_pComputeShaders;
+    std::unordered_map<RendererT, ID3D11DepthStencilState*> m_pDepthStencilStates;
 
     FrameResourceD3D11 m_frameResource;
 };

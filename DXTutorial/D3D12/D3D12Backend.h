@@ -152,6 +152,8 @@ public:
     void destroyDescriptorTable(DescriptorTable* table) override { }
     void createFence(Fence** ppFence) override;
     void destroyFence(Fence* pFence) override;
+    void createGraphicsPipelineState(GraphicsPipeline** ppPipeline) override { }
+    void createComputePipelineState(ComputePipeline** ppPipeline) override { }
 
     ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
       size_t resourceMax = m_resources[uuid].size(); 
@@ -186,6 +188,10 @@ public:
 
     void setDescriptorHeap(RendererT uuid, ID3D12DescriptorHeap* pHeap) {
       m_pDescriptorHeaps[uuid] = pHeap;
+    }
+
+    void setPipelineState(RendererT uuid, ID3D12PipelineState* pPipeline) {
+      m_pPipelineStates[uuid] = pPipeline;
     }
 
     U32 getFrameIndex() const { return m_frameIndex; }

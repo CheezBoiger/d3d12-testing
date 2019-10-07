@@ -168,24 +168,100 @@ public:
 };
 
 
+struct ShaderByteCode 
+{
+  void* _pByteCode;
+  size_t _szBytes;
+};
+
+
+enum PrimitiveTopology 
+{
+  PRIMITIVE_TOPOLOGY_POINTS,
+  PRIMITIVE_TOPOLOGY_LINES,
+  PRIMITIVE_TOPOLOGY_TRIANGLES,
+  PRIMITIVE_TOPOLOGY_PATCHES
+};
+
+
+enum CullMode
+{
+  CULL_MODE_BACK,
+  CULL_MODE_FRONT,
+  CULL_MODE_NONE
+};
+
+
+enum FillMode
+{
+  FILL_MODE_SOLID,
+  FILL_MODE_WIREFRAME
+};
+
+
+struct RasterizationState
+{
+  B32 _antialiasedLinesEnable;
+  B32 _conservativeRasterizationEnable;
+  CullMode _cullMode;
+  FillMode _fillMode;
+  I32 _depthBias;
+  B32 _depthClipEnable;
+  B32 _multisampleEnable;
+  R32 _depthBiasClamp;
+
+};
+
+
+struct DepthStencilState
+{
+};
+
+
+struct BlendState
+{
+};
+
+
+enum IBCutValue
+{
+  IB_CUT_VALUE_DISABLED,
+  IB_CUT_VALUE_CUT_0xFFFF,
+  IB_CUT_VALUE_CUT_0xFFFFFFFF
+};
+
+
+struct InputLayout 
+{
+
+};
+
+
 struct GraphicsPipelineInfo 
 {
-  void* _pVertexByteCode;
-  size_t _vertLengthBytes;
-  void* _pHullByteCode;
-  size_t _hullLengthBytes;
-  void* _pDomainByteCode;
-  size_t _domainLengthBytes;
-  void* _pGeometryByteCode;
-  size_t _geometryLengthBytes;
-  void* _pPixelByteCode;
-  size_t _pixelLengthBytes;
+  PrimitiveTopology _topology;
+  DXGI_FORMAT _dsvFormat;
+  U32 _numRenderTargets;
+  U32 _sampleMask;
+  DXGI_FORMAT _rtvFormats[8];
+  ShaderByteCode _vertexShader;
+  ShaderByteCode _hullShader;
+  ShaderByteCode _domainShader;
+  ShaderByteCode _geometryShader;
+  ShaderByteCode _pixelShader;
+
+  RootSignature* _pRootSignature;
+  RasterizationState _rasterizationState;
+  DepthStencilState _depthStencilState;
+  BlendState _blendState;
+  IBCutValue _ibCutValue;
+  InputLayout _inputLayout;
 };
 
 
 struct ComputePipelineInfo 
 {
-  void* _pComputeByteCode;
+  ShaderByteCode _computeShader;
 };
 
 class GraphicsPipeline : public GPUObject

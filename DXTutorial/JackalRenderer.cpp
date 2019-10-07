@@ -75,10 +75,6 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
   m_pConstBufferTable->finalize();
 
-  void* ptr = pGlobalsBuffer->map(0, sizeof(Globals));
-  memcpy(ptr, &m_globals, sizeof(Globals));
-  pGlobalsBuffer->unmap(0, sizeof(Globals));
-
   m_pRootSignature = nullptr;
   m_pBackend->createRootSignature(&m_pRootSignature);
   gfx::PipelineLayout layout = { };
@@ -198,5 +194,13 @@ void JackalRenderer::endFrame()
 void JackalRenderer::cleanUp()
 {
   m_pBackend->cleanUp();
+}
+
+
+void JackalRenderer::update(R32 dt, Globals& globals)
+{
+  void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
+  memcpy(pPtr, &globals, sizeof(Globals));
+  pGlobalsBuffer->unmap(0, sizeof(Globals));
 }
 } // jcl

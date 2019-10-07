@@ -50,7 +50,7 @@ public:
 
     void render();
     
-    void update(R32 dt) { }
+    void update(R32 dt, Globals& globals);
 
     void pushRenderGroups(RenderGroup& group) { }
 
@@ -72,7 +72,6 @@ private:
     gfx::ShaderResourceView* m_pAlebdoShaderResourceView;
     gfx::DepthStencilView* m_pSceneDepthView;
     gfx::ShaderResourceView* m_pSceneDepthResourceView;
-    Globals m_globals;
 
     gfx::Resource* m_pTriangleVertexBuffer;
     gfx::VertexBufferView* m_pTriangleVertexBufferView;

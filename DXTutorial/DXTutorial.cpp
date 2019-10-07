@@ -73,9 +73,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DXTUTORIAL));
 
+    jcl::Globals globals;
+    globals._cameraPos = { 1.0f, 1.0f, 1.0f, 1.0f };
+
     while (!bShouldClose) {
       pollEvent();
-      pRenderer->update(0.0f);
+      pRenderer->update(0.0f, globals);
       pRenderer->render();
     }
 
