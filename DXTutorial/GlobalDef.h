@@ -16,14 +16,18 @@ struct Globals
 {
   // Camera Position in world space.
   Vector4 _cameraPos;
-  // Inverse View.
+  // Inverse View. View To World
   Matrix44 _viewToWorld;
   // View
   Matrix44 _worldToView;
+  // Inverse View.
+  Matrix44 _invView;
   // Projection
   Matrix44 _proj;
   // View-Projection.
-  Matrix44 _viewProj;
+  Matrix44 _viewToClip;
+  // Inverse Projection.
+  Matrix44 _invProj;
   // target view size.
   U32 _targetSize[4]; 
 };
@@ -31,12 +35,12 @@ struct Globals
 
 struct PerMeshDescriptor
 {
-  // Model-View transform.
-  Matrix44 _worldToView;
-  // Model transform
-  Matrix44 _world;
+  // Model-View-Projection transform.
+  Matrix44 _worldToViewClip;
   // Previous frame Model-View-Projection transform.
   Matrix44 _previousWorldToViewClip;
+  // Normal Correction 
+  Matrix44 _n;
   // Materials
   Vector4 _matrialFlags;
 };

@@ -1,0 +1,7 @@
+#ifndef SHADER_GLOBAL_DEF_H
+#define SHADER_GLOBAL_DEF_H
+
+
+
+
+#endif // SHADER_GLOBAL_DEF_H

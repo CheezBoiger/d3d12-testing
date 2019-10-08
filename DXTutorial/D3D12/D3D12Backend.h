@@ -152,8 +152,10 @@ public:
     void destroyDescriptorTable(DescriptorTable* table) override { }
     void createFence(Fence** ppFence) override;
     void destroyFence(Fence* pFence) override;
-    void createGraphicsPipelineState(GraphicsPipeline** ppPipeline) override { }
-    void createComputePipelineState(ComputePipeline** ppPipeline) override { }
+    void createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
+                                     const GraphicsPipelineInfo* pInfo) override;
+    void createComputePipelineState(ComputePipeline** ppPipeline,
+                                    const ComputePipelineInfo* pInfo) override;
 
     ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
       size_t resourceMax = m_resources[uuid].size(); 
@@ -247,6 +249,7 @@ private:
     ID3D12Fence* m_pPresentFence;
     HANDLE m_pPresentEvent;
     U32 m_frameIndex;
+    B32 m_rayTracingHardwareCompatible;
 
 #if _DEBUG
     ID3D12Debug* debug0;

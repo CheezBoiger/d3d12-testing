@@ -209,18 +209,155 @@ struct RasterizationState
   B32 _depthClipEnable;
   B32 _multisampleEnable;
   R32 _depthBiasClamp;
+  U32 _forcedSampleCount;
+  B32 _frontCounterClockwise;
+  R32 _slopedScaledDepthBias;
+};
 
+
+enum StencilOp 
+{
+  STENCIL_OP_KEEP,
+  STENCIL_OP_ZERO,
+  STENCIL_OP_REPLACE,
+  STENCIL_OP_INCR_SAT,
+  STENCIL_OP_DECR_SAT,
+  STENCIL_OP_INVERT,
+  STENCIL_OP_INCR,
+  STENCIL_OP_DECR
+};
+
+
+enum ComparisonFunc
+{
+  COMPARISON_FUNC_NEVER,
+  COMPARISON_FUNC_LESS,
+  COMPARISON_FUNC_EQUAL,
+  COMPARISON_FUNC_LESS_EQUAL,
+  COMPARISON_FUNC_GREATER,
+  COMPARISON_FUNC_NOT_EQUAL,
+  COMPARISON_FUNC_GREATER_EQUAL,
+  COMPARSON_FUNC_ALWAYS
+};
+
+
+enum DepthWriteMask
+{
+  DEPTH_WRITE_MASK_ZERO,
+  DEPTH_WRITE_MASK_ALL
+};
+
+
+struct DepthStencilOpDesc 
+{
+  ComparisonFunc _stencilFunc;
+  StencilOp _stencilFailOp;
+  StencilOp _stencilDepthFailOp;
+  StencilOp _stencilPassOp;
 };
 
 
 struct DepthStencilState
 {
+  DepthWriteMask _depthWriteMask;
+  ComparisonFunc _depthFunc;
+  B8 _depthEnable;
+  B8 _stencilEnable;
+  U8 _stencilReadMask;
+  U8 _stencilWriteMask;
+  DepthStencilOpDesc _frontFace;
+  DepthStencilOpDesc _backFace;
+};
+
+
+enum Blend
+{
+  BLEND_ZERO = 1,
+  BLEND_ONE,
+  BLEND_SRC_COLOR,
+  BLEND_INV_SRC_COLOR,
+  BLEND_SRC_ALPHA,
+  BLEND_INV_SRC_ALPHA,
+  BLEND_DEST_ALPHA,
+  BLEND_INV_DEST_ALPHA,
+  BLEND_DEST_COLOR,
+  BLEND_INV_DEST_COLOR,
+  BLEND_SRC_ALPHA_SAT,
+  BLEND_BLEND_FACTOR,
+  BLEND_INV_BLEND_FACTOR,
+  BLEND_SRC1_COLOR,
+  BLEND_INV_SRC1_COLOR,
+  BLEND_SRC1_ALPHA,
+  BLEND_INV_SRC1_ALPHA
+};
+
+
+enum BlendOp
+{
+  BLEND_OP_ADD,
+  BLEND_OP_SUBTRACT,
+  BLEND_OP_REV_SUBTRACT,
+  BLEND_OP_MIN,
+  BLEND_OP_MAX
+};
+
+
+enum LogicOp
+{
+  LOGIC_OP_CLEAR,
+  LOGIC_OP_SET,
+  LOGIC_OP_COPY,
+  LOGIC_OP_COPY_INVERTED,
+  LOGIC_OP_NOOP,
+  LOGIC_OP_INVERT,
+  LOGIC_OP_AND,
+  LOGIC_OP_NAND,
+  LOGIC_OP_OR,
+  LOGIC_OP_NOR,
+  LOGIC_OP_XOR,
+  LOGIC_OP_EQUIV,
+  LOGIC_OP_AND_REVERSE,
+  LOGIC_OP_AND_INVERTED,
+  LOGIC_OP_OR_REVERSE,
+  LOGIC_OP_OR_INVERTED
+};
+
+
+enum ColorWriteEnable
+{
+  COLOR_WRITE_ENABLE_RED = 1,
+  COLOR_WRITE_ENABLE_GREEN = 2,
+  COLOR_WRITE_ENABLE_BLUE = 4,
+  COLOR_WRITE_ENABLE_ALPHA = 8,
+  COLOR_WRITE_ENABLE_ALL =
+      (((COLOR_WRITE_ENABLE_RED | COLOR_WRITE_ENABLE_GREEN) |
+        COLOR_WRITE_ENABLE_BLUE) |
+        COLOR_WRITE_ENABLE_ALPHA)
+};
+
+
+struct RenderTargetBlend
+{
+  B8 _blendEnable;
+  B8 _logicOpEnable;
+  Blend _srcBlend;
+  Blend _dstBlend;
+  BlendOp _blendOp;
+  Blend _srcBlendAlpha;
+  Blend _dstBlendAlpha;
+  BlendOp _blendOpAlpha;
+  LogicOp _logicOp;
+  U8 _renderTargetWriteMask;
 };
 
 
 struct BlendState
 {
+  B8 _alhpaToCoverageEnable;
+  B8 _independentBlendEnable;
+  RenderTargetBlend _renderTargets[8];
 };
+
 
 
 enum IBCutValue
@@ -267,14 +404,12 @@ struct ComputePipelineInfo
 class GraphicsPipeline : public GPUObject
 {
 public:
-  virtual void initialize(const GraphicsPipelineInfo* pInfo) { }
 };
 
 
 class ComputePipeline : public GPUObject
 {
 public:
-  virtual void initialize(const ComputePipelineInfo* pInfo) { }
 };
 
 
@@ -414,8 +549,10 @@ public:
                                           U32 firstElement, 
                                           U32 numElements) { }
     virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture) { }
-    virtual void createGraphicsPipelineState(GraphicsPipeline** pipline) { }
-    virtual void createComputePipelineState(ComputePipeline** pipeline) { }
+    virtual void createGraphicsPipelineState(GraphicsPipeline** pipline,
+                                             const GraphicsPipelineInfo* pInfo) { }
+    virtual void createComputePipelineState(ComputePipeline** pipeline,
+                                            const ComputePipelineInfo* pInfo) { }
     virtual void createRayTracingPipelineState() { }
     virtual void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 

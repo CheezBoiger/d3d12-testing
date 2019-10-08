@@ -57,6 +57,7 @@ public:
 private:
 
     void beginFrame();
+    void createGraphicsPipelines();
     void endFrame();
 
     gfx::BackendRenderer* m_pBackend;
@@ -75,5 +76,8 @@ private:
 
     gfx::Resource* m_pTriangleVertexBuffer;
     gfx::VertexBufferView* m_pTriangleVertexBufferView;
+    gfx::GraphicsPipeline* m_pPreZPipeline;
+
+    void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };
 } //

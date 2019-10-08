@@ -107,8 +107,10 @@ public:
 
     void createRootSignature(RootSignature** ppRootSig) override;
     void destroyRootSignature(RootSignature* pRootSig) override { }
-    void createGraphicsPipelineState(GraphicsPipeline** pipeline) override { }
-    void createComputePipelineState(ComputePipeline** pipeline) override { }
+    void createGraphicsPipelineState(GraphicsPipeline** pipeline,
+                                     const GraphicsPipelineInfo* pInfo) override { }
+    void createComputePipelineState(ComputePipeline** pipeline,
+                                    const ComputePipelineInfo* pInfo) override { }
 
     void createRayTracingPipelineState() override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 

@@ -4,6 +4,7 @@
 #include "CommandListD3D12.h"
 #include "D3D12MemAlloc.h"
 #include "RootSignatureD3D12.h"
+#include "PipelineStatesD3D12.h"
 #include "DescriptorTableD3D12.h"
 #include <string>
 
@@ -65,6 +66,217 @@ D3D12_RESOURCE_FLAGS getNativeAllowFlags(ResourceBindFlags binds)
   if (binds & RESOURCE_BIND_DEPTH_STENCIL)
     flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
   return flags;
+}
+
+
+D3D12_PRIMITIVE_TOPOLOGY_TYPE getNativeTopologyType(PrimitiveTopology topology)
+{
+  switch (topology) {
+    case PRIMITIVE_TOPOLOGY_POINTS: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+    case PRIMITIVE_TOPOLOGY_LINES: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+    case PRIMITIVE_TOPOLOGY_TRIANGLES: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    case PRIMITIVE_TOPOLOGY_PATCHES: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+    default: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+  }
+}
+
+
+D3D12_CULL_MODE getCullMode(CullMode cullMode)
+{
+  switch (cullMode) {
+    case CULL_MODE_BACK: return D3D12_CULL_MODE_BACK;
+    case CULL_MODE_NONE: return D3D12_CULL_MODE_NONE;
+    case CULL_MODE_FRONT: 
+    default: return D3D12_CULL_MODE_FRONT;
+  }
+}
+
+
+D3D12_FILL_MODE getFillMode(FillMode fillMode)
+{
+  switch (fillMode) {
+    case FILL_MODE_WIREFRAME: return D3D12_FILL_MODE_WIREFRAME;
+    case FILL_MODE_SOLID:
+    default: return D3D12_FILL_MODE_SOLID;
+  }
+}
+
+
+D3D12_INDEX_BUFFER_STRIP_CUT_VALUE getIBCutValue(IBCutValue cutValue)
+{
+  switch (cutValue) {
+    case IB_CUT_VALUE_CUT_0xFFFF: return D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF;
+    case IB_CUT_VALUE_CUT_0xFFFFFFFF: return D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF;
+    case IB_CUT_VALUE_DISABLED: 
+    default: return D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+  }
+}
+
+
+D3D12_STENCIL_OP getStencilOp(StencilOp op)
+{
+  switch (op) {
+    case STENCIL_OP_DECR: return D3D12_STENCIL_OP_DECR;
+    case STENCIL_OP_DECR_SAT: return D3D12_STENCIL_OP_DECR_SAT;
+    case STENCIL_OP_INCR: return D3D12_STENCIL_OP_INCR;
+    case STENCIL_OP_INCR_SAT: return D3D12_STENCIL_OP_INCR_SAT;
+    case STENCIL_OP_INVERT: return D3D12_STENCIL_OP_INVERT;
+    case STENCIL_OP_KEEP: return D3D12_STENCIL_OP_KEEP;
+    case STENCIL_OP_REPLACE: return D3D12_STENCIL_OP_REPLACE;
+    case STENCIL_OP_ZERO: 
+    default: return D3D12_STENCIL_OP_ZERO; 
+  }
+}
+
+
+D3D12_COMPARISON_FUNC getComparisonFunc(ComparisonFunc func)
+{
+  switch (func) {
+    case COMPARISON_FUNC_EQUAL: return D3D12_COMPARISON_FUNC_EQUAL;
+    case COMPARISON_FUNC_GREATER: return D3D12_COMPARISON_FUNC_GREATER;
+    case COMPARISON_FUNC_GREATER_EQUAL: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+    case COMPARISON_FUNC_LESS: return D3D12_COMPARISON_FUNC_LESS;
+    case COMPARISON_FUNC_LESS_EQUAL: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    case COMPARISON_FUNC_NOT_EQUAL: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+    case COMPARSON_FUNC_ALWAYS: return D3D12_COMPARISON_FUNC_ALWAYS; 
+    case COMPARISON_FUNC_NEVER:
+    default: return D3D12_COMPARISON_FUNC_NEVER;
+  }
+}
+
+
+D3D12_DEPTH_WRITE_MASK getDepthWriteMask(DepthWriteMask mask)
+{
+  switch (mask) {
+    case DEPTH_WRITE_MASK_ALL: return D3D12_DEPTH_WRITE_MASK_ALL;
+    case DEPTH_WRITE_MASK_ZERO:
+    default: return D3D12_DEPTH_WRITE_MASK_ZERO;
+  }
+}
+
+
+void processRasterizationState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, 
+                               const RasterizationState& rasterState)
+{
+  desc.RasterizerState.AntialiasedLineEnable = rasterState._antialiasedLinesEnable;
+  desc.RasterizerState.ConservativeRaster = rasterState._conservativeRasterizationEnable 
+                                          ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON 
+                                          : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF; 
+  desc.RasterizerState.CullMode = getCullMode(rasterState._cullMode);
+  desc.RasterizerState.FillMode = getFillMode(rasterState._fillMode);
+  desc.RasterizerState.DepthBias = rasterState._depthBias;
+  desc.RasterizerState.MultisampleEnable = rasterState._multisampleEnable;
+  desc.RasterizerState.DepthClipEnable = rasterState._depthClipEnable;
+  desc.RasterizerState.DepthBiasClamp = rasterState._depthBiasClamp;
+  desc.RasterizerState.ForcedSampleCount = rasterState._forcedSampleCount;
+  desc.RasterizerState.FrontCounterClockwise = rasterState._frontCounterClockwise;
+  desc.RasterizerState.SlopeScaledDepthBias = rasterState._slopedScaledDepthBias;
+}
+
+
+void processDepthStencilState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
+                              const DepthStencilState& dsState)
+{
+  desc.DepthStencilState.BackFace.StencilDepthFailOp = getStencilOp(dsState._backFace._stencilDepthFailOp);
+  desc.DepthStencilState.BackFace.StencilFailOp = getStencilOp(dsState._backFace._stencilFailOp);
+  desc.DepthStencilState.BackFace.StencilPassOp = getStencilOp(dsState._backFace._stencilPassOp);
+  desc.DepthStencilState.BackFace.StencilFunc = getComparisonFunc(dsState._backFace._stencilFunc);
+
+  desc.DepthStencilState.FrontFace.StencilDepthFailOp = getStencilOp(dsState._frontFace._stencilDepthFailOp);
+  desc.DepthStencilState.FrontFace.StencilFailOp = getStencilOp(dsState._frontFace._stencilFailOp);
+  desc.DepthStencilState.FrontFace.StencilPassOp = getStencilOp(dsState._frontFace._stencilPassOp);
+  desc.DepthStencilState.FrontFace.StencilFunc = getComparisonFunc(dsState._frontFace._stencilFunc);
+
+  desc.DepthStencilState.DepthEnable = dsState._depthEnable;
+  desc.DepthStencilState.DepthFunc = getComparisonFunc(dsState._depthFunc);
+  desc.DepthStencilState.DepthWriteMask = getDepthWriteMask(dsState._depthWriteMask);
+  desc.DepthStencilState.StencilEnable = dsState._stencilEnable;
+  desc.DepthStencilState.StencilReadMask = dsState._stencilReadMask;
+  desc.DepthStencilState.StencilWriteMask = dsState._stencilWriteMask;
+}
+
+
+D3D12_BLEND getBlend(Blend b)
+{
+  switch (b) {
+    case BLEND_BLEND_FACTOR: return D3D12_BLEND_BLEND_FACTOR;
+    case BLEND_DEST_ALPHA: return D3D12_BLEND_DEST_ALPHA;
+    case BLEND_DEST_COLOR: return D3D12_BLEND_DEST_COLOR;
+    case BLEND_INV_BLEND_FACTOR: return D3D12_BLEND_INV_BLEND_FACTOR;
+    case BLEND_INV_DEST_ALPHA: return D3D12_BLEND_INV_DEST_ALPHA;
+    case BLEND_INV_DEST_COLOR: return D3D12_BLEND_INV_DEST_COLOR;
+    case BLEND_INV_SRC1_ALPHA: return D3D12_BLEND_INV_SRC1_ALPHA;
+    case BLEND_INV_SRC1_COLOR: return D3D12_BLEND_INV_SRC1_COLOR;
+    case BLEND_INV_SRC_COLOR: return D3D12_BLEND_INV_SRC_COLOR;
+    case BLEND_ONE: return D3D12_BLEND_ONE;
+    case BLEND_ZERO: return D3D12_BLEND_ZERO;
+    default: return D3D12_BLEND_ZERO;
+  }
+}
+
+
+D3D12_BLEND_OP getBlendOp(BlendOp op)
+{
+  switch (op) {
+    case BLEND_OP_SUBTRACT: return D3D12_BLEND_OP_SUBTRACT;
+    case BLEND_OP_REV_SUBTRACT: return D3D12_BLEND_OP_REV_SUBTRACT;
+    case BLEND_OP_MIN: return D3D12_BLEND_OP_MIN;
+    case BLEND_OP_MAX: return D3D12_BLEND_OP_MAX;
+    case BLEND_OP_ADD: 
+    default: return D3D12_BLEND_OP_ADD;
+  }
+}
+
+
+D3D12_LOGIC_OP getLogicOp(LogicOp op)
+{
+  switch (op) {
+    case LOGIC_OP_SET: return D3D12_LOGIC_OP_SET;
+    case LOGIC_OP_COPY: return D3D12_LOGIC_OP_COPY;
+    case LOGIC_OP_COPY_INVERTED: return D3D12_LOGIC_OP_COPY_INVERTED;
+    case LOGIC_OP_NOOP: return D3D12_LOGIC_OP_NOOP;
+    case LOGIC_OP_INVERT: return D3D12_LOGIC_OP_INVERT;
+    case LOGIC_OP_AND: return D3D12_LOGIC_OP_AND;
+    case LOGIC_OP_NAND: return D3D12_LOGIC_OP_NAND;
+    case LOGIC_OP_OR: return D3D12_LOGIC_OP_OR;
+    case LOGIC_OP_NOR: return D3D12_LOGIC_OP_NOR;
+    case LOGIC_OP_XOR: return D3D12_LOGIC_OP_XOR;
+    case LOGIC_OP_EQUIV: return D3D12_LOGIC_OP_EQUIV;
+    case LOGIC_OP_AND_REVERSE: return D3D12_LOGIC_OP_AND_REVERSE;
+    case LOGIC_OP_AND_INVERTED: return D3D12_LOGIC_OP_AND_INVERTED;
+    case LOGIC_OP_OR_REVERSE: return D3D12_LOGIC_OP_OR_REVERSE;
+    case LOGIC_OP_OR_INVERTED: return D3D12_LOGIC_OP_OR_INVERTED;
+    case LOGIC_OP_CLEAR:
+    default: return D3D12_LOGIC_OP_CLEAR;
+  }
+}
+
+
+void processBlendState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
+                       const BlendState& blendState)
+{
+  desc.BlendState.AlphaToCoverageEnable = blendState._alhpaToCoverageEnable;
+  desc.BlendState.IndependentBlendEnable = blendState._independentBlendEnable;
+  
+  for (U32 i = 0; i < 8; ++i) {
+      desc.BlendState.RenderTarget[i].BlendEnable = blendState._renderTargets[i]._blendEnable;
+      desc.BlendState.RenderTarget[i].BlendOp = getBlendOp(blendState._renderTargets[i]._blendOp);
+      desc.BlendState.RenderTarget[i].BlendOpAlpha = getBlendOp(blendState._renderTargets[i]._blendOpAlpha);
+      desc.BlendState.RenderTarget[i].DestBlend = getBlend(blendState._renderTargets[i]._dstBlend);
+      desc.BlendState.RenderTarget[i].DestBlendAlpha = getBlend(blendState._renderTargets[i]._dstBlendAlpha);
+      desc.BlendState.RenderTarget[i].LogicOp = getLogicOp(blendState._renderTargets[i]._logicOp);
+      desc.BlendState.RenderTarget[i].LogicOpEnable = blendState._renderTargets[i]._logicOpEnable;
+      desc.BlendState.RenderTarget[i].RenderTargetWriteMask = blendState._renderTargets[i]._renderTargetWriteMask;
+      desc.BlendState.RenderTarget[i].SrcBlend = getBlend(blendState._renderTargets[i]._srcBlend);
+      desc.BlendState.RenderTarget[i].SrcBlendAlpha = getBlend(blendState._renderTargets[i]._srcBlendAlpha);
+  }
+}
+    
+
+void processInputLayout(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
+                        const InputLayout& layout)
+{
+  desc.InputLayout.pInputElementDescs;
 }
 
 
@@ -165,6 +377,13 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
         DEBUG("Failed to create d3d12 device!");
         return;
     }
+
+    // Check if supports raytracing.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureOptions;
+    DX12ASSERT(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, 
+                                              &featureOptions, 
+                                              sizeof(featureOptions)));
+    m_rayTracingHardwareCompatible = (featureOptions.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
 
     D3D12MA::ALLOCATOR_DESC allocDesc = { };
     allocDesc.pDevice = m_pDevice;
@@ -765,5 +984,73 @@ void D3D12Backend::destroyFence(Fence* pFence)
   m_fences[pFence->getUUID()]->Release();
   m_fences[pFence->getUUID()] = nullptr;
   delete pFence;
+}
+
+
+void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
+                                               const GraphicsPipelineInfo* pInfo)
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { };
+    desc.VS.BytecodeLength = pInfo->_vertexShader._szBytes;
+    desc.VS.pShaderBytecode = pInfo->_vertexShader._pByteCode;
+
+    desc.PS.BytecodeLength = pInfo->_pixelShader._szBytes;
+    desc.PS.pShaderBytecode = pInfo->_pixelShader._pByteCode;
+
+    desc.DS.BytecodeLength = pInfo->_domainShader._szBytes;
+    desc.DS.pShaderBytecode = pInfo->_domainShader._pByteCode;
+
+    desc.HS.BytecodeLength = pInfo->_hullShader._szBytes;
+    desc.HS.pShaderBytecode = pInfo->_hullShader._pByteCode;
+
+    desc.GS.BytecodeLength = pInfo->_geometryShader._szBytes;
+    desc.GS.pShaderBytecode = pInfo->_geometryShader._pByteCode;
+
+    desc.PrimitiveTopologyType = getNativeTopologyType(pInfo->_topology);
+    desc.DSVFormat = pInfo->_dsvFormat;
+    desc.NumRenderTargets = pInfo->_numRenderTargets;
+    desc.NodeMask = 0;
+    desc.pRootSignature = getBackendD3D12()->getRootSignature(pInfo->_pRootSignature->getUUID());
+    
+    processRasterizationState(desc, pInfo->_rasterizationState);
+    processDepthStencilState(desc, pInfo->_depthStencilState);
+    processBlendState(desc, pInfo->_blendState);
+    processInputLayout(desc, pInfo->_inputLayout);
+
+    desc.IBStripCutValue = getIBCutValue(pInfo->_ibCutValue);
+    desc.StreamOutput;
+    desc.SampleMask = pInfo->_sampleMask;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+
+    for (U32 i = 0; i < 8; ++i) {
+      desc.RTVFormats[i] = pInfo->_rtvFormats[i];
+    }
+
+
+    ID3D12PipelineState* pPipelineState = nullptr;
+  
+    DX12ASSERT(m_pDevice->CreateGraphicsPipelineState(&desc, 
+                                                      __uuidof(ID3D12PipelineState), 
+                                                      (void**)&pPipelineState));
+    *ppPipeline = new GraphicsPipelineStateD3D12();
+    m_pPipelineStates[(*ppPipeline)->getUUID()] = pPipelineState;
+}
+
+
+void D3D12Backend::createComputePipelineState(ComputePipeline** ppPipeline,
+                                              const ComputePipelineInfo* pInfo)
+{
+  *ppPipeline = new ComputePipelineStateD3D12();
+
+  D3D12_COMPUTE_PIPELINE_STATE_DESC compDesc = { };
+
+  ID3D12PipelineState* pPipelineState = nullptr;
+
+  DX12ASSERT(m_pDevice->CreateComputePipelineState(&compDesc, 
+                                                   __uuidof(ID3D12PipelineState), 
+                                                   (void**)&pPipelineState));
+
+  m_pPipelineStates[(*ppPipeline)->getUUID()] = pPipelineState;
 }
 } // gfx

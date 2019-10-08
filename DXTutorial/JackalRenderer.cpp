@@ -4,6 +4,8 @@
 #include "D3D11/D3D11Backend.h"
 #include "GlobalDef.h"
 
+#include <fstream>
+
 namespace jcl {
 
 
@@ -107,8 +109,10 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                             1080, 1, 0, TEXT("SceneDepth"));
   m_pBackend->createDepthStencilView(&m_pSceneDepthResourceView, 
                                      m_pSceneDepth);
-  
-#if 1
+
+
+  createGraphicsPipelines();
+
   {
     gfx::Fence* pFence = nullptr;
     gfx::Resource* pStaging = nullptr;
@@ -134,7 +138,6 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
     m_pBackend->destroyFence(pFence);
     m_pBackend->destroyCommandList(pList);
   }
-#endif
 }
 
 
@@ -202,5 +205,38 @@ void JackalRenderer::update(R32 dt, Globals& globals)
   void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(pPtr, &globals, sizeof(Globals));
   pGlobalsBuffer->unmap(0, sizeof(Globals));
+}
+
+
+void JackalRenderer::createGraphicsPipelines()
+{
+  m_pPreZPipeline = nullptr;
+  gfx::GraphicsPipelineInfo info = { };
+  I8* bin = new I8[1024 * 1024];
+  retrieveShader("PreZPass.cso",
+                 (void**)&bin,
+                 info._vertexShader._szBytes);
+  info._vertexShader._pByteCode = bin;
+  
+  //m_pBackend->createGraphicsPipelineState(&m_pPreZPipeline, &info);
+
+  delete[] bin;
+}
+
+
+void JackalRenderer::retrieveShader(const std::string& filepath,
+                                    void** bytecode,
+                                    size_t& length)
+{
+  std::ifstream fileinput(filepath, std::ifstream::ate | std::ifstream::binary);
+  if (!fileinput.is_open()) {
+    DEBUG("Failed to load shader!");
+  } 
+
+  length = size_t(fileinput.tellg());
+  fileinput.seekg(0);
+  
+  fileinput.read(*(I8**)bytecode, length);
+  fileinput.close();
 }
 } // jcl
