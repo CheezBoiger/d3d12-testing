@@ -71,6 +71,21 @@ enum ClearFlag
   CLEAR_FLAG_STENCIL = (1 << 1)
 };
 
+
+enum ShaderType
+{
+    SHADER_TYPE_VERTEX,
+    SHADER_TYPE_HULL,
+    SHADER_TYPE_DOMAIN,
+    SHADER_TYPE_GEOMETRY,
+    SHADER_TYPE_PIXEL,
+    SHADER_TYPE_COMPUTE,
+    SHADER_TYPE_RAYGEN,
+    SHADER_TYPE_RAY_CLOSESTHIT,
+    SHADER_TYPE_RAY_ANYHIT,
+    SHADER_TYPE_RAY_MISS
+};
+
 typedef U32 ClearFlags;
 typedef U64 RendererT;
 
@@ -374,6 +389,17 @@ struct InputLayout
 };
 
 
+class Shader : public GPUObject
+{
+public:
+    Shader(ShaderType type) : m_shaderType(type) { }
+    ShaderType getType() const { return m_shaderType; }
+
+private:
+    ShaderType m_shaderType;
+};
+
+
 struct GraphicsPipelineInfo 
 {
   PrimitiveTopology _topology;
@@ -381,11 +407,11 @@ struct GraphicsPipelineInfo
   U32 _numRenderTargets;
   U32 _sampleMask;
   DXGI_FORMAT _rtvFormats[8];
-  ShaderByteCode _vertexShader;
-  ShaderByteCode _hullShader;
-  ShaderByteCode _domainShader;
-  ShaderByteCode _geometryShader;
-  ShaderByteCode _pixelShader;
+  Shader* _vertexShader;
+  Shader* _hullShader;
+  Shader* _domainShader;
+  Shader* _geometryShader;
+  Shader* _pixelShader;
 
   RootSignature* _pRootSignature;
   RasterizationState _rasterizationState;
@@ -585,6 +611,9 @@ public:
     virtual RenderTargetView* getSwapchainRenderTargetView() { return nullptr; }
     virtual void createFence(Fence** ppFence) { }
     virtual void destroyFence(Fence* pFence) { }
+
+    virtual void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pByteCode) { }
+    virtual void destroyShader(Shader* pShader) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
 

@@ -212,13 +212,14 @@ void JackalRenderer::createGraphicsPipelines()
 {
   m_pPreZPipeline = nullptr;
   gfx::GraphicsPipelineInfo info = { };
+  gfx::ShaderByteCode bytecode;
   I8* bin = new I8[1024 * 1024];
   retrieveShader("PreZPass.cso",
-                 (void**)&bin,
-                 info._vertexShader._szBytes);
-  info._vertexShader._pByteCode = bin;
+                 (void**)&bytecode._pByteCode,
+                 bytecode._szBytes);
   
   //m_pBackend->createGraphicsPipelineState(&m_pPreZPipeline, &info);
+  m_pBackend->createShader(&m_pDepthVertexShader, gfx::SHADER_TYPE_VERTEX, &bytecode);
 
   delete[] bin;
 }
@@ -231,6 +232,8 @@ void JackalRenderer::retrieveShader(const std::string& filepath,
   std::ifstream fileinput(filepath, std::ifstream::ate | std::ifstream::binary);
   if (!fileinput.is_open()) {
     DEBUG("Failed to load shader!");
+    length = 0;
+    return;
   } 
 
   length = size_t(fileinput.tellg());

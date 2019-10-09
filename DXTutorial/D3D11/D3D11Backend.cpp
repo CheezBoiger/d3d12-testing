@@ -365,4 +365,101 @@ void D3D11Backend::createIndexBufferView(IndexBufferView** ppIndexView,
   pView->_format = format;
   pView->_szBytes = szBytes;
 }
+
+
+void D3D11Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
+                                               const GraphicsPipelineInfo* pInfo)
+{
+    *ppPipeline = new GraphicsPipelineD3D11();
+    
+}
+
+
+void D3D11Backend::createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode)
+{
+    if (!pBytecode) { DEBUG("Null bytecode struct passed! Skipping shader creation."); return; }
+    if (pBytecode->_szBytes == 0) { DEBUG("Byte code length is 0, skipping shader creation."); return; }
+
+    *ppShader = new Shader(type);
+
+    switch (type) {
+        case SHADER_TYPE_VERTEX: {
+            ID3D11VertexShader* pVertexShader = nullptr;
+            DX11ASSERT(m_pDevice->CreateVertexShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pVertexShader));
+            m_pVertexShaders[(*ppShader)->getUUID()] = pVertexShader;
+        }
+            break;
+        case SHADER_TYPE_HULL: {
+            ID3D11HullShader* pHullShader = nullptr;
+            DX11ASSERT(m_pDevice->CreateHullShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pHullShader));
+            m_pHullShaders[(*ppShader)->getUUID()] = pHullShader;
+        }
+            break;
+        case SHADER_TYPE_DOMAIN: {
+            ID3D11DomainShader* pDomainShader = nullptr;
+            DX11ASSERT(m_pDevice->CreateDomainShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pDomainShader));
+            m_pDomainShaders[(*ppShader)->getUUID()] = pDomainShader;
+        }
+            break;
+        case SHADER_TYPE_GEOMETRY: {
+            ID3D11GeometryShader* pGeometryShader = nullptr;
+            DX11ASSERT(m_pDevice->CreateGeometryShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pGeometryShader));
+            m_pGeometryShaders[(*ppShader)->getUUID()] = pGeometryShader;
+        }
+            break;
+        case SHADER_TYPE_PIXEL: {
+            ID3D11PixelShader* pPixelShader = nullptr;
+            DX11ASSERT(m_pDevice->CreatePixelShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pPixelShader));
+            m_pPixelShaders[(*ppShader)->getUUID()] = pPixelShader;
+        }
+            break;
+        case SHADER_TYPE_COMPUTE: {
+            ID3D11ComputeShader* pComputeShader = nullptr;
+            DX11ASSERT(m_pDevice->CreateComputeShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pComputeShader));
+            m_pComputeShaders[(*ppShader)->getUUID()] = pComputeShader;
+        }
+            break;
+        default: {
+            DEBUG("Unsupported shader type for D3D11.");
+        }
+    }
+}
+
+
+void D3D11Backend::destroyShader(Shader* pShader)
+{
+    if (!pShader) return;
+
+    switch (pShader->getType()) {
+    case SHADER_TYPE_VERTEX: {
+        m_pVertexShaders[pShader->getUUID()]->Release();
+    }
+                           break;
+    case SHADER_TYPE_HULL: {
+        m_pHullShaders[pShader->getUUID()]->Release();
+    }
+                         break;
+    case SHADER_TYPE_DOMAIN: {
+        m_pDomainShaders[pShader->getUUID()]->Release();
+    }
+                           break;
+    case SHADER_TYPE_GEOMETRY: {
+        m_pGeometryShaders[pShader->getUUID()]->Release();
+    }
+                             break;
+    case SHADER_TYPE_PIXEL: {
+        m_pPixelShaders[pShader->getUUID()]->Release();
+    }
+                          break;
+    case SHADER_TYPE_COMPUTE: {
+        m_pComputeShaders[pShader->getUUID()]->Release();
+    }
+                            break;
+    default: {
+        DEBUG("Unsupported shader type for D3D11.");
+    }
+    }
+
+    delete pShader;
+}
 } // gfx

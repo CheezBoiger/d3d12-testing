@@ -21,6 +21,18 @@ struct FrameResourceD3D11 {
 };
 
 
+struct GraphicsPipelineD3D11 : public GraphicsPipeline
+{
+    RendererT _vs           : 16; // verex shader.
+    RendererT _hs           : 16; // hull shader
+    RendererT _ds           : 16; // domain shader.
+    RendererT _gs           : 16; // geometry shader
+    RendererT _ps           : 16; // pixel shader
+    RendererT _bs           : 16; // blend state.
+    RendererT _depthstencil : 16; // depth stencil state.
+};
+
+
 struct BufferD3D11 : public Resource
 {
     BufferD3D11(ResourceDimension dimension,
@@ -108,9 +120,11 @@ public:
     void createRootSignature(RootSignature** ppRootSig) override;
     void destroyRootSignature(RootSignature* pRootSig) override { }
     void createGraphicsPipelineState(GraphicsPipeline** pipeline,
-                                     const GraphicsPipelineInfo* pInfo) override { }
+                                     const GraphicsPipelineInfo* pInfo) override;
     void createComputePipelineState(ComputePipeline** pipeline,
                                     const ComputePipelineInfo* pInfo) override { }
+    void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode) override;
+    void destroyShader(Shader* pShader) override;
 
     void createRayTracingPipelineState() override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
@@ -157,6 +171,8 @@ private:
     std::unordered_map<RendererT, ID3D11ShaderResourceView*> m_shaderResourceViews;
     std::unordered_map<RendererT, ID3D11DepthStencilView*> m_depthStencilViews;
     std::unordered_map<RendererT, ID3D11UnorderedAccessView*> m_unorderedAccessViews;
+
+    // Pipeline values, use hashes to determine which are the same.
     std::unordered_map<RendererT, ID3D11VertexShader*> m_pVertexShaders;
     std::unordered_map<RendererT, ID3D11PixelShader*> m_pPixelShaders;
     std::unordered_map<RendererT, ID3D11GeometryShader*> m_pGeometryShaders;

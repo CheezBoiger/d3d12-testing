@@ -987,25 +987,61 @@ void D3D12Backend::destroyFence(Fence* pFence)
 }
 
 
+void D3D12Backend::createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode)
+{
+    if (!pBytecode) { DEBUG("Null bytecode struct passed! Skipping shader creation."); return; }
+    if (pBytecode->_szBytes == 0) { DEBUG("Byte code length is 0, skipping shader creation."); return; }
+    ShaderD3D12* pShader = new ShaderD3D12(type);
+
+    // Allocate space for shader byte code. NOTE: Be sure to delete this 
+    // allocation when destroyed!
+    pShader->_byteCode._pByteCode = new U8[pBytecode->_szBytes];
+    pShader->_byteCode._szBytes = pBytecode->_szBytes;
+
+    memcpy(pShader->_byteCode._pByteCode, pBytecode->_pByteCode, pBytecode->_szBytes);
+
+    *ppShader = pShader;    
+}
+
+void D3D12Backend::destroyShader(Shader* pShader)
+{
+    ShaderD3D12* pNativeShader = static_cast<ShaderD3D12*>(pShader);
+    delete[] pNativeShader->_byteCode._pByteCode;
+    delete pShader;
+}
+
+
 void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
                                                const GraphicsPipelineInfo* pInfo)
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { };
-    desc.VS.BytecodeLength = pInfo->_vertexShader._szBytes;
-    desc.VS.pShaderBytecode = pInfo->_vertexShader._pByteCode;
 
-    desc.PS.BytecodeLength = pInfo->_pixelShader._szBytes;
-    desc.PS.pShaderBytecode = pInfo->_pixelShader._pByteCode;
+    ShaderD3D12* pShader = static_cast<ShaderD3D12*>(pInfo->_vertexShader);
+    desc.VS.BytecodeLength = pShader->_byteCode._szBytes;
+    desc.VS.pShaderBytecode = pShader->_byteCode._pByteCode;
 
-    desc.DS.BytecodeLength = pInfo->_domainShader._szBytes;
-    desc.DS.pShaderBytecode = pInfo->_domainShader._pByteCode;
+    pShader = static_cast<ShaderD3D12*>(pInfo->_pixelShader);
+    desc.PS.BytecodeLength = pShader->_byteCode._szBytes;
+    desc.PS.pShaderBytecode = pShader->_byteCode._pByteCode;
 
-    desc.HS.BytecodeLength = pInfo->_hullShader._szBytes;
-    desc.HS.pShaderBytecode = pInfo->_hullShader._pByteCode;
+    if (pInfo->_domainShader) {
+        pShader = static_cast<ShaderD3D12*>(pInfo->_domainShader);
+        desc.DS.BytecodeLength = pShader->_byteCode._szBytes;
+        desc.DS.pShaderBytecode = pShader->_byteCode._pByteCode;
+    }
 
-    desc.GS.BytecodeLength = pInfo->_geometryShader._szBytes;
-    desc.GS.pShaderBytecode = pInfo->_geometryShader._pByteCode;
+    if (pInfo->_hullShader) {
+        pShader = static_cast<ShaderD3D12*>(pInfo->_hullShader);
+        desc.HS.BytecodeLength = pShader->_byteCode._szBytes;
+        desc.HS.pShaderBytecode = pShader->_byteCode._pByteCode;
+    }
 
+    if (pInfo->_geometryShader) {
+        pShader = static_cast<ShaderD3D12*>(pInfo->_geometryShader);
+        desc.GS.BytecodeLength = pShader->_byteCode._szBytes;
+        desc.GS.pShaderBytecode = pShader->_byteCode._pByteCode;
+    }
+    
     desc.PrimitiveTopologyType = getNativeTopologyType(pInfo->_topology);
     desc.DSVFormat = pInfo->_dsvFormat;
     desc.NumRenderTargets = pInfo->_numRenderTargets;

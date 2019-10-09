@@ -77,6 +77,7 @@ private:
     gfx::Resource* m_pTriangleVertexBuffer;
     gfx::VertexBufferView* m_pTriangleVertexBufferView;
     gfx::GraphicsPipeline* m_pPreZPipeline;
+    gfx::Shader* m_pDepthVertexShader;
 
     void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };
