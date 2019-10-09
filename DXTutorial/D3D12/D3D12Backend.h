@@ -249,7 +249,6 @@ private:
     ID3D12Fence* m_pPresentFence;
     HANDLE m_pPresentEvent;
     U32 m_frameIndex;
-    B32 m_rayTracingHardwareCompatible;
 
 #if _DEBUG
     ID3D12Debug* debug0;

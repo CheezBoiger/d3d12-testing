@@ -383,7 +383,7 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
     DX12ASSERT(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, 
                                               &featureOptions, 
                                               sizeof(featureOptions)));
-    m_rayTracingHardwareCompatible = (featureOptions.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
+    m_hardwareRaytracingCompatible = (featureOptions.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
 
     D3D12MA::ALLOCATOR_DESC allocDesc = { };
     allocDesc.pDevice = m_pDevice;

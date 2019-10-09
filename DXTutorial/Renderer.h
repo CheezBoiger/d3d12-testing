@@ -586,9 +586,12 @@ public:
     virtual void createFence(Fence** ppFence) { }
     virtual void destroyFence(Fence* pFence) { }
 
+    bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
+
 protected:
 
     IDXGISwapChain1* m_pSwapChain;
+    B32 m_hardwareRaytracingCompatible;
 };
 
 } // gfx
