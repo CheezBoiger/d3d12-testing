@@ -370,8 +370,23 @@ void D3D11Backend::createIndexBufferView(IndexBufferView** ppIndexView,
 void D3D11Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
                                                const GraphicsPipelineInfo* pInfo)
 {
-    *ppPipeline = new GraphicsPipelineD3D11();
+    GraphicsPipelineD3D11* pPipeline = new GraphicsPipelineD3D11();
+    *ppPipeline = pPipeline;
     
+    pPipeline->_vs = pInfo->_vertexShader->getUUID();
+    pPipeline->_ps = pInfo->_pixelShader->getUUID();
+
+    if (pInfo->_hullShader) {
+        pPipeline->_hs = pInfo->_hullShader->getUUID();
+    }
+
+    if (pInfo->_domainShader) {
+        pPipeline->_ds = pInfo->_domainShader->getUUID();
+    }
+
+    if (pInfo->_geometryShader) {
+        pPipeline->_gs = pInfo->_geometryShader->getUUID();
+    }
 }
 
 

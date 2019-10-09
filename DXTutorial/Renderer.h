@@ -614,6 +614,8 @@ public:
 
     virtual void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pByteCode) { }
     virtual void destroyShader(Shader* pShader) { }
+    virtual void createDepthStencilState(DepthStencilState** dsState) { }
+    virtual void createRasterizationState(RasterizationState** rasterState) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
 
