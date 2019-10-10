@@ -1089,4 +1089,25 @@ void D3D12Backend::createComputePipelineState(ComputePipeline** ppPipeline,
 
   m_pPipelineStates[(*ppPipeline)->getUUID()] = pPipelineState;
 }
+
+
+void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline)
+{
+    if (!m_hardwareRaytracingCompatible) {
+        DEBUG("ERROR: This GPU is not compatible for hardware ray tracing! Skipping: ", __FUNCTION__);
+    }
+
+    ID3D12Device5* dxrDevice;
+    m_pDevice->QueryInterface<ID3D12Device5>(&dxrDevice);
+    D3D12_STATE_OBJECT_DESC rayTracingPipeline = { };
+    rayTracingPipeline.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
+    
+    D3D12_DXIL_LIBRARY_DESC desc = { };
+    D3D12_SHADER_BYTECODE byteCode = { };
+    desc.DXILLibrary.BytecodeLength = byteCode.BytecodeLength;
+    desc.DXILLibrary.pShaderBytecode = byteCode.pShaderBytecode;
+
+   D3D12_EXPORT_DESC ex = { };
+
+}
 } // gfx

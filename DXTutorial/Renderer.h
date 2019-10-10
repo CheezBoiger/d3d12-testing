@@ -579,7 +579,14 @@ public:
                                              const GraphicsPipelineInfo* pInfo) { }
     virtual void createComputePipelineState(ComputePipeline** pipeline,
                                             const ComputePipelineInfo* pInfo) { }
-    virtual void createRayTracingPipelineState() { }
+    virtual void createRayTracingPipelineState(RayTracingPipeline** ppPipeline) { }
+
+    // creates acceleration structure for hardware ray tracing.
+    virtual void createAccelerationStructure(Resource** ppResource) { }
+    virtual void createMLOperator() { }
+    virtual void createBindingTable() { }
+    virtual void createOperatorInitializer() { }
+
     virtual void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 
                                         U32 vertexStride, 
@@ -618,11 +625,13 @@ public:
     virtual void createRasterizationState(RasterizationState** rasterState) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
+    bool isHarwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }
 
 protected:
 
     IDXGISwapChain1* m_pSwapChain;
     B32 m_hardwareRaytracingCompatible;
+    B32 m_harwareMachineLearningCompatible;
 };
 
 } // gfx

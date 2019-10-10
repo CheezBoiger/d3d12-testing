@@ -126,7 +126,7 @@ public:
     void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode) override;
     void destroyShader(Shader* pShader) override;
 
-    void createRayTracingPipelineState() override { 
+    void createRayTracingPipelineState(RayTracingPipeline** pPipeline) override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
     }
 

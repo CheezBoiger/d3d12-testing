@@ -154,6 +154,7 @@ public:
 
     void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
+    void createRayTracingPipelineState(RayTracingPipeline** ppPipeline) override;
 
     void createSampler(Sampler** sampler) override { }
     void destroySampler(Sampler* sampler) override { }
@@ -260,6 +261,13 @@ private:
     ID3D12Fence* m_pPresentFence;
     HANDLE m_pPresentEvent;
     U32 m_frameIndex;
+
+    // DirectML Operations.
+    IDMLDevice* m_pdmlDevice;
+    std::unordered_map<RendererT, IDMLCompiledOperator*> m_compiledOperators;
+    std::unordered_map<RendererT, IDMLBindingTable*> m_bindingTables;
+    std::unordered_map<RendererT, IDMLOperatorInitializer*> m_operatorInitializers;
+    std::unordered_map<RendererT, IDMLCommandRecorder*> m_commandRecorders;
 
 #if _DEBUG
     ID3D12Debug* debug0;
