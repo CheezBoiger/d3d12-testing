@@ -214,7 +214,7 @@ enum FillMode
 };
 
 
-struct RasterizationState
+struct RasterizationStateInfo
 {
   B32 _antialiasedLinesEnable;
   B32 _conservativeRasterizationEnable;
@@ -272,7 +272,7 @@ struct DepthStencilOpDesc
 };
 
 
-struct DepthStencilState
+struct DepthStencilStateInfo
 {
   DepthWriteMask _depthWriteMask;
   ComparisonFunc _depthFunc;
@@ -366,7 +366,7 @@ struct RenderTargetBlend
 };
 
 
-struct BlendState
+struct BlendStateInfo
 {
   B8 _alhpaToCoverageEnable;
   B8 _independentBlendEnable;
@@ -383,7 +383,7 @@ enum IBCutValue
 };
 
 
-struct InputLayout 
+struct InputLayoutInfo
 {
 
 };
@@ -400,6 +400,31 @@ private:
 };
 
 
+class RasterizationState : public GPUObject
+{
+public:
+};
+
+
+class DepthStencilState : public GPUObject
+{
+
+};
+
+
+class BlendState : public GPUObject
+{
+
+};
+
+
+struct InputLayout : public GPUObject
+{
+
+};
+
+
+
 struct GraphicsPipelineInfo 
 {
   PrimitiveTopology _topology;
@@ -414,11 +439,11 @@ struct GraphicsPipelineInfo
   Shader* _pixelShader;
 
   RootSignature* _pRootSignature;
-  RasterizationState _rasterizationState;
-  DepthStencilState _depthStencilState;
-  BlendState _blendState;
+  RasterizationState* _rasterizationState;
+  DepthStencilState* _depthStencilState;
+  BlendState* _blendState;
   IBCutValue _ibCutValue;
-  InputLayout _inputLayout;
+  InputLayout* _inputLayout;
 };
 
 
@@ -621,8 +646,10 @@ public:
 
     virtual void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pByteCode) { }
     virtual void destroyShader(Shader* pShader) { }
-    virtual void createDepthStencilState(DepthStencilState** dsState) { }
-    virtual void createRasterizationState(RasterizationState** rasterState) { }
+    virtual void createDepthStencilState(DepthStencilState** dsState, const DepthStencilStateInfo* pInfo) { }
+    virtual void createRasterizationState(RasterizationState** rasterState, const RasterizationStateInfo* pInfo) { }
+    virtual void createBlendState(BlendState** ppBlendState, const BlendStateInfo* pInfo) { }
+    virtual void createInputLayout(InputLayout** ppInputLayout, const InputLayoutInfo* pInfo) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
     bool isHarwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }

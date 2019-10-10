@@ -156,7 +156,7 @@ D3D12_DEPTH_WRITE_MASK getDepthWriteMask(DepthWriteMask mask)
 
 
 void processRasterizationState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, 
-                               const RasterizationState& rasterState)
+                               const RasterizationStateInfo& rasterState)
 {
   desc.RasterizerState.AntialiasedLineEnable = rasterState._antialiasedLinesEnable;
   desc.RasterizerState.ConservativeRaster = rasterState._conservativeRasterizationEnable 
@@ -175,7 +175,7 @@ void processRasterizationState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
 
 
 void processDepthStencilState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
-                              const DepthStencilState& dsState)
+                              const DepthStencilStateInfo& dsState)
 {
   desc.DepthStencilState.BackFace.StencilDepthFailOp = getStencilOp(dsState._backFace._stencilDepthFailOp);
   desc.DepthStencilState.BackFace.StencilFailOp = getStencilOp(dsState._backFace._stencilFailOp);
@@ -253,7 +253,7 @@ D3D12_LOGIC_OP getLogicOp(LogicOp op)
 
 
 void processBlendState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
-                       const BlendState& blendState)
+                       const BlendStateInfo& blendState)
 {
   desc.BlendState.AlphaToCoverageEnable = blendState._alhpaToCoverageEnable;
   desc.BlendState.IndependentBlendEnable = blendState._independentBlendEnable;
@@ -274,7 +274,7 @@ void processBlendState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
     
 
 void processInputLayout(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
-                        const InputLayout& layout)
+                        const InputLayoutInfo& layout)
 {
   desc.InputLayout.pInputElementDescs;
 }
@@ -1048,10 +1048,10 @@ void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
     desc.NodeMask = 0;
     desc.pRootSignature = getBackendD3D12()->getRootSignature(pInfo->_pRootSignature->getUUID());
     
-    processRasterizationState(desc, pInfo->_rasterizationState);
-    processDepthStencilState(desc, pInfo->_depthStencilState);
-    processBlendState(desc, pInfo->_blendState);
-    processInputLayout(desc, pInfo->_inputLayout);
+    processRasterizationState(desc, static_cast<RasterizationStateD3D12*>(pInfo->_rasterizationState)->_info);
+    processDepthStencilState(desc, static_cast<DepthStencilStateD3D12*>(pInfo->_depthStencilState)->_info);
+    processBlendState(desc, static_cast<BlendStateD3D12*>(pInfo->_blendState)->_info);
+    processInputLayout(desc, static_cast<InputLayoutD3D12*>(pInfo->_inputLayout)->_info);
 
     desc.IBStripCutValue = getIBCutValue(pInfo->_ibCutValue);
     desc.StreamOutput;

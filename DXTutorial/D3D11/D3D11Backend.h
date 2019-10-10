@@ -180,6 +180,8 @@ private:
     std::unordered_map<RendererT, ID3D11DomainShader*> m_pDomainShaders;
     std::unordered_map<RendererT, ID3D11ComputeShader*> m_pComputeShaders;
     std::unordered_map<RendererT, ID3D11DepthStencilState*> m_pDepthStencilStates;
+    std::unordered_map<RendererT, ID3D11RasterizerState*> m_pRasterizationStates;
+    std::unordered_map<RendererT, ID3D11BlendState*> m_pBlendStates;
 
     FrameResourceD3D11 m_frameResource;
 };

@@ -31,6 +31,30 @@ struct ShaderD3D12 : public Shader
 };
 
 
+struct RasterizationStateD3D12 : public RasterizationState
+{
+    RasterizationStateInfo _info;
+};
+
+
+struct DepthStencilStateD3D12 : public DepthStencilState
+{
+    DepthStencilStateInfo _info;
+};
+
+
+struct BlendStateD3D12 : public BlendState
+{
+    BlendStateInfo _info;
+};
+
+
+struct InputLayoutD3D12 : public InputLayout
+{
+    InputLayoutInfo _info;
+};
+
+
 // Frame Resources.
 struct FrameResource
 {
