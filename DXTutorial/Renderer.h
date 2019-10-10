@@ -72,20 +72,6 @@ enum ClearFlag
 };
 
 
-enum ShaderType
-{
-    SHADER_TYPE_VERTEX,
-    SHADER_TYPE_HULL,
-    SHADER_TYPE_DOMAIN,
-    SHADER_TYPE_GEOMETRY,
-    SHADER_TYPE_PIXEL,
-    SHADER_TYPE_COMPUTE,
-    SHADER_TYPE_RAYGEN,
-    SHADER_TYPE_RAY_CLOSESTHIT,
-    SHADER_TYPE_RAY_ANYHIT,
-    SHADER_TYPE_RAY_MISS
-};
-
 typedef U32 ClearFlags;
 typedef U64 RendererT;
 
@@ -252,7 +238,7 @@ enum ComparisonFunc
   COMPARISON_FUNC_GREATER,
   COMPARISON_FUNC_NOT_EQUAL,
   COMPARISON_FUNC_GREATER_EQUAL,
-  COMPARSON_FUNC_ALWAYS
+  COMPARISON_FUNC_ALWAYS
 };
 
 
@@ -368,11 +354,17 @@ struct RenderTargetBlend
 
 struct BlendStateInfo
 {
-  B8 _alhpaToCoverageEnable;
+  B8 _alphaToCoverageEnable;
   B8 _independentBlendEnable;
   RenderTargetBlend _renderTargets[8];
 };
 
+
+enum InputClassification
+{
+  INPUT_CLASSIFICATION_PER_VERTEX,
+  INPUT_CLASSIFICATION_PER_INSTANCE
+};
 
 
 enum IBCutValue
@@ -383,46 +375,23 @@ enum IBCutValue
 };
 
 
+struct InputElementInfo
+{
+  const CHAR* _semanticName;
+  U32 _semanticIndex;
+  DXGI_FORMAT _format;
+  U32 _inputSlot;
+  U32 _alignedByteOffset;
+  InputClassification _classification;
+  U32 _instanceDataStepRate;
+};
+
+
 struct InputLayoutInfo
 {
-
+  InputElementInfo* _pInputElements;
+  U32 _elementCount;
 };
-
-
-class Shader : public GPUObject
-{
-public:
-    Shader(ShaderType type) : m_shaderType(type) { }
-    ShaderType getType() const { return m_shaderType; }
-
-private:
-    ShaderType m_shaderType;
-};
-
-
-class RasterizationState : public GPUObject
-{
-public:
-};
-
-
-class DepthStencilState : public GPUObject
-{
-
-};
-
-
-class BlendState : public GPUObject
-{
-
-};
-
-
-struct InputLayout : public GPUObject
-{
-
-};
-
 
 
 struct GraphicsPipelineInfo 
@@ -432,18 +401,18 @@ struct GraphicsPipelineInfo
   U32 _numRenderTargets;
   U32 _sampleMask;
   DXGI_FORMAT _rtvFormats[8];
-  Shader* _vertexShader;
-  Shader* _hullShader;
-  Shader* _domainShader;
-  Shader* _geometryShader;
-  Shader* _pixelShader;
+  ShaderByteCode _vertexShader;
+  ShaderByteCode _hullShader;
+  ShaderByteCode _domainShader;
+  ShaderByteCode _geometryShader;
+  ShaderByteCode _pixelShader;
 
   RootSignature* _pRootSignature;
-  RasterizationState* _rasterizationState;
-  DepthStencilState* _depthStencilState;
-  BlendState* _blendState;
+  RasterizationStateInfo _rasterizationState;
+  DepthStencilStateInfo _depthStencilState;
+  BlendStateInfo _blendState;
   IBCutValue _ibCutValue;
-  InputLayout* _inputLayout;
+  InputLayoutInfo _inputLayout;
 };
 
 
@@ -643,13 +612,6 @@ public:
     virtual RenderTargetView* getSwapchainRenderTargetView() { return nullptr; }
     virtual void createFence(Fence** ppFence) { }
     virtual void destroyFence(Fence* pFence) { }
-
-    virtual void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pByteCode) { }
-    virtual void destroyShader(Shader* pShader) { }
-    virtual void createDepthStencilState(DepthStencilState** dsState, const DepthStencilStateInfo* pInfo) { }
-    virtual void createRasterizationState(RasterizationState** rasterState, const RasterizationStateInfo* pInfo) { }
-    virtual void createBlendState(BlendState** ppBlendState, const BlendStateInfo* pInfo) { }
-    virtual void createInputLayout(InputLayout** ppInputLayout, const InputLayoutInfo* pInfo) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
     bool isHarwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }

@@ -22,39 +22,6 @@ struct ViewHandleD3D12 : public TargetView
 };
 
 
-struct ShaderD3D12 : public Shader
-{
-    ShaderD3D12(ShaderType type) 
-        : Shader(type) { _byteCode._pByteCode = nullptr; }
-
-    ShaderByteCode _byteCode;
-};
-
-
-struct RasterizationStateD3D12 : public RasterizationState
-{
-    RasterizationStateInfo _info;
-};
-
-
-struct DepthStencilStateD3D12 : public DepthStencilState
-{
-    DepthStencilStateInfo _info;
-};
-
-
-struct BlendStateD3D12 : public BlendState
-{
-    BlendStateInfo _info;
-};
-
-
-struct InputLayoutD3D12 : public InputLayout
-{
-    InputLayoutInfo _info;
-};
-
-
 // Frame Resources.
 struct FrameResource
 {
@@ -190,8 +157,6 @@ public:
                                      const GraphicsPipelineInfo* pInfo) override;
     void createComputePipelineState(ComputePipeline** ppPipeline,
                                     const ComputePipelineInfo* pInfo) override;
-    void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode) override;
-    void destroyShader(Shader* pShader) override;
 
     ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
       size_t resourceMax = m_resources[uuid].size(); 

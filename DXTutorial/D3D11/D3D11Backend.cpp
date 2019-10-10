@@ -1,6 +1,7 @@
 #include "D3D11Backend.h"
 #include "CommandListD3D11.h"
 #include "DescriptorTableD3D11.h"
+#include "RenderPassD3D11.h"
 
 namespace gfx {
 
@@ -48,6 +49,154 @@ void getNativeAccessAndUsage(ResourceUsage usage,
   if (usage == RESOURCE_USAGE_DEFAULT) {
     cpuAccess = 0;
     outUsage = D3D11_USAGE_DEFAULT;
+  }
+}
+
+
+D3D11_BLEND_OP getD3D11BlendOp(BlendOp op)
+{
+  switch (op) {
+    case BLEND_OP_SUBTRACT: return D3D11_BLEND_OP_SUBTRACT;
+    case BLEND_OP_REV_SUBTRACT: return D3D11_BLEND_OP_REV_SUBTRACT;
+    case BLEND_OP_MIN: return D3D11_BLEND_OP_MIN;
+    case BLEND_OP_MAX: return D3D11_BLEND_OP_MAX;
+    case BLEND_OP_ADD: 
+    default: return D3D11_BLEND_OP_ADD;
+  }
+}
+
+
+D3D11_BLEND getD3D11Blend(Blend blend)
+{
+  switch (blend) {
+    case BLEND_ONE: return D3D11_BLEND_ONE;
+    case BLEND_SRC_COLOR: return D3D11_BLEND_SRC_COLOR;
+    case BLEND_INV_SRC_COLOR: return D3D11_BLEND_INV_SRC_COLOR;
+    case BLEND_SRC_ALPHA: return D3D11_BLEND_SRC_ALPHA;
+    case BLEND_INV_SRC_ALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
+    case BLEND_DEST_ALPHA: return D3D11_BLEND_DEST_ALPHA;
+    case BLEND_INV_DEST_ALPHA: return D3D11_BLEND_INV_DEST_ALPHA;
+    case BLEND_DEST_COLOR: return D3D11_BLEND_DEST_COLOR;
+    case BLEND_INV_DEST_COLOR: return D3D11_BLEND_INV_DEST_COLOR;
+    case BLEND_SRC_ALPHA_SAT: return D3D11_BLEND_SRC_ALPHA_SAT;
+    case BLEND_BLEND_FACTOR: return D3D11_BLEND_BLEND_FACTOR;
+    case BLEND_INV_BLEND_FACTOR: return D3D11_BLEND_INV_BLEND_FACTOR;
+    case BLEND_SRC1_COLOR: return D3D11_BLEND_SRC1_COLOR;
+    case BLEND_INV_SRC1_COLOR: return D3D11_BLEND_INV_SRC1_COLOR;
+    case BLEND_SRC1_ALPHA: return D3D11_BLEND_SRC1_ALPHA;
+    case BLEND_INV_SRC1_ALPHA: return D3D11_BLEND_INV_SRC1_ALPHA;
+    case BLEND_ZERO:
+    default: return D3D11_BLEND_ZERO;
+  }
+}
+
+
+D3D11_LOGIC_OP getD3D11LogicOp(LogicOp op)
+{
+  switch (op) {
+    case LOGIC_OP_SET: return D3D11_LOGIC_OP_SET;
+    case LOGIC_OP_COPY: return D3D11_LOGIC_OP_COPY;
+    case LOGIC_OP_COPY_INVERTED: return D3D11_LOGIC_OP_COPY_INVERTED;
+    case LOGIC_OP_NOOP: return D3D11_LOGIC_OP_NOOP;
+    case LOGIC_OP_INVERT: return D3D11_LOGIC_OP_INVERT;
+    case LOGIC_OP_AND: return D3D11_LOGIC_OP_AND;
+    case LOGIC_OP_NAND: return D3D11_LOGIC_OP_NAND;
+    case LOGIC_OP_OR: return D3D11_LOGIC_OP_OR;
+    case LOGIC_OP_NOR: return D3D11_LOGIC_OP_NOR;
+    case LOGIC_OP_XOR: return D3D11_LOGIC_OP_XOR;
+    case LOGIC_OP_EQUIV: return D3D11_LOGIC_OP_EQUIV;
+    case LOGIC_OP_AND_REVERSE: return D3D11_LOGIC_OP_AND_REVERSE;
+    case LOGIC_OP_AND_INVERTED: return D3D11_LOGIC_OP_AND_INVERTED;
+    case LOGIC_OP_OR_REVERSE: return D3D11_LOGIC_OP_OR_REVERSE;
+    case LOGIC_OP_OR_INVERTED: return D3D11_LOGIC_OP_OR_INVERTED;
+    case LOGIC_OP_CLEAR:
+    default: return D3D11_LOGIC_OP_CLEAR;
+  }
+}
+
+
+D3D11_STENCIL_OP getD3D11StencilOp(StencilOp op)
+{
+  switch (op) {
+    case STENCIL_OP_KEEP: return D3D11_STENCIL_OP_KEEP;
+    case STENCIL_OP_REPLACE: return D3D11_STENCIL_OP_REPLACE;
+    case STENCIL_OP_INCR_SAT: return D3D11_STENCIL_OP_INCR_SAT;
+    case STENCIL_OP_DECR_SAT: return D3D11_STENCIL_OP_DECR_SAT;
+    case STENCIL_OP_INVERT: return D3D11_STENCIL_OP_INVERT;
+    case STENCIL_OP_INCR: return D3D11_STENCIL_OP_INCR;
+    case STENCIL_OP_DECR: return D3D11_STENCIL_OP_DECR;
+    case STENCIL_OP_ZERO: 
+    default: return D3D11_STENCIL_OP_ZERO;
+  }
+}
+
+
+D3D11_COMPARISON_FUNC getD3D11ComparisonFunc(ComparisonFunc func)
+{
+  switch (func) {
+    case COMPARISON_FUNC_LESS: return D3D11_COMPARISON_LESS;
+    case COMPARISON_FUNC_EQUAL: return D3D11_COMPARISON_EQUAL;
+    case COMPARISON_FUNC_LESS_EQUAL: return D3D11_COMPARISON_LESS_EQUAL;
+    case COMPARISON_FUNC_GREATER: return D3D11_COMPARISON_GREATER;
+    case COMPARISON_FUNC_NOT_EQUAL: return D3D11_COMPARISON_NOT_EQUAL;
+    case COMPARISON_FUNC_GREATER_EQUAL: return D3D11_COMPARISON_GREATER_EQUAL;
+    case COMPARISON_FUNC_ALWAYS: return D3D11_COMPARISON_ALWAYS;
+    case COMPARISON_FUNC_NEVER: 
+    default: return D3D11_COMPARISON_NEVER; 
+  }
+}
+
+
+D3D11_DEPTH_WRITE_MASK getD3D11WriteMask(DepthWriteMask mask)
+{
+  switch (mask) {
+    case DEPTH_WRITE_MASK_ALL: return D3D11_DEPTH_WRITE_MASK_ALL;
+    case DEPTH_WRITE_MASK_ZERO: 
+    default: D3D11_DEPTH_WRITE_MASK_ZERO;
+  }
+}
+
+
+D3D11_INPUT_CLASSIFICATION getD3D11InputClassification(InputClassification c)
+{
+  switch (c) {
+    case INPUT_CLASSIFICATION_PER_INSTANCE: return D3D11_INPUT_PER_INSTANCE_DATA;
+    case INPUT_CLASSIFICATION_PER_VERTEX:
+    default: return D3D11_INPUT_PER_VERTEX_DATA;
+  }
+}
+
+
+D3D11_PRIMITIVE_TOPOLOGY getD3D11PrimitiveTopology(PrimitiveTopology topo)
+{
+  switch (topo) {
+    case PRIMITIVE_TOPOLOGY_LINES: return D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+    case PRIMITIVE_TOPOLOGY_PATCHES: return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    case PRIMITIVE_TOPOLOGY_POINTS: return D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case PRIMITIVE_TOPOLOGY_TRIANGLES: 
+    default:
+      return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+  }
+}
+
+
+D3D11_CULL_MODE getD3D11CullMode(CullMode mode)
+{
+  switch (mode) {
+    case CULL_MODE_BACK: return D3D11_CULL_BACK;
+    case CULL_MODE_FRONT: return D3D11_CULL_FRONT;
+    case CULL_MODE_NONE: 
+    default: return D3D11_CULL_NONE;
+  }
+}
+
+
+D3D11_FILL_MODE getD3D11FillMode(FillMode fill)
+{
+  switch (fill) {
+    case FILL_MODE_WIREFRAME: return D3D11_FILL_WIREFRAME;
+    case FILL_MODE_SOLID:
+    default: return D3D11_FILL_SOLID;
   }
 }
 
@@ -373,109 +522,156 @@ void D3D11Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
     GraphicsPipelineD3D11* pPipeline = new GraphicsPipelineD3D11();
     *ppPipeline = pPipeline;
     
-    pPipeline->_vs = pInfo->_vertexShader->getUUID();
-    pPipeline->_ps = pInfo->_pixelShader->getUUID();
+    pPipeline->_topology = getD3D11PrimitiveTopology(pInfo->_topology);
+    pPipeline->_numRenderTargets = pInfo->_numRenderTargets;
 
-    if (pInfo->_hullShader) {
-        pPipeline->_hs = pInfo->_hullShader->getUUID();
+    if (pInfo->_vertexShader._pByteCode) {
+      ID3D11VertexShader* pVertexShader = nullptr;
+      DX11ASSERT(m_pDevice->CreateVertexShader(pInfo->_vertexShader._pByteCode, 
+                                               pInfo->_vertexShader._szBytes, 
+                                               nullptr, 
+                                               &pVertexShader));
+      m_pVertexShaders[pPipeline->getUUID()] = pVertexShader;
+    } 
+
+    if (pInfo->_hullShader._pByteCode) {
+      ID3D11HullShader* pHullShader = nullptr;
+      DX11ASSERT(m_pDevice->CreateHullShader(pInfo->_hullShader._pByteCode, 
+                                             pInfo->_hullShader._szBytes, 
+                                             nullptr, 
+                                             &pHullShader));
+      m_pHullShaders[pPipeline->getUUID()] = pHullShader;
+    } 
+
+    if (pInfo->_domainShader._pByteCode) {
+      ID3D11DomainShader* pDomainShader = nullptr;
+      DX11ASSERT(m_pDevice->CreateDomainShader(pInfo->_domainShader._pByteCode, 
+                                               pInfo->_domainShader._szBytes, 
+                                               nullptr, 
+                                               &pDomainShader));
+      m_pDomainShaders[pPipeline->getUUID()] = pDomainShader;
+    } 
+
+    if (pInfo->_geometryShader._pByteCode) {
+      ID3D11GeometryShader* pGeometryShader = nullptr;
+      DX11ASSERT(m_pDevice->CreateGeometryShader(pInfo->_geometryShader._pByteCode,
+                                                 pInfo->_geometryShader._szBytes, nullptr,
+                                                 &pGeometryShader));
+      m_pGeometryShaders[pPipeline->getUUID()] = pGeometryShader;
+    } 
+
+    if (pInfo->_pixelShader._pByteCode) {
+      ID3D11PixelShader* pPixelShader = nullptr;
+      DX11ASSERT(m_pDevice->CreatePixelShader(pInfo->_pixelShader._pByteCode, 
+                                              pInfo->_pixelShader._szBytes, 
+                                              nullptr, 
+                                              &pPixelShader));
+      m_pPixelShaders[pPipeline->getUUID()] = pPixelShader;
     }
 
-    if (pInfo->_domainShader) {
-        pPipeline->_ds = pInfo->_domainShader->getUUID();
+    {
+      ID3D11BlendState* pBlendState = nullptr;
+      D3D11_BLEND_DESC blendDesc = { };
+      blendDesc.AlphaToCoverageEnable = pInfo->_blendState._alphaToCoverageEnable;
+      blendDesc.IndependentBlendEnable = pInfo->_blendState._independentBlendEnable;
+      for (U32 i = 0; i < 8; ++i) {
+        blendDesc.RenderTarget[i].BlendEnable = pInfo->_blendState._renderTargets[i]._blendEnable;
+        blendDesc.RenderTarget[i].BlendOp  = getD3D11BlendOp(pInfo->_blendState._renderTargets[i]._blendOp);
+        blendDesc.RenderTarget[i].BlendOpAlpha = getD3D11BlendOp(pInfo->_blendState._renderTargets[i]._blendOpAlpha);
+        blendDesc.RenderTarget[i].DestBlend = getD3D11Blend(pInfo->_blendState._renderTargets[i]._dstBlend);
+        blendDesc.RenderTarget[i].DestBlendAlpha = getD3D11Blend(pInfo->_blendState._renderTargets[i]._dstBlendAlpha);
+        blendDesc.RenderTarget[i].RenderTargetWriteMask = pInfo->_blendState._renderTargets[i]._renderTargetWriteMask;
+        blendDesc.RenderTarget[i].SrcBlend = getD3D11Blend(pInfo->_blendState._renderTargets[i]._srcBlend);
+        blendDesc.RenderTarget[i].SrcBlendAlpha = getD3D11Blend(pInfo->_blendState._renderTargets[i]._srcBlendAlpha);
+      }
+
+      DX11ASSERT(m_pDevice->CreateBlendState(&blendDesc, &pBlendState));
+      m_pBlendStates[pPipeline->getUUID()] = pBlendState;
     }
 
-    if (pInfo->_geometryShader) {
-        pPipeline->_gs = pInfo->_geometryShader->getUUID();
+    {
+      ID3D11DepthStencilState* pDepthStencilState = nullptr;
+      D3D11_DEPTH_STENCIL_DESC depthStencilDesc = { };
+      depthStencilDesc.BackFace.StencilDepthFailOp = getD3D11StencilOp(pInfo->_depthStencilState._backFace._stencilDepthFailOp);
+      depthStencilDesc.BackFace.StencilFailOp = getD3D11StencilOp(pInfo->_depthStencilState._backFace._stencilFailOp);
+      depthStencilDesc.BackFace.StencilFunc = getD3D11ComparisonFunc(pInfo->_depthStencilState._backFace._stencilFunc);
+      depthStencilDesc.BackFace.StencilPassOp = getD3D11StencilOp(pInfo->_depthStencilState._backFace._stencilPassOp);
+
+      depthStencilDesc.DepthEnable = pInfo->_depthStencilState._depthEnable;
+      depthStencilDesc.DepthFunc = getD3D11ComparisonFunc(pInfo->_depthStencilState._depthFunc);
+      depthStencilDesc.DepthWriteMask = getD3D11WriteMask(pInfo->_depthStencilState._depthWriteMask);
+      depthStencilDesc.FrontFace.StencilDepthFailOp = getD3D11StencilOp(pInfo->_depthStencilState._frontFace._stencilDepthFailOp);
+      depthStencilDesc.FrontFace.StencilFailOp = getD3D11StencilOp(pInfo->_depthStencilState._frontFace._stencilFailOp);
+      depthStencilDesc.FrontFace.StencilFunc = getD3D11ComparisonFunc(pInfo->_depthStencilState._frontFace._stencilFunc);
+      depthStencilDesc.FrontFace.StencilPassOp = getD3D11StencilOp(pInfo->_depthStencilState._frontFace._stencilPassOp);
+
+      depthStencilDesc.StencilEnable = pInfo->_depthStencilState._stencilEnable;
+      depthStencilDesc.StencilReadMask = pInfo->_depthStencilState._stencilReadMask;
+      depthStencilDesc.StencilWriteMask = pInfo->_depthStencilState._stencilWriteMask;
+      DX11ASSERT(m_pDevice->CreateDepthStencilState(&depthStencilDesc, &pDepthStencilState));
+      m_pDepthStencilStates[pPipeline->getUUID()] = pDepthStencilState;
     }
+
+    {
+      ID3D11RasterizerState* rasterState = { };
+      D3D11_RASTERIZER_DESC desc = { };
+      desc.AntialiasedLineEnable = pInfo->_rasterizationState._antialiasedLinesEnable;
+      desc.CullMode = getD3D11CullMode(pInfo->_rasterizationState._cullMode);
+      desc.DepthBias = pInfo->_rasterizationState._depthBias;
+      desc.DepthBiasClamp = pInfo->_rasterizationState._depthBiasClamp;
+      desc.DepthClipEnable = pInfo->_rasterizationState._depthClipEnable;
+      desc.FillMode = getD3D11FillMode(pInfo->_rasterizationState._fillMode);
+      desc.FrontCounterClockwise = pInfo->_rasterizationState._frontCounterClockwise;
+      desc.MultisampleEnable = pInfo->_rasterizationState._multisampleEnable;
+      desc.ScissorEnable = true;
+      desc.SlopeScaledDepthBias = pInfo->_rasterizationState._slopedScaledDepthBias;
+      DX11ASSERT(m_pDevice->CreateRasterizerState(&desc, &rasterState));
+      m_pRasterizationStates[pPipeline->getUUID()] = rasterState;
+    }
+
+    {
+      std::vector<D3D11_INPUT_ELEMENT_DESC> elementDescs(pInfo->_inputLayout._elementCount);
+      ID3D11InputLayout* pInputLayout = nullptr;
+      for (U32 i = 0; i < elementDescs.size(); ++i) {
+        elementDescs[i].AlignedByteOffset = pInfo->_inputLayout._pInputElements[i]._alignedByteOffset;
+        elementDescs[i].Format = pInfo->_inputLayout._pInputElements[i]._format;
+        elementDescs[i].InputSlot = pInfo->_inputLayout._pInputElements[i]._inputSlot;
+        elementDescs[i].InputSlotClass = getD3D11InputClassification(pInfo->_inputLayout._pInputElements[i]._classification);
+        elementDescs[i].InstanceDataStepRate = pInfo->_inputLayout._pInputElements[i]._instanceDataStepRate;
+        elementDescs[i].SemanticIndex = pInfo->_inputLayout._pInputElements[i]._semanticIndex;
+        elementDescs[i].SemanticName = pInfo->_inputLayout._pInputElements[i]._semanticName;
+      }
+
+      DX11ASSERT(m_pDevice->CreateInputLayout(elementDescs.data(), 
+                                              elementDescs.size(), 
+                                              pInfo->_vertexShader._pByteCode, 
+                                              pInfo->_vertexShader._szBytes, 
+                                              &pInputLayout));
+      m_pInputLayouts[pPipeline->getUUID()] = pInputLayout;
+    }
+
+#if 0
+    if (pInfo->_com{
+      ID3D11ComputeShader* pComputeShader = nullptr;
+      DX11ASSERT(m_pDevice->CreateComputeShader(pBytecode->_pByteCode,
+                                                pBytecode->_szBytes, nullptr,
+                                                &pComputeShader));
+      m_pComputeShaders[(*ppShader)->getUUID()] = pComputeShader;
+    }
+#endif 
 }
 
 
-void D3D11Backend::createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode)
+void D3D11Backend::createRenderPass(RenderPass** pRenderPass, 
+                                    U32 rtvSize,
+                                    B32 hasDepthStencil)
 {
-    if (!pBytecode) { DEBUG("Null bytecode struct passed! Skipping shader creation."); return; }
-    if (pBytecode->_szBytes == 0) { DEBUG("Byte code length is 0, skipping shader creation."); return; }
-
-    *ppShader = new Shader(type);
-
-    switch (type) {
-        case SHADER_TYPE_VERTEX: {
-            ID3D11VertexShader* pVertexShader = nullptr;
-            DX11ASSERT(m_pDevice->CreateVertexShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pVertexShader));
-            m_pVertexShaders[(*ppShader)->getUUID()] = pVertexShader;
-        }
-            break;
-        case SHADER_TYPE_HULL: {
-            ID3D11HullShader* pHullShader = nullptr;
-            DX11ASSERT(m_pDevice->CreateHullShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pHullShader));
-            m_pHullShaders[(*ppShader)->getUUID()] = pHullShader;
-        }
-            break;
-        case SHADER_TYPE_DOMAIN: {
-            ID3D11DomainShader* pDomainShader = nullptr;
-            DX11ASSERT(m_pDevice->CreateDomainShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pDomainShader));
-            m_pDomainShaders[(*ppShader)->getUUID()] = pDomainShader;
-        }
-            break;
-        case SHADER_TYPE_GEOMETRY: {
-            ID3D11GeometryShader* pGeometryShader = nullptr;
-            DX11ASSERT(m_pDevice->CreateGeometryShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pGeometryShader));
-            m_pGeometryShaders[(*ppShader)->getUUID()] = pGeometryShader;
-        }
-            break;
-        case SHADER_TYPE_PIXEL: {
-            ID3D11PixelShader* pPixelShader = nullptr;
-            DX11ASSERT(m_pDevice->CreatePixelShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pPixelShader));
-            m_pPixelShaders[(*ppShader)->getUUID()] = pPixelShader;
-        }
-            break;
-        case SHADER_TYPE_COMPUTE: {
-            ID3D11ComputeShader* pComputeShader = nullptr;
-            DX11ASSERT(m_pDevice->CreateComputeShader(pBytecode->_pByteCode, pBytecode->_szBytes, nullptr, &pComputeShader));
-            m_pComputeShaders[(*ppShader)->getUUID()] = pComputeShader;
-        }
-            break;
-        default: {
-            DEBUG("Unsupported shader type for D3D11.");
-        }
-    }
-
+  *pRenderPass = new RenderPassD3D11();
 }
 
 
-void D3D11Backend::destroyShader(Shader* pShader)
+void D3D11Backend::destroyRenderPass(RenderPass* pRenderPass)
 {
-    if (!pShader) return;
-
-    switch (pShader->getType()) {
-    case SHADER_TYPE_VERTEX: {
-        m_pVertexShaders[pShader->getUUID()]->Release();
-    }
-                           break;
-    case SHADER_TYPE_HULL: {
-        m_pHullShaders[pShader->getUUID()]->Release();
-    }
-                         break;
-    case SHADER_TYPE_DOMAIN: {
-        m_pDomainShaders[pShader->getUUID()]->Release();
-    }
-                           break;
-    case SHADER_TYPE_GEOMETRY: {
-        m_pGeometryShaders[pShader->getUUID()]->Release();
-    }
-                             break;
-    case SHADER_TYPE_PIXEL: {
-        m_pPixelShaders[pShader->getUUID()]->Release();
-    }
-                          break;
-    case SHADER_TYPE_COMPUTE: {
-        m_pComputeShaders[pShader->getUUID()]->Release();
-    }
-                            break;
-    default: {
-        DEBUG("Unsupported shader type for D3D11.");
-    }
-    }
-
-    delete pShader;
+  delete pRenderPass;
 }
 } // gfx

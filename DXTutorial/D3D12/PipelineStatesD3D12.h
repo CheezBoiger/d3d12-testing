@@ -11,6 +11,7 @@ class GraphicsPipelineStateD3D12 : public GraphicsPipeline
 {
 public:
   GraphicsPipelineStateD3D12() { }
+  D3D_PRIMITIVE_TOPOLOGY _topology;
 };
 
 

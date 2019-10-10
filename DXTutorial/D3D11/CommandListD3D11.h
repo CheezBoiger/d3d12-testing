@@ -128,6 +128,27 @@ public:
     m_ctx->CopyResource(pNativeDst, pNativeSrc);
   }
 
+  void setRenderPass(RenderPass* pRenderPass) override {
+  }
+
+  void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {
+    if (!pPipeline) {
+      m_ctx->PSSetShader(0, 0, 0);
+      m_ctx->VSSetShader(0, 0, 0);
+      m_ctx->RSSetState(nullptr);
+      m_ctx->IASetInputLayout(nullptr);
+    }
+
+    GraphicsPipelineD3D11* pNative = static_cast<GraphicsPipelineD3D11*>(pPipeline);
+    m_ctx->IASetPrimitiveTopology(pNative->_topology);
+    m_ctx->IASetInputLayout(getBackendD3D11()->getInputLayout(pPipeline->getUUID()));
+    m_ctx->VSSetShader(getBackendD3D11()->getVertexShader(pPipeline->getUUID()), 0, 0);
+    m_ctx->PSSetShader(getBackendD3D11()->getPixelShader(pPipeline->getUUID()), 0, 0);
+    m_ctx->RSSetState(getBackendD3D11()->getRasterizerState(pPipeline->getUUID()));
+    //m_ctx->OMSetBlendState(getBackendD3D11()->getBlendState(pPipeline->getUUID()), );
+    m_ctx->OMSetDepthStencilState(getBackendD3D11()->getDepthStencilState(pPipeline->getUUID()), 0);
+  }
+
   ID3D11DeviceContext* m_ctx;
   D3D11Backend* pBackend;
   ID3D11CommandList* m_pCmdList;

@@ -27,14 +27,14 @@ struct RenderGroup
 };
 
 /*/
-    Jackal Renderer is the front end rendering engine, whose sole responsibility
+    Front End Renderer is the front end rendering engine, whose sole responsibility
     is to run the application as programmed for the game. Graphics Programmers mainly
     work here with freedom of the hardware graphics API, solely to implement lighting
     techniques, animation, particles, physics, gobos, shadows, post-processing, etc; in short,
     figure out what they should be rendering. Different renderers can be implemented for different
     games, but the underlying workhorse will always be the BackendRenderer handling the hardware implementation.
 */
-class JackalRenderer
+class FrontEndRenderer
 {
 public:
 
@@ -77,7 +77,7 @@ private:
     gfx::Resource* m_pTriangleVertexBuffer;
     gfx::VertexBufferView* m_pTriangleVertexBufferView;
     gfx::GraphicsPipeline* m_pPreZPipeline;
-    gfx::Shader* m_pDepthVertexShader;
+    gfx::RenderPass* m_pPreZPass;
 
     void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };

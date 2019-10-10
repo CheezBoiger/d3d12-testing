@@ -23,13 +23,8 @@ struct FrameResourceD3D11 {
 
 struct GraphicsPipelineD3D11 : public GraphicsPipeline
 {
-    RendererT _vs           : 16; // verex shader.
-    RendererT _hs           : 16; // hull shader
-    RendererT _ds           : 16; // domain shader.
-    RendererT _gs           : 16; // geometry shader
-    RendererT _ps           : 16; // pixel shader
-    RendererT _bs           : 16; // blend state.
-    RendererT _depthstencil : 16; // depth stencil state.
+  D3D11_PRIMITIVE_TOPOLOGY _topology;
+  U32 _numRenderTargets;
 };
 
 
@@ -123,12 +118,16 @@ public:
                                      const GraphicsPipelineInfo* pInfo) override;
     void createComputePipelineState(ComputePipeline** pipeline,
                                     const ComputePipelineInfo* pInfo) override { }
-    void createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode) override;
-    void destroyShader(Shader* pShader) override;
 
     void createRayTracingPipelineState(RayTracingPipeline** pPipeline) override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
     }
+
+    void createRenderPass(RenderPass** pRenderPass, 
+                          U32 rtvSize,
+                          B32 hasDepthStencil) override;
+
+    void destroyRenderPass(RenderPass* pRenderPass) override;
 
     ID3D11Resource* getResource(RendererT res) {
       return m_resources[res];
@@ -150,6 +149,30 @@ public:
 
     ID3D11DepthStencilView* getDepthStencilView(RendererT uuid) {
       return m_depthStencilViews[uuid];
+    }
+
+    ID3D11VertexShader* getVertexShader(RendererT uuid) {
+      return m_pVertexShaders[uuid];
+    }
+
+    ID3D11PixelShader* getPixelShader(RendererT uuid) {
+      return m_pPixelShaders[uuid];
+    }
+
+    ID3D11RasterizerState* getRasterizerState(RendererT uuid) {
+      return m_pRasterizationStates[uuid];
+    }
+
+    ID3D11DepthStencilState* getDepthStencilState(RendererT uuid) {
+      return m_pDepthStencilStates[uuid];
+    }
+
+    ID3D11BlendState* getBlendState(RendererT uuid) {
+      return m_pBlendStates[uuid];
+    }
+
+    ID3D11InputLayout* getInputLayout(RendererT uuid) {
+      return m_pInputLayouts[uuid];
     }
 
 private:
@@ -182,6 +205,7 @@ private:
     std::unordered_map<RendererT, ID3D11DepthStencilState*> m_pDepthStencilStates;
     std::unordered_map<RendererT, ID3D11RasterizerState*> m_pRasterizationStates;
     std::unordered_map<RendererT, ID3D11BlendState*> m_pBlendStates;
+    std::unordered_map<RendererT, ID3D11InputLayout*> m_pInputLayouts;
 
     FrameResourceD3D11 m_frameResource;
 };

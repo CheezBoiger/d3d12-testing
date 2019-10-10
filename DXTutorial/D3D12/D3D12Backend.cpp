@@ -129,6 +129,18 @@ D3D12_STENCIL_OP getStencilOp(StencilOp op)
 }
 
 
+D3D12_PRIMITIVE_TOPOLOGY getPrimitiveTopology(PrimitiveTopology topology)
+{
+  switch (topology) {
+    case PRIMITIVE_TOPOLOGY_LINES: return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case PRIMITIVE_TOPOLOGY_PATCHES: return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    case PRIMITIVE_TOPOLOGY_POINTS: return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case PRIMITIVE_TOPOLOGY_TRIANGLES: 
+    default: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+  }
+}
+
+
 D3D12_COMPARISON_FUNC getComparisonFunc(ComparisonFunc func)
 {
   switch (func) {
@@ -138,7 +150,7 @@ D3D12_COMPARISON_FUNC getComparisonFunc(ComparisonFunc func)
     case COMPARISON_FUNC_LESS: return D3D12_COMPARISON_FUNC_LESS;
     case COMPARISON_FUNC_LESS_EQUAL: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
     case COMPARISON_FUNC_NOT_EQUAL: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-    case COMPARSON_FUNC_ALWAYS: return D3D12_COMPARISON_FUNC_ALWAYS; 
+    case COMPARISON_FUNC_ALWAYS: return D3D12_COMPARISON_FUNC_ALWAYS; 
     case COMPARISON_FUNC_NEVER:
     default: return D3D12_COMPARISON_FUNC_NEVER;
   }
@@ -151,6 +163,16 @@ D3D12_DEPTH_WRITE_MASK getDepthWriteMask(DepthWriteMask mask)
     case DEPTH_WRITE_MASK_ALL: return D3D12_DEPTH_WRITE_MASK_ALL;
     case DEPTH_WRITE_MASK_ZERO:
     default: return D3D12_DEPTH_WRITE_MASK_ZERO;
+  }
+}
+
+
+D3D12_INPUT_CLASSIFICATION getD3D12InputClassification(InputClassification c)
+{
+  switch (c) {
+    case INPUT_CLASSIFICATION_PER_INSTANCE: return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+    case INPUT_CLASSIFICATION_PER_VERTEX:
+    default: return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
   }
 }
 
@@ -255,7 +277,7 @@ D3D12_LOGIC_OP getLogicOp(LogicOp op)
 void processBlendState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
                        const BlendStateInfo& blendState)
 {
-  desc.BlendState.AlphaToCoverageEnable = blendState._alhpaToCoverageEnable;
+  desc.BlendState.AlphaToCoverageEnable = blendState._alphaToCoverageEnable;
   desc.BlendState.IndependentBlendEnable = blendState._independentBlendEnable;
   
   for (U32 i = 0; i < 8; ++i) {
@@ -270,13 +292,6 @@ void processBlendState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
       desc.BlendState.RenderTarget[i].SrcBlend = getBlend(blendState._renderTargets[i]._srcBlend);
       desc.BlendState.RenderTarget[i].SrcBlendAlpha = getBlend(blendState._renderTargets[i]._srcBlendAlpha);
   }
-}
-    
-
-void processInputLayout(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
-                        const InputLayoutInfo& layout)
-{
-  desc.InputLayout.pInputElementDescs;
 }
 
 
@@ -670,6 +685,7 @@ void D3D12Backend::createRenderPass(RenderPass** pass,
                                     U32 rtvSize,
                                     B32 hasDepthStencil)
 {
+  *pass = new RenderPassD3D12();
   
 }
 
@@ -987,60 +1003,28 @@ void D3D12Backend::destroyFence(Fence* pFence)
 }
 
 
-void D3D12Backend::createShader(Shader** ppShader, ShaderType type, const ShaderByteCode* pBytecode)
-{
-    if (!pBytecode) { DEBUG("Null bytecode struct passed! Skipping shader creation."); return; }
-    if (pBytecode->_szBytes == 0) { DEBUG("Byte code length is 0, skipping shader creation."); return; }
-    ShaderD3D12* pShader = new ShaderD3D12(type);
-
-    // Allocate space for shader byte code. NOTE: Be sure to delete this 
-    // allocation when destroyed!
-    pShader->_byteCode._pByteCode = new U8[pBytecode->_szBytes];
-    pShader->_byteCode._szBytes = pBytecode->_szBytes;
-
-    memcpy(pShader->_byteCode._pByteCode, pBytecode->_pByteCode, pBytecode->_szBytes);
-
-    *ppShader = pShader;    
-}
-
-void D3D12Backend::destroyShader(Shader* pShader)
-{
-    ShaderD3D12* pNativeShader = static_cast<ShaderD3D12*>(pShader);
-    delete[] pNativeShader->_byteCode._pByteCode;
-    delete pShader;
-}
-
-
 void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
                                                const GraphicsPipelineInfo* pInfo)
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { };
 
-    ShaderD3D12* pShader = static_cast<ShaderD3D12*>(pInfo->_vertexShader);
-    desc.VS.BytecodeLength = pShader->_byteCode._szBytes;
-    desc.VS.pShaderBytecode = pShader->_byteCode._pByteCode;
+    desc.VS.BytecodeLength = pInfo->_vertexShader._szBytes;
+    desc.VS.pShaderBytecode = pInfo->_vertexShader._pByteCode;
 
-    pShader = static_cast<ShaderD3D12*>(pInfo->_pixelShader);
-    desc.PS.BytecodeLength = pShader->_byteCode._szBytes;
-    desc.PS.pShaderBytecode = pShader->_byteCode._pByteCode;
+    desc.PS.BytecodeLength = pInfo->_pixelShader._szBytes;
+    desc.PS.pShaderBytecode = pInfo->_pixelShader._pByteCode;
 
-    if (pInfo->_domainShader) {
-        pShader = static_cast<ShaderD3D12*>(pInfo->_domainShader);
-        desc.DS.BytecodeLength = pShader->_byteCode._szBytes;
-        desc.DS.pShaderBytecode = pShader->_byteCode._pByteCode;
-    }
 
-    if (pInfo->_hullShader) {
-        pShader = static_cast<ShaderD3D12*>(pInfo->_hullShader);
-        desc.HS.BytecodeLength = pShader->_byteCode._szBytes;
-        desc.HS.pShaderBytecode = pShader->_byteCode._pByteCode;
-    }
+    desc.DS.BytecodeLength = pInfo->_domainShader._szBytes;
+    desc.DS.pShaderBytecode = pInfo->_domainShader._pByteCode;
 
-    if (pInfo->_geometryShader) {
-        pShader = static_cast<ShaderD3D12*>(pInfo->_geometryShader);
-        desc.GS.BytecodeLength = pShader->_byteCode._szBytes;
-        desc.GS.pShaderBytecode = pShader->_byteCode._pByteCode;
-    }
+
+    desc.HS.BytecodeLength = pInfo->_hullShader._szBytes;
+    desc.HS.pShaderBytecode = pInfo->_hullShader._pByteCode;
+
+
+    desc.GS.BytecodeLength = pInfo->_geometryShader._szBytes;
+    desc.GS.pShaderBytecode = pInfo->_geometryShader._pByteCode;
     
     desc.PrimitiveTopologyType = getNativeTopologyType(pInfo->_topology);
     desc.DSVFormat = pInfo->_dsvFormat;
@@ -1048,10 +1032,9 @@ void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
     desc.NodeMask = 0;
     desc.pRootSignature = getBackendD3D12()->getRootSignature(pInfo->_pRootSignature->getUUID());
     
-    processRasterizationState(desc, static_cast<RasterizationStateD3D12*>(pInfo->_rasterizationState)->_info);
-    processDepthStencilState(desc, static_cast<DepthStencilStateD3D12*>(pInfo->_depthStencilState)->_info);
-    processBlendState(desc, static_cast<BlendStateD3D12*>(pInfo->_blendState)->_info);
-    processInputLayout(desc, static_cast<InputLayoutD3D12*>(pInfo->_inputLayout)->_info);
+    processRasterizationState(desc, pInfo->_rasterizationState);
+    processDepthStencilState(desc, pInfo->_depthStencilState);
+    processBlendState(desc, pInfo->_blendState);
 
     desc.IBStripCutValue = getIBCutValue(pInfo->_ibCutValue);
     desc.StreamOutput;
@@ -1063,14 +1046,29 @@ void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
       desc.RTVFormats[i] = pInfo->_rtvFormats[i];
     }
 
+    std::vector<D3D12_INPUT_ELEMENT_DESC> elementDescs(pInfo->_inputLayout._elementCount);
+    for (U32 i = 0; i < elementDescs.size(); ++i) {
+      elementDescs[i].AlignedByteOffset = pInfo->_inputLayout._pInputElements[i]._alignedByteOffset;
+      elementDescs[i].Format = pInfo->_inputLayout._pInputElements[i]._format;
+      elementDescs[i].InputSlot = pInfo->_inputLayout._pInputElements[i]._inputSlot;
+      elementDescs[i].InputSlotClass = getD3D12InputClassification(pInfo->_inputLayout._pInputElements[i]._classification);
+      elementDescs[i].InstanceDataStepRate = pInfo->_inputLayout._pInputElements[i]._instanceDataStepRate;
+      elementDescs[i].SemanticIndex = pInfo->_inputLayout._pInputElements[i]._semanticIndex;
+      elementDescs[i].SemanticName = pInfo->_inputLayout._pInputElements[i]._semanticName;
+    }
+
+    desc.InputLayout.NumElements = pInfo->_inputLayout._elementCount;
+    desc.InputLayout.pInputElementDescs = elementDescs.data();
 
     ID3D12PipelineState* pPipelineState = nullptr;
   
     DX12ASSERT(m_pDevice->CreateGraphicsPipelineState(&desc, 
                                                       __uuidof(ID3D12PipelineState), 
                                                       (void**)&pPipelineState));
-    *ppPipeline = new GraphicsPipelineStateD3D12();
+    GraphicsPipelineStateD3D12* pPipe = new GraphicsPipelineStateD3D12(); 
+    *ppPipeline = pPipe;
     m_pPipelineStates[(*ppPipeline)->getUUID()] = pPipelineState;
+    pPipe->_topology = getPrimitiveTopology(pInfo->_topology);
 }
 
 

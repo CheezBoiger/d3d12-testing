@@ -5,6 +5,7 @@
 #include "CommonsD3D12.h"
 #include "D3D12Backend.h"
 #include "RenderPassD3D12.h"
+#include "PipelineStatesD3D12.h"
 
 
 namespace gfx {
@@ -91,6 +92,8 @@ public:
       if (!pPipeline) return;
 
       ID3D12PipelineState* pso = getBackendD3D12()->getPipelineState(pPipeline->getUUID());
+      GraphicsPipelineStateD3D12* pGraphicsPipeline = static_cast<GraphicsPipelineStateD3D12*>(pPipeline);
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->IASetPrimitiveTopology(pGraphicsPipeline->_topology);
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetPipelineState(pso);
     }
 

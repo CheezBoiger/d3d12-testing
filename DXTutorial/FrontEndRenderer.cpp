@@ -1,5 +1,5 @@
 
-#include "JackalRenderer.h"
+#include "FrontEndRenderer.h"
 #include "D3D12/D3D12Backend.h"
 #include "D3D11/D3D11Backend.h"
 #include "GlobalDef.h"
@@ -17,13 +17,13 @@ struct Vertex {
 
 
 Vertex triangle[3] = {
-  { { 1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { { 0.0f, -1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { { 0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
 };
 
 
-void JackalRenderer::init(HWND handle, RendererRHI rhi)
+void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 {
   {
     switch (rhi) {
@@ -80,7 +80,7 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
   m_pRootSignature = nullptr;
   m_pBackend->createRootSignature(&m_pRootSignature);
   gfx::PipelineLayout layout = { };
-  layout.numConstantBuffers = 1;
+  layout.numConstantBuffers = 2;
   layout.numSamplers = 0;
   layout.numShaderResourceViews = 0;
   layout.numUnorderedAcessViews = 0;
@@ -107,9 +107,12 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                             DXGI_FORMAT_D24_UNORM_S8_UINT,
                             1920,
                             1080, 1, 0, TEXT("SceneDepth"));
-  m_pBackend->createDepthStencilView(&m_pSceneDepthResourceView, 
+  m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
                                      m_pSceneDepth);
 
+  m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
+  m_pPreZPass->setDepthStencil(m_pSceneDepthView);
+  m_pPreZPass->finalize();
 
   createGraphicsPipelines();
 
@@ -123,6 +126,11 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
                              sizeof(triangle),
                              sizeof(Vertex),
                              TEXT("staging"));
+
+    void* ptr = pStaging->map(0, sizeof(triangle));
+    memcpy(ptr, triangle, sizeof(triangle));
+    pStaging->unmap(0, sizeof(triangle));
+
     m_pBackend->createFence(&pFence);
     m_pBackend->createCommandList(&pList);
     pList->init();
@@ -141,7 +149,7 @@ void JackalRenderer::init(HWND handle, RendererRHI rhi)
 }
 
 
-void JackalRenderer::render()
+void FrontEndRenderer::render()
 {
   beginFrame();
   if (m_pList) {
@@ -160,7 +168,7 @@ void JackalRenderer::render()
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
     m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
-    m_pList->clearDepthStencil(m_pSceneDepthResourceView, 
+    m_pList->clearDepthStencil(m_pSceneDepthView, 
                                gfx::CLEAR_FLAG_DEPTH | gfx::CLEAR_FLAG_STENCIL,
                                0.0f, 
                                0, 1, &rect);
@@ -170,11 +178,11 @@ void JackalRenderer::render()
 
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
-    m_pList->setRenderPass(nullptr);
-    m_pList->setGraphicsPipeline(nullptr);
+    m_pList->setRenderPass(m_pPreZPass);
+    m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
     m_pList->setIndexBuffer(nullptr);
-    m_pList->drawIndexedInstanced(0, 0, 0, 0, 0);
+    m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->close();
   }
@@ -183,24 +191,24 @@ void JackalRenderer::render()
 }
 
 
-void JackalRenderer::beginFrame()
+void FrontEndRenderer::beginFrame()
 {
 }
 
 
-void JackalRenderer::endFrame()
+void FrontEndRenderer::endFrame()
 {
   m_pBackend->present();
 }
 
 
-void JackalRenderer::cleanUp()
+void FrontEndRenderer::cleanUp()
 {
   m_pBackend->cleanUp();
 }
 
 
-void JackalRenderer::update(R32 dt, Globals& globals)
+void FrontEndRenderer::update(R32 dt, Globals& globals)
 {
   void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(pPtr, &globals, sizeof(Globals));
@@ -208,24 +216,76 @@ void JackalRenderer::update(R32 dt, Globals& globals)
 }
 
 
-void JackalRenderer::createGraphicsPipelines()
+void FrontEndRenderer::createGraphicsPipelines()
 {
   m_pPreZPipeline = nullptr;
   gfx::GraphicsPipelineInfo info = { };
-  gfx::ShaderByteCode bytecode;
-  I8* bin = new I8[1024 * 1024];
+  gfx::ShaderByteCode vertBytecode;
+  gfx::ShaderByteCode pixBytecode;
+  vertBytecode._pByteCode = new I8[1024 * 1024 * 5];
+  pixBytecode._pByteCode = new I8[1024 * 1024 * 5];
+  retrieveShader("PreZPass.vert.cso",
+                 &vertBytecode._pByteCode,
+                 vertBytecode._szBytes);
   retrieveShader("PreZPass.cso",
-                 (void**)&bytecode._pByteCode,
-                 bytecode._szBytes);
-  
-  //m_pBackend->createGraphicsPipelineState(&m_pPreZPipeline, &info);
-  m_pBackend->createShader(&m_pDepthVertexShader, gfx::SHADER_TYPE_VERTEX, &bytecode);
+                 &pixBytecode._pByteCode,
+                 pixBytecode._szBytes);
 
-  delete[] bin;
+  info._vertexShader = vertBytecode;
+  info._pixelShader = pixBytecode;  
+  info._numRenderTargets = 0;
+  info._depthStencilState._backFace._stencilDepthFailOp = gfx::STENCIL_OP_ZERO;
+  info._depthStencilState._backFace._stencilFailOp = gfx::STENCIL_OP_ZERO;
+  info._depthStencilState._backFace._stencilFunc = gfx::COMPARISON_FUNC_NEVER;
+  info._depthStencilState._backFace._stencilPassOp = gfx::STENCIL_OP_KEEP;
+
+  info._depthStencilState._frontFace = info._depthStencilState._backFace;
+
+  info._depthStencilState._depthEnable = true;
+  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_LESS_EQUAL;
+  info._depthStencilState._depthWriteMask = gfx::DEPTH_WRITE_MASK_ALL;
+  info._depthStencilState._stencilReadMask = 0x1;
+  info._depthStencilState._stencilWriteMask = 0xff;
+
+  info._rasterizationState._antialiasedLinesEnable = false;
+  info._rasterizationState._conservativeRasterizationEnable = false;
+  info._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
+  info._rasterizationState._depthBias = 0.0f;
+  info._rasterizationState._depthBiasClamp = 0.0f;
+  info._rasterizationState._depthClipEnable = false;
+  info._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
+  info._rasterizationState._forcedSampleCount = 0;
+  info._rasterizationState._frontCounterClockwise = true;
+  info._rasterizationState._slopedScaledDepthBias = 0.0f;
+  
+  info._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
+  info._dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  info._pRootSignature = m_pRootSignature;
+
+  std::vector<gfx::InputElementInfo> elements(3);
+  std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TEXCOORD" };
+  U32 offset = 0;
+  for (size_t i = 0; i < elements.size(); ++i) {
+    elements[i]._alignedByteOffset = offset;
+    elements[i]._classification = gfx::INPUT_CLASSIFICATION_PER_VERTEX;
+    elements[i]._format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    elements[i]._instanceDataStepRate = 0;
+    elements[i]._semanticIndex = 0;
+    elements[i]._semanticName = semantics[i];
+    offset += sizeof(Vector4);
+  }
+
+  info._inputLayout._elementCount = elements.size();
+  info._inputLayout._pInputElements = elements.data();
+
+  m_pBackend->createGraphicsPipelineState(&m_pPreZPipeline, &info);
+
+  delete[] vertBytecode._pByteCode;
+  delete[] pixBytecode._pByteCode;
 }
 
 
-void JackalRenderer::retrieveShader(const std::string& filepath,
+void FrontEndRenderer::retrieveShader(const std::string& filepath,
                                     void** bytecode,
                                     size_t& length)
 {
@@ -239,7 +299,7 @@ void JackalRenderer::retrieveShader(const std::string& filepath,
   length = size_t(fileinput.tellg());
   fileinput.seekg(0);
   
-  fileinput.read(*(I8**)bytecode, length);
+  fileinput.read((I8*)*bytecode, length);
   fileinput.close();
 }
 } // jcl
