@@ -20,14 +20,12 @@ struct Globals
   Matrix44 _viewToWorld;
   // View
   Matrix44 _worldToView;
-  // Inverse View.
-  Matrix44 _invView;
   // Projection
   Matrix44 _proj;
   // View-Projection.
   Matrix44 _viewToClip;
   // Inverse Projection.
-  Matrix44 _invProj;
+  Matrix44 _clipToView;
   // target view size.
   U32 _targetSize[4]; 
 };

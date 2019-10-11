@@ -291,6 +291,13 @@ public:
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->CopyResource(pNativeDst, pNativeSrc);  
     }
 
+    void setGraphicsRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) override {
+        if (!pTable) return;
+        ID3D12DescriptorHeap* pHeap = getBackendD3D12()->getDescriptorHeap(pTable->getUUID());
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootDescriptorTable(rootParameterIndex, 
+                                                                                       pHeap->GetGPUDescriptorHandleForHeapStart());
+    }
+
 protected:
    std::vector<ID3D12GraphicsCommandList*> m_pCmdList;
     std::vector<ID3D12CommandAllocator*> m_pAllocatorRef;

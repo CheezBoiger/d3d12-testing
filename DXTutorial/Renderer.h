@@ -494,6 +494,12 @@ public:
     virtual void setGraphicsRootSignature(RootSignature* pRootSignature) { }
     virtual void setComputeRootSignature(RootSignature* pRootSignature) { }
     virtual void setIndexBuffer(IndexBufferView* buffer) { }
+    virtual void setGraphicsRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) { }
+    virtual void setComputeRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) { }
+    virtual void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
+    virtual void setComputeRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) { }
+    virtual void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
+    virtual void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource pShaderResourceView) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }

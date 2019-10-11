@@ -178,6 +178,7 @@ void FrontEndRenderer::render()
 
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
+    m_pList->setGraphicsRootDescriptorTable(0, m_pConstBufferTable);
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
@@ -210,6 +211,10 @@ void FrontEndRenderer::cleanUp()
 
 void FrontEndRenderer::update(R32 dt, Globals& globals)
 {
+  globals._targetSize[0] = 1920;
+  globals._targetSize[1] = 1080;
+  globals._targetSize[2] = 0;
+  globals._targetSize[3] = 0;
   void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(pPtr, &globals, sizeof(Globals));
   pGlobalsBuffer->unmap(0, sizeof(Globals));

@@ -10,22 +10,10 @@ struct PSInput
 };
 
 
-// Global Info, to be sync'ed with cpu GlobalDef.h struct
-cbuffer Global : register (b0) 
-{
-  float4 vCameraPos;
-  float4x4 mViewToWorld;
-  float4x4 mWorldToView;
-  float4x4 mInvView;
-  float4x4 mProj;
-  float4x4 mViewToClip;
-  float4x4 mInvProj;
-  uint4 uTargetSize;
-};
-
 // PerMesh constant buffer, to be sync'ed with cpu GlobalDef.h struct.
-cbuffer PerMesh : register (b1)
+cbuffer PerMesh : register (b0)
 {
+  float4x4 mWorld;
   float4x4 mWorldToViewClip;
   float4x4 mPrevWorldToViewClip;
   float4x4 mN;

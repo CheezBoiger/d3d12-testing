@@ -37,7 +37,7 @@ void pollEvent()
 void initializeEngine(HWND window)
 {
   pRenderer = new jcl::FrontEndRenderer();
-  pRenderer->init(window, jcl::FrontEndRenderer::RENDERER_RHI_D3D_11);
+  pRenderer->init(window, jcl::FrontEndRenderer::RENDERER_RHI_D3D_12);
 }
 
 
