@@ -487,7 +487,7 @@ public:
     virtual void setGraphicsPipeline(GraphicsPipeline* pPipeline) { }
     virtual void setComputePipeline(ComputePipeline* pPipeline) { }
     virtual void setRayTracingPipeline(RayTracingPipeline* pPipeline) { }
-    virtual void setAccelerationStructure() { }
+    virtual void setAccelerationStructure(Resource* pAccelerationStructure) { }
     virtual void setRenderPass(RenderPass* pass) { }
     virtual void dispatch(U32 x, U32 y, U32 z) { }
     virtual void setVertexBuffers(U32 startSlot, VertexBufferView** vbvs, U32 vertexBufferCount) { }
@@ -583,6 +583,8 @@ public:
 
     // creates acceleration structure for hardware ray tracing.
     virtual void createAccelerationStructure(Resource** ppResource) { }
+  
+    // Machine learning operators for ml assisted rendering.
     virtual void createMLOperator() { }
     virtual void createBindingTable() { }
     virtual void createOperatorInitializer() { }
@@ -620,7 +622,7 @@ public:
     virtual void destroyFence(Fence* pFence) { }
 
     bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
-    bool isHarwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }
+    bool isHardwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }
 
 protected:
 

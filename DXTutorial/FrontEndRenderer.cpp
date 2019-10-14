@@ -19,7 +19,7 @@ struct Vertex {
 Vertex triangle[3] = {
   { {  1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
   { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { {  0.5f,  0.5f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
 };
 
 
@@ -46,6 +46,14 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
   config._renderWidth = 1920;
   config._windowed = true;
   m_pBackend->initialize(handle, false, config);
+
+  if (m_pBackend->isHardwareRaytracingCompatible()) {
+  }
+
+  if (m_pBackend->isHardwareMachineLearningCompatible()) {
+    
+  }
+
   m_pBackend->createCommandList(&m_pList);
 
   if (m_pList)

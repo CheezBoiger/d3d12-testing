@@ -1,7 +1,7 @@
 //
 #pragma once
 
-#include "../Renderer.h"
+#include "../BackendRenderer.h"
 #include "D3D12Backend.h"
 
 namespace gfx {

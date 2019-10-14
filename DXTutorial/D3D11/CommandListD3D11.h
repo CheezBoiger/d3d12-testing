@@ -1,9 +1,10 @@
 #pragma once
 
 #include "CommonsD3D11.h"
-#include "../Renderer.h"
+#include "../BackendRenderer.h"
 #include "D3D11Backend.h"
 #include "DescriptorTableD3D11.h"
+#include "RenderPassD3D11.h"
 #include "RootSignatureD3D11.h"
 
 namespace gfx {
@@ -129,6 +130,19 @@ public:
   }
 
   void setRenderPass(RenderPass* pRenderPass) override {
+    static ID3D11RenderTargetView* kRenderTargetViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+    static ID3D11DepthStencilView* kDepthStencilView = nullptr;
+    RenderPassD3D11* pNativePass = static_cast<RenderPassD3D11*>(pRenderPass);
+    U32 renderTargetCount = 0;
+    for (U32 i = 0; i < pNativePass->m_pRenderTargets.size(); ++i) {
+      renderTargetCount++;
+    }
+
+    if (pNativePass->pDepthStencilView) {
+      kDepthStencilView = getBackendD3D11()->getDepthStencilView(pNativePass->pDepthStencilView->getUUID());
+    }
+
+    m_ctx->OMSetRenderTargets(renderTargetCount, kRenderTargetViews, kDepthStencilView);
   }
 
   void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {

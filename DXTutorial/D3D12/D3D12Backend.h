@@ -5,7 +5,7 @@
 #include "MemoryAllocatorD3D12.h"
 #include "D3D12MemAlloc.h"
 #include "RenderPassD3D12.h"
-#include "../Renderer.h"
+#include "../BackendRenderer.h"
 
 #include <vector>
 #include <unordered_map>

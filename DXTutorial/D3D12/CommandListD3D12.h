@@ -1,7 +1,7 @@
 //
 #pragma once
 
-#include "../Renderer.h"
+#include "../BackendRenderer.h"
 #include "CommonsD3D12.h"
 #include "D3D12Backend.h"
 #include "RenderPassD3D12.h"
@@ -296,6 +296,12 @@ public:
         ID3D12DescriptorHeap* pHeap = getBackendD3D12()->getDescriptorHeap(pTable->getUUID());
         m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootDescriptorTable(rootParameterIndex, 
                                                                                        pHeap->GetGPUDescriptorHandleForHeapStart());
+    }
+
+    void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) override {
+      ID3D12Resource* pResource = getBackendD3D12()->getResource(pConstantBuffer->getUUID());
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootConstantBufferView(rootParameterIndex, 
+                                                                                        pResource->GetGPUVirtualAddress());
     }
 
 protected:
