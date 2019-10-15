@@ -213,11 +213,36 @@ struct Matrix44 {
 
     R32* operator[](U32 i) { return _[i]; }
 
-    static Matrix44 perspectiveRH(R32 fovy, R32 aspect, R32 zNear, R32 zFar);
+    static Matrix44 perspectiveRH(R32 fovy, R32 aspect, R32 zNear, R32 zFar) {
+      R32 tanHalfFov = tanf(fovy * 0.5f);
+      Matrix44 per;
+      per[0][0] = 1.0f / (aspect * tanHalfFov);
+      per[1][1] = 1.0f / tanHalfFov;
+      per[2][2] = zFar / (zNear - zFar);
+      per[3][2] = zNear * zFar / (zNear - zFar);
+      per[2][3] = -1.0f;
+      per[3][3] = 0.0f;
+      return per;
+    }
+
     static Matrix44 orthographicRH(R32 width, R32 height, R32 zNear, R32 zFar);
     static Matrix44 translate(const Matrix44& mat, const Vector4& translation);
     static Matrix44 scale(const Matrix44& mat, const Vector4& sc);
     static Matrix44 rotate(const Matrix44& mat);
-    static Matrix44 lookAtRH(const Vector3& eye, const Vector3& center, const Vector3& up);
+
+    static Matrix44 lookAtRH(const Vector3& position, const Vector3& target, const Vector3& up) {
+      Vector3 zaxis = (position - target).normalize();
+      Vector3 xaxis = up.cross(zaxis).normalize();
+      Vector3 yaxis = zaxis.cross(xaxis);
+    
+      Matrix44 view(
+        xaxis._x,              yaxis._x,             zaxis._x,            0.0f,
+        xaxis._y,              yaxis._y,             zaxis._y,            0.0f,
+        xaxis._z,              yaxis._z,             zaxis._z,            0.0f,
+        -xaxis.dot(position), -yaxis.dot(position), -zaxis.dot(position), 1.0f
+      );
+
+      return view;
+    }
 };
 } // m

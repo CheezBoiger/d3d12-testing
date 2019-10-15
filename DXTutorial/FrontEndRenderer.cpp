@@ -67,6 +67,12 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            sizeof(Globals),
                            0, TEXT("Globals"));
 
+  m_pBackend->createBuffer(&pMeshBuffer,
+                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                           sizeof(PerMeshDescriptor), 
+                           0, TEXT("MeshData"));
+
   m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
                            gfx::RESOURCE_DIMENSION_2D,
                            gfx::RESOURCE_USAGE_DEFAULT,
@@ -87,14 +93,21 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 
   m_pRootSignature = nullptr;
   m_pBackend->createRootSignature(&m_pRootSignature);
-  gfx::PipelineLayout layout = { };
-  layout.numConstantBuffers = 2;
-  layout.numSamplers = 0;
-  layout.numShaderResourceViews = 0;
-  layout.numUnorderedAcessViews = 0;
+  std::vector<gfx::PipelineLayout> layouts(2);
+  layouts[0]._numConstantBuffers = 1;
+  layouts[0]._numSamplers = 0;
+  layouts[0]._numShaderResourceViews = 0;
+  layouts[0]._numUnorderedAcessViews = 0;
+
+  layouts[1]._type = gfx::PIPELINE_LAYOUT_TYPE_CBV;
+  layouts[1]._numConstantBuffers = 1;
+  layouts[1]._numSamplers = 0;
+  layouts[1]._numShaderResourceViews = 0;
+  layouts[1]._numUnorderedAcessViews = 0;
+
   m_pRootSignature->initialize(gfx::SHADER_VISIBILITY_PIXEL | gfx::SHADER_VISIBILITY_VERTEX, 
-                               &layout, 
-                               1);
+                               layouts.data(), 
+                               2);
 
   m_pBackend->createBuffer(&m_pTriangleVertexBuffer, 
                            gfx::RESOURCE_USAGE_DEFAULT,
@@ -112,7 +125,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                             gfx::RESOURCE_DIMENSION_2D,
                             gfx::RESOURCE_USAGE_DEFAULT,
                             gfx::RESOURCE_BIND_DEPTH_STENCIL,
-                            DXGI_FORMAT_D24_UNORM_S8_UINT,
+                            DXGI_FORMAT_D32_FLOAT,
                             1920,
                             1080, 1, 0, TEXT("SceneDepth"));
   m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
@@ -161,6 +174,20 @@ void FrontEndRenderer::render()
 {
   beginFrame();
   if (m_pList) {
+    gfx::Viewport viewport = { };
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.w = 1920.0f;
+    viewport.h = 1080.0f;
+    viewport.mind = 0.0f;
+    viewport.maxd = 1.0f;
+  
+    gfx::Scissor scissor = { };
+    scissor.top = 0;
+    scissor.right = 1920;
+    scissor.bottom = 1080;
+    scissor.left = 0;
+
     static R32 t = 0.0f;
     R32 v = sinf(t * 0.05f);
     R32 s = -sinf(t * 0.05f);
@@ -177,21 +204,26 @@ void FrontEndRenderer::render()
                                1, &rect);
     m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
     m_pList->clearDepthStencil(m_pSceneDepthView, 
-                               gfx::CLEAR_FLAG_DEPTH | gfx::CLEAR_FLAG_STENCIL,
-                               0.0f, 
+                               gfx::CLEAR_FLAG_DEPTH,
+                               1.0f, 
                                0, 1, &rect);
 
-    m_pList->setComputePipeline(nullptr);
-    m_pList->dispatch(16, 16, 1);
+    //m_pList->setComputePipeline(nullptr);
+    //m_pList->dispatch(16, 16, 1);
 
+    m_pList->setViewports(&viewport, 1);
+    m_pList->setScissors(&scissor, 1);
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
     m_pList->setGraphicsRootDescriptorTable(0, m_pConstBufferTable);
+    m_pList->setGraphicsRootConstantBufferView(1, pMeshBuffer);
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
     m_pList->setIndexBuffer(nullptr);
-    m_pList->drawInstanced(3, 1, 0, 0);
+    for (U32 i = 0; i < 100; ++i) {
+      m_pList->drawInstanced(3, 1, 0, 0);
+    }
 
     m_pList->close();
   }
@@ -223,9 +255,21 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
   globals._targetSize[1] = 1080;
   globals._targetSize[2] = 0;
   globals._targetSize[3] = 0;
+  Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+  Matrix44 V = m::Matrix44::lookAtRH(Vector3(2.0f, 0.0f, 2.0f), 
+                                     Vector3(0.0f, 0.0f, 0.0f), 
+                                     Vector3(0.0f, 1.0f, 0.0f));
+  globals._viewToClip = V * P;
+
   void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
   memcpy(pPtr, &globals, sizeof(Globals));
   pGlobalsBuffer->unmap(0, sizeof(Globals));
+
+  mm._worldToViewClip = Matrix44() * V * P;
+
+  pPtr = pMeshBuffer->map(0, sizeof(PerMeshDescriptor));
+  memcpy(pPtr, &mm, sizeof(PerMeshDescriptor));
+  pMeshBuffer->unmap(0, sizeof(PerMeshDescriptor));
 }
 
 
@@ -245,18 +289,19 @@ void FrontEndRenderer::createGraphicsPipelines()
                  pixBytecode._szBytes);
 
   info._vertexShader = vertBytecode;
-  info._pixelShader = pixBytecode;  
+  //info._pixelShader = pixBytecode;  
   info._numRenderTargets = 0;
   info._depthStencilState._backFace._stencilDepthFailOp = gfx::STENCIL_OP_ZERO;
   info._depthStencilState._backFace._stencilFailOp = gfx::STENCIL_OP_ZERO;
   info._depthStencilState._backFace._stencilFunc = gfx::COMPARISON_FUNC_NEVER;
   info._depthStencilState._backFace._stencilPassOp = gfx::STENCIL_OP_KEEP;
-
+  info._depthStencilState._stencilEnable = false;
   info._depthStencilState._frontFace = info._depthStencilState._backFace;
 
   info._depthStencilState._depthEnable = true;
-  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_LESS_EQUAL;
+  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_LESS;
   info._depthStencilState._depthWriteMask = gfx::DEPTH_WRITE_MASK_ALL;
+
   info._depthStencilState._stencilReadMask = 0x1;
   info._depthStencilState._stencilWriteMask = 0xff;
 
@@ -265,15 +310,23 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
   info._rasterizationState._depthBias = 0.0f;
   info._rasterizationState._depthBiasClamp = 0.0f;
-  info._rasterizationState._depthClipEnable = false;
+  info._rasterizationState._depthClipEnable = true;
   info._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
   info._rasterizationState._forcedSampleCount = 0;
-  info._rasterizationState._frontCounterClockwise = true;
+  info._rasterizationState._frontCounterClockwise = false;
   info._rasterizationState._slopedScaledDepthBias = 0.0f;
-  
+ 
   info._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
-  info._dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  info._dsvFormat = DXGI_FORMAT_D32_FLOAT;
   info._pRootSignature = m_pRootSignature;
+
+  info._blendState._renderTargets[0]._blendEnable = false;
+  info._blendState._renderTargets[0]._logicOpEnable = false;
+  info._blendState._renderTargets[0]._blendOp = gfx::BLEND_OP_ADD;
+  info._blendState._renderTargets[0]._blendOpAlpha = gfx::BLEND_OP_ADD;
+  info._blendState._renderTargets[0]._logicOp = gfx::LOGIC_OP_NOOP;
+  info._blendState._renderTargets[0]._renderTargetWriteMask = gfx::COLOR_WRITE_ENABLE_ALL;
+  
 
   std::vector<gfx::InputElementInfo> elements(3);
   std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TEXCOORD" };

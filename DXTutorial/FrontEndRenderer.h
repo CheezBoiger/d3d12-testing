@@ -55,7 +55,7 @@ public:
     void pushRenderGroups(RenderGroup& group) { }
 
 private:
-
+    PerMeshDescriptor mm;
     void beginFrame();
     void createGraphicsPipelines();
     void endFrame();
@@ -64,6 +64,7 @@ private:
     gfx::CommandList* m_pList;
     GBuffer m_gbuffer;
     gfx::Resource* pGlobalsBuffer;
+    gfx::Resource* pMeshBuffer;
     gfx::Resource* m_pSceneDepth;
 
     gfx::DescriptorTable* m_pConstBufferTable;

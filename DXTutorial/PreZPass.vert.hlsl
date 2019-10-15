@@ -5,13 +5,10 @@
 struct PSInput 
 {
   float4 vPos : SV_POSITION;
-  float4 vNormal : NORMAL;
-  float4 vTexCoord : TEXCOORD;
 };
 
-
 // PerMesh constant buffer, to be sync'ed with cpu GlobalDef.h struct.
-cbuffer PerMesh : register (b0)
+cbuffer PerMesh : register (b1)
 {
   float4x4 mWorld;
   float4x4 mWorldToViewClip;
@@ -26,11 +23,8 @@ PSInput VSMain( float4 position : POSITION,
                 float4 texCoord : TEXCOORD )
 {
   PSInput input;
+  position.w = 1.0f;
   input.vPos = mul(mWorldToViewClip, position);
-  input.vNormal = mul(mN, normal);
-  input.vTexCoord = texCoord;
-
-  input.vPos.w = 1.0;
   return input;
 }
 

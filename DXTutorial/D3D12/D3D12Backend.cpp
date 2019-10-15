@@ -212,6 +212,7 @@ void processDepthStencilState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc,
   desc.DepthStencilState.DepthEnable = dsState._depthEnable;
   desc.DepthStencilState.DepthFunc = getComparisonFunc(dsState._depthFunc);
   desc.DepthStencilState.DepthWriteMask = getDepthWriteMask(dsState._depthWriteMask);
+  
   desc.DepthStencilState.StencilEnable = dsState._stencilEnable;
   desc.DepthStencilState.StencilReadMask = dsState._stencilReadMask;
   desc.DepthStencilState.StencilWriteMask = dsState._stencilWriteMask;
@@ -643,7 +644,7 @@ void D3D12Backend::createTexture(Resource** texture,
     clearValue.Color[2] = 0.0f;
     clearValue.Color[3] = 0.0f;
   } else if (binds & RESOURCE_BIND_DEPTH_STENCIL) {
-    clearValue.DepthStencil.Depth = 0.0f;
+    clearValue.DepthStencil.Depth = 1.0f;
     clearValue.DepthStencil.Stencil = 0;
   }
 
@@ -1013,7 +1014,6 @@ void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
 
     desc.PS.BytecodeLength = pInfo->_pixelShader._szBytes;
     desc.PS.pShaderBytecode = pInfo->_pixelShader._pByteCode;
-
 
     desc.DS.BytecodeLength = pInfo->_domainShader._szBytes;
     desc.DS.pShaderBytecode = pInfo->_domainShader._pByteCode;

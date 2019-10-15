@@ -8,6 +8,7 @@
 #include <d3dcompiler.h>
 
 #include <string>
+#include <math.h>
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -38,3 +39,12 @@ typedef double R64;
 #define DEBUG(str, ...)
 #define ASSERT(x)
 #endif
+
+#define CONST_PI                3.141592653589793238462643383279502884197169399375
+#define CONST_PI_HALF           1.57079632679489661923   // pi/2
+#define CONST_PI_QUARTER        0.785398163397448309616 // pi/4
+#define CONST_2_PI              6.283185307 // 2 * pi
+#define CONST_TOLERANCE         0.0001     // 
+#define EPSILON                 0.0000001 // 
+#define R_E                     2.71828182845904523536   // e
+#define ToRads(deg) ((deg) * (static_cast<R32>(CONST_PI) / 180.0f))

@@ -28,6 +28,18 @@ D3D12_ROOT_SIGNATURE_FLAGS getNativeRootSignatureFlags(ShaderVisibilityFlags fla
 }
 
 
+D3D12_ROOT_PARAMETER_TYPE getRootParameterType(PipelineLayoutType type)
+{
+  switch (type) {
+    case PIPELINE_LAYOUT_TYPE_CBV: return D3D12_ROOT_PARAMETER_TYPE_CBV;
+    case PIPELINE_LAYOUT_TYPE_CONSTANTS: return D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+    case PIPELINE_LAYOUT_TYPE_SRV: return D3D12_ROOT_PARAMETER_TYPE_SRV;    
+    default:
+    case PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE: return D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+  }
+}
+
+
 class RootSignatureD3D12 : public RootSignature
 {
 public:
@@ -44,62 +56,74 @@ public:
 
     ID3D12RootSignature* pRootSig = nullptr;
     D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
+    U32 cbvRegister = 0;
 
     for (U32 i = 0; i < numLayouts; ++i) {
-      D3D12_ROOT_DESCRIPTOR_TABLE rootTable = {};
-      U32 numCBV_SRV_UAV_Descriptors = 0;
-
-      if (pLayouts[i].numConstantBuffers > 0) {
-        D3D12_DESCRIPTOR_RANGE range = {};
-        range.NumDescriptors = static_cast<U32>(pLayouts[i].numConstantBuffers);
-        range.BaseShaderRegister = 0;
-        range.OffsetInDescriptorsFromTableStart =
-            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-        range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-        range.RegisterSpace = 0;
-        kDescriptorRanges[i].push_back(range);
-      }
-
-      if (pLayouts[i].numShaderResourceViews) {
-        D3D12_DESCRIPTOR_RANGE range = {};
-        range.NumDescriptors = static_cast<U32>(pLayouts[i].numShaderResourceViews);
-        range.OffsetInDescriptorsFromTableStart =
-            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-        range.BaseShaderRegister = 0;
-        range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        range.RegisterSpace = 0;
-        kDescriptorRanges[i].push_back(range);
-      }
-
-      if (pLayouts[i].numUnorderedAcessViews) {
-        D3D12_DESCRIPTOR_RANGE range = {};
-        range.NumDescriptors = static_cast<U32>(pLayouts[i].numUnorderedAcessViews);
-        range.OffsetInDescriptorsFromTableStart =
-            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-        range.BaseShaderRegister = 0;
-        range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        range.RegisterSpace = 0;
-        kDescriptorRanges[i].push_back(range);
-      }
-
-      if (pLayouts[i].numSamplers) {
-        D3D12_DESCRIPTOR_RANGE range = { };
-        range.NumDescriptors = pLayouts[i].numSamplers;
-        range.OffsetInDescriptorsFromTableStart = 
-            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-        range.BaseShaderRegister = 0;
-        range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-        range.RegisterSpace = 0;
-        kDescriptorRanges[i].push_back(range);
-      }
-
-      rootTable.NumDescriptorRanges = static_cast<U32>(kDescriptorRanges[i].size());
-      rootTable.pDescriptorRanges = kDescriptorRanges[i].data();
-
       D3D12_ROOT_PARAMETER rootParam = {};
-      rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-      rootParam.DescriptorTable = rootTable;
       rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+      rootParam.ParameterType = getRootParameterType(pLayouts[i]._type);
+
+      switch (rootParam.ParameterType) {
+        case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE: {
+          D3D12_ROOT_DESCRIPTOR_TABLE rootTable = {};
+          U32 numCBV_SRV_UAV_Descriptors = 0;
+ 
+          if (pLayouts[i]._numConstantBuffers > 0) {
+            D3D12_DESCRIPTOR_RANGE range = {};
+            range.NumDescriptors = static_cast<U32>(pLayouts[i]._numConstantBuffers);
+            range.BaseShaderRegister = cbvRegister++;
+            range.OffsetInDescriptorsFromTableStart =
+                D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+            range.RegisterSpace = 0;
+            kDescriptorRanges[i].push_back(range);
+          }
+
+          if (pLayouts[i]._numShaderResourceViews) {
+            D3D12_DESCRIPTOR_RANGE range = {};
+            range.NumDescriptors = static_cast<U32>(pLayouts[i]._numShaderResourceViews);
+            range.OffsetInDescriptorsFromTableStart =
+                D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            range.BaseShaderRegister = 0;
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+            range.RegisterSpace = 0;
+            kDescriptorRanges[i].push_back(range);
+          }
+
+          if (pLayouts[i]._numUnorderedAcessViews) {
+            D3D12_DESCRIPTOR_RANGE range = {};
+            range.NumDescriptors = static_cast<U32>(pLayouts[i]._numUnorderedAcessViews);
+            range.OffsetInDescriptorsFromTableStart =
+                D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            range.BaseShaderRegister = 0;
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+            range.RegisterSpace = 0;
+            kDescriptorRanges[i].push_back(range);
+          }
+
+          if (pLayouts[i]._numSamplers) {
+            D3D12_DESCRIPTOR_RANGE range = { };
+            range.NumDescriptors = pLayouts[i]._numSamplers;
+            range.OffsetInDescriptorsFromTableStart = 
+                D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            range.BaseShaderRegister = 0;
+            range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+            range.RegisterSpace = 0;
+            kDescriptorRanges[i].push_back(range);
+          }
+
+          rootTable.NumDescriptorRanges = static_cast<U32>(kDescriptorRanges[i].size());
+          rootTable.pDescriptorRanges = kDescriptorRanges[i].data();
+          rootParam.DescriptorTable = rootTable;
+          break;
+        }
+        case D3D12_ROOT_PARAMETER_TYPE_CBV: {
+          rootParam.Descriptor.RegisterSpace = 0;
+          rootParam.Descriptor.ShaderRegister = cbvRegister++;
+          break;
+        }
+      }
+
       kParameters[parameterCount++] = rootParam;
     }
 
@@ -110,10 +134,18 @@ public:
       rootSigDesc.Flags = getNativeRootSignatureFlags(visibleFlags);
 
       ID3DBlob* pRootSigBlob = nullptr;
-      DX12ASSERT(D3D12SerializeRootSignature(&rootSigDesc, 
+      ID3DBlob* pErrorBlob = nullptr;
+      HRESULT result = D3D12SerializeRootSignature(&rootSigDesc, 
                                              D3D_ROOT_SIGNATURE_VERSION_1_0, 
                                              &pRootSigBlob, 
-                                             nullptr));
+                                             &pErrorBlob);
+      if (pErrorBlob) {
+        char* pp = reinterpret_cast<char*>(pErrorBlob->GetBufferPointer());
+        DEBUG("Error: %s", pp);
+        pErrorBlob->Release();
+      }
+
+      DX12ASSERT(result);
       DX12ASSERT(getBackendD3D12()->getDevice()->CreateRootSignature(0, 
                                                                      pRootSigBlob->GetBufferPointer(), 
                                                                      pRootSigBlob->GetBufferSize(),

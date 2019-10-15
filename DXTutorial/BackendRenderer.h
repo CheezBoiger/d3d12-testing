@@ -152,12 +152,23 @@ public:
 };
 
 
+enum PipelineLayoutType
+{
+  PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE,
+  PIPELINE_LAYOUT_TYPE_CONSTANTS,
+  PIPELINE_LAYOUT_TYPE_CBV,
+  PIPELINE_LAYOUT_TYPE_SRV,
+  PIPELINE_LAYOUT_TYPE_SAMPLERS
+};
+
+
 struct PipelineLayout
 {
-  U32 numConstantBuffers;
-  U32 numSamplers;
-  U32 numUnorderedAcessViews;
-  U32 numShaderResourceViews;
+  PipelineLayoutType _type;
+  U32 _numConstantBuffers;
+  U32 _numSamplers;
+  U32 _numUnorderedAcessViews;
+  U32 _numShaderResourceViews;
 };
 
 class RootSignature : public GPUObject

@@ -33,6 +33,8 @@ struct Globals
 
 struct PerMeshDescriptor
 {
+  // Model World transform.
+  Matrix44 _world;
   // Model-View-Projection transform.
   Matrix44 _worldToViewClip;
   // Previous frame Model-View-Projection transform.
