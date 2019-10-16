@@ -56,6 +56,7 @@ public:
 
 private:
     PerMeshDescriptor mm;
+    PerMeshDescriptor mm2;
     void beginFrame();
     void createGraphicsPipelines();
     void endFrame();
@@ -65,6 +66,7 @@ private:
     GBuffer m_gbuffer;
     gfx::Resource* pGlobalsBuffer;
     gfx::Resource* pMeshBuffer;
+    gfx::Resource* pOtherMeshBuffer;
     gfx::Resource* m_pSceneDepth;
 
     gfx::DescriptorTable* m_pConstBufferTable;

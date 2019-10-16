@@ -73,6 +73,12 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            sizeof(PerMeshDescriptor), 
                            0, TEXT("MeshData"));
 
+  m_pBackend->createBuffer(&pOtherMeshBuffer,
+                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                           sizeof(PerMeshDescriptor), 
+                           0, TEXT("OtherMeshData"));
+
   m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
                            gfx::RESOURCE_DIMENSION_2D,
                            gfx::RESOURCE_USAGE_DEFAULT,
@@ -216,14 +222,17 @@ void FrontEndRenderer::render()
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
     m_pList->setGraphicsRootDescriptorTable(0, m_pConstBufferTable);
-    m_pList->setGraphicsRootConstantBufferView(1, pMeshBuffer);
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
     m_pList->setIndexBuffer(nullptr);
-    for (U32 i = 0; i < 100; ++i) {
+    for (U32 i = 0; i < 1; ++i) {
+      m_pList->setGraphicsRootConstantBufferView(1, pMeshBuffer);
       m_pList->drawInstanced(3, 1, 0, 0);
     }
+
+    m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
+    m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->close();
   }
@@ -256,7 +265,7 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
   globals._targetSize[2] = 0;
   globals._targetSize[3] = 0;
   Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
-  Matrix44 V = m::Matrix44::lookAtRH(Vector3(2.0f, 0.0f, 2.0f), 
+  Matrix44 V = m::Matrix44::lookAtRH(Vector3(3.0f, 0.0f, 3.0f), 
                                      Vector3(0.0f, 0.0f, 0.0f), 
                                      Vector3(0.0f, 1.0f, 0.0f));
   globals._viewToClip = V * P;
@@ -266,10 +275,21 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
   pGlobalsBuffer->unmap(0, sizeof(Globals));
 
   mm._worldToViewClip = Matrix44() * V * P;
+  mm2._worldToViewClip = Matrix44(
+     1.0f, 0.0f, 0.0f,  0.0f,
+     0.0f, 1.0f, 0.0f,  0.0f,
+     0.0f, 0.0f, 1.0f,  0.0f,
+    -1.0f, 0.0f, 0.0f,  1.0f
+  ) * V * P;
+  
 
   pPtr = pMeshBuffer->map(0, sizeof(PerMeshDescriptor));
   memcpy(pPtr, &mm, sizeof(PerMeshDescriptor));
   pMeshBuffer->unmap(0, sizeof(PerMeshDescriptor));
+
+  pPtr = pOtherMeshBuffer->map(0, sizeof(PerMeshDescriptor));
+  memcpy(pPtr, &mm2, sizeof(PerMeshDescriptor));
+  pOtherMeshBuffer->unmap(0, sizeof(PerMeshDescriptor));
 }
 
 
@@ -291,6 +311,7 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._vertexShader = vertBytecode;
   //info._pixelShader = pixBytecode;  
   info._numRenderTargets = 0;
+  info._sampleMask = 0xffffffff;
   info._depthStencilState._backFace._stencilDepthFailOp = gfx::STENCIL_OP_ZERO;
   info._depthStencilState._backFace._stencilFailOp = gfx::STENCIL_OP_ZERO;
   info._depthStencilState._backFace._stencilFunc = gfx::COMPARISON_FUNC_NEVER;
