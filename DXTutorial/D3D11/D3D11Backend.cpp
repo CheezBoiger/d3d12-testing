@@ -524,6 +524,7 @@ void D3D11Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
     
     pPipeline->_topology = getD3D11PrimitiveTopology(pInfo->_topology);
     pPipeline->_numRenderTargets = pInfo->_numRenderTargets;
+    pPipeline->_sampleMask = pInfo->_sampleMask;
 
     if (pInfo->_vertexShader._pByteCode) {
       ID3D11VertexShader* pVertexShader = nullptr;

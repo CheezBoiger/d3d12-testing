@@ -159,7 +159,11 @@ public:
     m_ctx->VSSetShader(getBackendD3D11()->getVertexShader(pPipeline->getUUID()), 0, 0);
     m_ctx->PSSetShader(getBackendD3D11()->getPixelShader(pPipeline->getUUID()), 0, 0);
     m_ctx->RSSetState(getBackendD3D11()->getRasterizerState(pPipeline->getUUID()));
-    //m_ctx->OMSetBlendState(getBackendD3D11()->getBlendState(pPipeline->getUUID()), );
+
+    m_ctx->OMSetBlendState(getBackendD3D11()->getBlendState(pPipeline->getUUID()),
+                           pNative->_blendFactor, 
+                           pNative->_sampleMask);
+
     m_ctx->OMSetDepthStencilState(getBackendD3D11()->getDepthStencilState(pPipeline->getUUID()), 0);
   }
 

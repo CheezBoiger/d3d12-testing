@@ -25,6 +25,8 @@ struct GraphicsPipelineD3D11 : public GraphicsPipeline
 {
   D3D11_PRIMITIVE_TOPOLOGY _topology;
   U32 _numRenderTargets;
+  U32 _sampleMask;
+  R32 _blendFactor[4];
 };
 
 
