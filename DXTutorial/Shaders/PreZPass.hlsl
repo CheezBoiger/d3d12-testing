@@ -1,5 +1,5 @@
 
-#include "ShaderGlobalDef.h"
+#include "ShaderGlobalDef.hlsli"
 
 // Global Info, to be sync'ed with cpu GlobalDef.h struct
 cbuffer Global : register (b0)

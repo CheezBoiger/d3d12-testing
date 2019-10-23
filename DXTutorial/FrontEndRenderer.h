@@ -3,32 +3,10 @@
 #include "BackendRenderer.h"
 #include <vector>
 #include "GlobalDef.h"
+#include "GeometryPass.h"
 
 namespace jcl {
 
-
-typedef U64 RenderUUID;
-
-struct GeometryMesh
-{
-  RenderUUID _meshDescriptor;
-  RenderUUID _materialDescriptor;
-};
-
-struct RenderGroup
-{
-  // Render Targets.
-  std::vector<gfx::RenderTargetView*> renderTargetViews;
-  // Depth Stencil Target.
-  gfx::DepthStencilView* _depthStencilView; 
-  // The given pipeline used for this render group.
-  RenderUUID _pipeline;
-  // Render in deferred lighting flow.
-  B32 _isDeferred;
-  // All render commands to be processed.
-  GeometryMesh* _geometryMeshes;
-  U32 meshCount;
-};
 
 /*/
     Front End Renderer is the front end rendering engine, whose sole responsibility
@@ -86,6 +64,8 @@ private:
     gfx::VertexBufferView* m_pTriangleVertexBufferView;
     gfx::GraphicsPipeline* m_pPreZPipeline;
     gfx::RenderPass* m_pPreZPass;
+
+    GeometryPass m_geometryPass;
 
     // Define your transparent meshes, sort them from your opaques.
     std::vector<GeometryMesh> m_transparentMeshes;

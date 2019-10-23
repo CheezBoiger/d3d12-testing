@@ -173,6 +173,9 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_pBackend->destroyFence(pFence);
     m_pBackend->destroyCommandList(pList);
   }
+
+  m_geometryPass.setGBuffer(&m_gbuffer);
+  m_geometryPass.initialize(m_pBackend);
 }
 
 
@@ -233,6 +236,9 @@ void FrontEndRenderer::render()
 
     m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
     m_pList->drawInstanced(3, 1, 0, 0);
+
+    m_geometryPass.generateCommands(m_opaqueMeshes.data(), m_opaqueMeshes.size());
+    m_geometryPass.generateCommands(m_transparentMeshes.data(), m_transparentMeshes.size());
 
     m_pList->close();
   }

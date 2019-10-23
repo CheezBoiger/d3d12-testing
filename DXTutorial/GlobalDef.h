@@ -5,6 +5,8 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix44.h"
 
+#include <vector>
+
 namespace jcl {
 
 
@@ -46,7 +48,8 @@ struct PerMeshDescriptor
 };
 
 
-struct GBuffer {
+struct GBuffer 
+{
   gfx::Resource* pAlbedoTexture;
   gfx::Resource* pMaterialTexture;
   gfx::Resource* pNormalTexture;
@@ -55,6 +58,27 @@ struct GBuffer {
 };
 
 
-void generateGBufferResources(GBuffer* pOut, gfx::BackendRenderer* backend);
 
+typedef U64 RenderUUID;
+
+struct GeometryMesh
+ {
+  RenderUUID _meshDescriptor;
+  RenderUUID _materialDescriptor;
+};
+
+struct RenderGroup 
+{
+  // Render Targets.
+  std::vector<gfx::RenderTargetView*> renderTargetViews;
+  // Depth Stencil Target.
+  gfx::DepthStencilView* _depthStencilView;
+  // The given pipeline used for this render group.
+  RenderUUID _pipeline;
+  // Render in deferred lighting flow.
+  B32 _isDeferred;
+  // All render commands to be processed.
+  GeometryMesh* _geometryMeshes;
+  U32 meshCount;
+};
 } // jcl

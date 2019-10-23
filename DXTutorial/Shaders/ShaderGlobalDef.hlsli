@@ -40,7 +40,9 @@ struct PSInputGeometry
 {
     float4 Position : SV_POSITION;
     float4 Normal : NORMAL;
-    float4 TexCoords : TEXCOORD;
+    float4 TexCoords : TEXCOORD0;
+    float4 ScreenPosition : TEXCOORD1;
+    float4 WorldPosition : TEXCOORD2;
 };
 
 

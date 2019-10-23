@@ -1,5 +1,5 @@
 // Shader Code for a pre z pass.
-#include "ShaderGlobalDef.h"
+#include "ShaderGlobalDef.hlsli"
 
 // PerMesh constant buffer, to be sync'ed with cpu GlobalDef.h struct.
 cbuffer PerMesh : register (b1)
