@@ -1,34 +1,19 @@
 // Shader Code for a pre z pass.
 #include "ShaderGlobalDef.h"
 
-
-struct PSInput 
-{
-  float4 vPos : SV_POSITION;
-};
-
 // PerMesh constant buffer, to be sync'ed with cpu GlobalDef.h struct.
 cbuffer PerMesh : register (b1)
 {
-  float4x4 mWorld;
-  float4x4 mWorldToViewClip;
-  float4x4 mPrevWorldToViewClip;
-  float4x4 mN;
-  float4 vMaterialFlags;
+    MeshTransforms Mesh;
 };
 
 
-PSInput VSMain( float4 position : POSITION, 
+PSInputBasic VSMain ( float4 position : POSITION, 
                 float4 normal : NORMAL,
                 float4 texCoord : TEXCOORD )
 {
-  PSInput input;
+  PSInputBasic input;
   position.w = 1.0f;
-  input.vPos = mul(mWorldToViewClip, position);
+  input.Position = mul(Mesh.WorldToViewClip, position);
   return input;
-}
-
-float4 PSMain( PSInput input ) : SV_TARGET
-{
-
 }

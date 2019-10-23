@@ -9,21 +9,25 @@ namespace jcl {
 
 typedef U64 RenderUUID;
 
-struct RenderCommand 
+struct GeometryMesh
 {
   RenderUUID _meshDescriptor;
   RenderUUID _materialDescriptor;
 };
 
-
 struct RenderGroup
 {
+  // Render Targets.
+  std::vector<gfx::RenderTargetView*> renderTargetViews;
+  // Depth Stencil Target.
+  gfx::DepthStencilView* _depthStencilView; 
   // The given pipeline used for this render group.
   RenderUUID _pipeline;
   // Render in deferred lighting flow.
   B32 _isDeferred;
   // All render commands to be processed.
-  std::vector<RenderCommand> _renderCommands;
+  GeometryMesh* _geometryMeshes;
+  U32 meshCount;
 };
 
 /*/
@@ -31,8 +35,9 @@ struct RenderGroup
     is to run the application as programmed for the game. Graphics Programmers mainly
     work here with freedom of the hardware graphics API, solely to implement lighting
     techniques, animation, particles, physics, gobos, shadows, post-processing, etc; in short,
-    figure out what they should be rendering. Different renderers can be implemented for different
-    games, but the underlying workhorse will always be the BackendRenderer handling the hardware implementation.
+    figure out what they should be rendering, since they need to be able to represent concept to the hardware. 
+    Different renderers can be implemented for different games, but the underlying workhorse will always be the 
+    BackendRenderer handling the hardware implementation.
 */
 class FrontEndRenderer
 {
@@ -52,7 +57,7 @@ public:
     
     void update(R32 dt, Globals& globals);
 
-    void pushRenderGroups(RenderGroup& group) { }
+    void pushMesh(GeometryMesh* pMesh) { }
 
 private:
     PerMeshDescriptor mm;
@@ -81,6 +86,15 @@ private:
     gfx::VertexBufferView* m_pTriangleVertexBufferView;
     gfx::GraphicsPipeline* m_pPreZPipeline;
     gfx::RenderPass* m_pPreZPass;
+
+    // Define your transparent meshes, sort them from your opaques.
+    std::vector<GeometryMesh> m_transparentMeshes;
+
+    // Define your opaque meshes, sort them from your transparents. 
+    std::vector<GeometryMesh> m_opaqueMeshes;
+
+    // RenderGroups define the pass set for this particular set of calls.
+    std::vector<RenderGroup*> m_renderGroups;
 
     void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };
