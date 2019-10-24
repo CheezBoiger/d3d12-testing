@@ -6,7 +6,7 @@
 #include "D3D12Backend.h"
 #include "RenderPassD3D12.h"
 #include "PipelineStatesD3D12.h"
-
+#include <pix.h>
 
 namespace gfx {
 
@@ -60,9 +60,15 @@ public:
         m_pCmdList[i]->Release();
     }
 
-    virtual void reset() override {
+    virtual void reset(const char* debugTag) override {
+        
         U32 frameIndex = getBackendD3D12()->getFrameIndex();
+        const char* tag = debugTag;
+
+        if (!debugTag)
+            tag = "";
         m_pCmdList[frameIndex]->Reset(m_pAllocatorRef[frameIndex], nullptr);
+        PIXBeginEvent(m_pCmdList[frameIndex], 0, tag);
         _isRecording = true;
     }
 
@@ -76,6 +82,14 @@ public:
                                                                     startIndexLocation, 
                                                                     baseVertexLocation, 
                                                                     startInstanceLocation);
+    }
+
+    void setMarker(const char* tag) override {
+        const char* t = tag;
+
+        if (!tag) t = "";
+
+        PIXSetMarker(m_pCmdList[getBackendD3D12()->getFrameIndex()], 0, tag);
     }
 
     virtual void drawInstanced(U32 vertexCountPerInstance, 
@@ -168,6 +182,7 @@ public:
     }
 
     virtual void close() override {
+        PIXEndEvent();
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->Close();
         _isRecording = false;
     }

@@ -45,7 +45,7 @@ public:
                          startInstanceLocation);
   }
 
-  void reset() override {
+  void reset(const char* debugTag) override {
     if (m_pCmdList) {
       m_pCmdList->Release();
     }

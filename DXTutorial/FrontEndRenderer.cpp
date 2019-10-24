@@ -208,7 +208,7 @@ void FrontEndRenderer::render()
     rect.right = 1920;
     rect.top = 0;
 
-    m_pList->reset();
+    m_pList->reset("Cool Comamand List");
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
     m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
@@ -220,6 +220,7 @@ void FrontEndRenderer::render()
     //m_pList->setComputePipeline(nullptr);
     //m_pList->dispatch(16, 16, 1);
 
+    m_pList->setMarker("PreZPass");
     m_pList->setViewports(&viewport, 1);
     m_pList->setScissors(&scissor, 1);
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
@@ -237,8 +238,10 @@ void FrontEndRenderer::render()
     m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
     m_pList->drawInstanced(3, 1, 0, 0);
 
+    m_pList->setMarker("GBuffer Pass");
     m_geometryPass.generateCommands(m_opaqueMeshes.data(), m_opaqueMeshes.size());
     m_geometryPass.generateCommands(m_transparentMeshes.data(), m_transparentMeshes.size());
+
 
     m_pList->close();
   }

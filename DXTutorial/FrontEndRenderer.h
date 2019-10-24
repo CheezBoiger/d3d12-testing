@@ -74,6 +74,7 @@ private:
     std::vector<GeometryMesh> m_opaqueMeshes;
 
     // RenderGroups define the pass set for this particular set of calls.
+    // Should only be setting resize on amortized time.
     std::vector<RenderGroup*> m_renderGroups;
 
     void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);

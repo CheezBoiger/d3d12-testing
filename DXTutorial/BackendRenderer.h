@@ -482,7 +482,7 @@ public:
     virtual void init() { }
     virtual void destroy() { }
 
-    virtual void reset() { }
+    virtual void reset(const char* debugTag = nullptr) { }
 
     virtual void drawIndexedInstanced(U32 indexCountPerInstance, 
                                       U32 instanceCount, 
@@ -523,7 +523,7 @@ public:
                                    U32 numRects,
                                    const RECT* rects) {}
     virtual void copyResource(Resource* pDst, Resource* pSrc) { }
-
+    virtual void setMarker(const char* tag = nullptr) { }
     B32 isRecording() const { return _isRecording; }
 
 protected:

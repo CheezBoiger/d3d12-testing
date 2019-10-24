@@ -8,6 +8,8 @@
 #include "DescriptorTableD3D12.h"
 #include <string>
 
+#include <pix.h>
+
 namespace gfx
 {
 
