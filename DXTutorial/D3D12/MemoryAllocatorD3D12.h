@@ -14,13 +14,27 @@
 
 namespace gfx {
 
+
+class MemoryAllocator
+{
+public:
+    virtual ~MemoryAllocator() { }
+};
+
 /*
     Simple Linear allocator structure.
 */
-class LinearAllocator {
+class LinearAllocator : public MemoryAllocator
+{
 public:
     
 private:
+};
+
+
+class BuddyAllocator : public MemoryAllocator
+{
+
 };
 
 
@@ -38,7 +52,12 @@ class MemoryPool
 {
 public:
 
-    void initialize(ID3D12Device* pDevice, size_t regionSzBytes) {
+    void initialize
+        (
+            ID3D12Device* pDevice, 
+            size_t regionSzBytes
+        ) 
+    {
         //D3D12_RESOURCE_ALLOCATION_INFO allocRules = pDevice->GetResourceAllocationInfo(0, )
 
         // 64kb alignment granularity for all GPUs, this means page sizes of this range,
@@ -55,11 +74,15 @@ public:
         heapDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE;
         heapDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_L1;
         heapDesc.Properties.CreationNodeMask = 0;
-
+        
         pDevice->CreateHeap(&heapDesc, __uuidof(ID3D12Heap), (void**)&m_pArena);
     }
 
-    void cleanUp(ID3D12Device* pDevice) {
+    void cleanUp
+        (
+            ID3D12Device* pDevice
+        ) 
+    {
         m_pArena->Release();
     }
 
@@ -68,6 +91,7 @@ public:
     D3D12_HEAP_DESC getDesc() { return m_pArena->GetDesc(); }
 
 private:
+    MemoryAllocator* m_pAllocator;
     ID3D12Heap* m_pArena;
 };
 
@@ -75,12 +99,22 @@ private:
 class MemoryAllocatorD3D12 
 {
 public:
-    void initialize(ID3D12Device* pDevice) {
+    void initialize
+        (
+            ID3D12Device* pDevice
+        ) 
+    {
         m_garbageIndex = 0;
     }
 
 
-    ID3D12Resource* allocate(ID3D12Device* pDevice, ResourceUsage usage, const D3D12_RESOURCE_DESC& desc) {
+    ID3D12Resource* allocate
+        (
+            ID3D12Device* pDevice, 
+            ResourceUsage usage, 
+            const D3D12_RESOURCE_DESC& desc
+        ) 
+    {
         ID3D12Resource* pResource = nullptr;
         D3D12_RESOURCE_ALLOCATION_INFO info = pDevice->GetResourceAllocationInfo(0, 1, &desc);
 
@@ -90,7 +124,12 @@ public:
         return pResource; 
     }
 
-    void free(ID3D12Resource* pResource) { }
+    void free
+        (
+            ID3D12Resource* pResource
+        ) 
+    { 
+    }
 
 
 private:

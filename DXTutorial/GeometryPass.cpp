@@ -82,6 +82,8 @@ void GeometryPass::initialize
     
     pipeInfo._inputLayout._elementCount = elements.size();
     pipeInfo._inputLayout._pInputElements = elements.data();
+
+    pBackend->createGraphicsPipelineState(&m_pPSO, &pipeInfo);
 }
 
 
