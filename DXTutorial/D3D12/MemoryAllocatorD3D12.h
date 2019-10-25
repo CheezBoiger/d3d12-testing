@@ -14,36 +14,24 @@
 
 namespace gfx {
 
-
-class MemoryAllocator
+struct MemoryResource
 {
-public:
-    virtual ~MemoryAllocator() { }
+    ID3D12Resource* _pResource;
+    size_t _poolId;
+    size_t _blockId;
+    size_t _offset;
 };
-
-/*
-    Simple Linear allocator structure.
-*/
-class LinearAllocator : public MemoryAllocator
-{
-public:
-    
-private:
-};
-
-
-class BuddyAllocator : public MemoryAllocator
-{
-
-};
-
-
 /*
     One of the most powerful, yet overwhelming, features of D3D12 is the ability 
     to manage your own memory. Allocation of large memory heaps is essential to speeding up
     creation of game objects, and effects. With a large allocation, developers can then figure out
     how to handle this giant memory region, suballocating from it to placed resources to be used by
     constant buffers, vertex/index buffers, shader resource views, image, etc...
+
+    Concept derives from Region Based Memory Allocation, or otherwise known as Memory Arena management,
+    in order to devise your own way of handling memory allocations. This can be avoided, however, by 
+    simply creating committed allocations that allow the gpu to dedicate a memory block on the gpu 
+    (similar to how d3d11 handled memory managment.)
 
     This is not for the faintest of heart, however, as CPU/GPU memory management can be a huge turn off
     from most developers. This is why libraries exists from hardware vendors, to handle these cases.
@@ -86,13 +74,34 @@ public:
         m_pArena->Release();
     }
 
-    void free() { }
+    // Free memory resource from the allocator.
+    virtual void free(MemoryResource* pResource) { }
+
+    // Allocate memory on the heap.
+    virtual void allocate(MemoryResource** ppResource, const D3D12_RESOURCE_DESC* pDesc) { }
 
     D3D12_HEAP_DESC getDesc() { return m_pArena->GetDesc(); }
 
-private:
-    MemoryAllocator* m_pAllocator;
+protected:
     ID3D12Heap* m_pArena;
+};
+
+
+/*
+    Simple Linear allocator structure.
+*/
+class LinearAllocator : public MemoryPool
+{
+public:
+
+private:
+};
+
+
+class BuddyAllocator : public MemoryPool
+{
+public:
+    
 };
 
 
