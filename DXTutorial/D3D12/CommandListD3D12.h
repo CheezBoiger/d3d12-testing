@@ -24,11 +24,16 @@ D3D12_CLEAR_FLAGS getDepthClearFlags(ClearFlags flags)
 class GraphicsCommandListD3D12 : public CommandList
 {
 public:
-    GraphicsCommandListD3D12(D3D12_COMMAND_LIST_TYPE type, 
-                             ID3D12CommandAllocator** pAllocs, U32 allocCount)
-        : m_pAllocatorRef(allocCount)
-        , m_type(type)
-        , CommandList()
+
+    GraphicsCommandListD3D12
+        (
+            D3D12_COMMAND_LIST_TYPE type, 
+            ID3D12CommandAllocator** pAllocs, 
+            U32 allocCount
+        )
+            : m_pAllocatorRef(allocCount)
+            , m_type(type)
+            , CommandList()
     {
       for (U32 i = 0; i < allocCount; ++i)
         m_pAllocatorRef[i] = pAllocs[i];
@@ -72,16 +77,20 @@ public:
         _isRecording = true;
     }
 
-    virtual void drawIndexedInstanced(U32 indexCountPerInstance, 
-                                      U32 instanceCount, 
-                                      U32 startIndexLocation, 
-                                      U32 baseVertexLocation, 
-                                      U32 startInstanceLocation) override {
+    virtual void drawIndexedInstanced
+        (
+            U32 indexCountPerInstance, 
+            U32 instanceCount, 
+            U32 startIndexLocation, 
+            U32 baseVertexLocation, 
+            U32 startInstanceLocation
+        ) override 
+    {
         m_pCmdList[getBackendD3D12()->getFrameIndex()]->DrawIndexedInstanced(indexCountPerInstance, 
-                                                                    instanceCount, 
-                                                                    startIndexLocation, 
-                                                                    baseVertexLocation, 
-                                                                    startInstanceLocation);
+                                                                            instanceCount, 
+                                                                            startIndexLocation, 
+                                                                            baseVertexLocation, 
+                                                                            startInstanceLocation);
     }
 
     void setMarker(const char* tag) override {
@@ -92,14 +101,18 @@ public:
         PIXSetMarker(m_pCmdList[getBackendD3D12()->getFrameIndex()], 0, tag);
     }
 
-    virtual void drawInstanced(U32 vertexCountPerInstance, 
-                       U32 instanceCount, 
-                       U32 startVertexLocation, 
-                       U32 startInstanceLocation) override {
+    virtual void drawInstanced
+        (
+            U32 vertexCountPerInstance, 
+            U32 instanceCount, 
+            U32 startVertexLocation, 
+            U32 startInstanceLocation
+        ) override 
+    {
         m_pCmdList[getBackendD3D12()->getFrameIndex()]->DrawInstanced(vertexCountPerInstance, 
-                                                             instanceCount, 
-                                                             startVertexLocation, 
-                                                             startInstanceLocation);
+                                                                     instanceCount, 
+                                                                     startVertexLocation, 
+                                                                     startInstanceLocation);
     }
 
     virtual void setGraphicsPipeline(GraphicsPipeline* pPipeline) override {

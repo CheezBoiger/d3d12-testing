@@ -225,7 +225,7 @@ void FrontEndRenderer::render()
     m_pList->setScissors(&scissor, 1);
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
-    m_pList->setGraphicsRootDescriptorTable(0, m_pConstBufferTable);
+    m_pList->setGraphicsRootDescriptorTable(GLOBAL_CONST_SLOT, m_pConstBufferTable);
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
@@ -239,8 +239,8 @@ void FrontEndRenderer::render()
     m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->setMarker("GBuffer Pass");
-    m_geometryPass.generateCommands(m_opaqueMeshes.data(), m_opaqueMeshes.size());
-    m_geometryPass.generateCommands(m_transparentMeshes.data(), m_transparentMeshes.size());
+
+    m_geometryPass.generateCommands(this, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
 
 
     m_pList->close();

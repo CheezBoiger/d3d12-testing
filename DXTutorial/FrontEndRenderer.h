@@ -5,6 +5,8 @@
 #include "GlobalDef.h"
 #include "GeometryPass.h"
 
+#include <unordered_map>
+
 namespace jcl {
 
 
@@ -36,6 +38,12 @@ public:
     void update(R32 dt, Globals& globals);
 
     void pushMesh(GeometryMesh* pMesh) { }
+
+    gfx::Resource* getResource(RenderUUID uuid) { return m_pGraphicsResources[uuid]; }
+
+    gfx::VertexBufferView* getVertexBufferView(RenderUUID uuid) { return m_pVertexBufferViews[uuid]; }
+
+    gfx::IndexBufferView* getIndexBufferView(RenderUUID uuid) { return m_pIndexBufferViews[uuid]; }
 
 private:
     PerMeshDescriptor mm;
@@ -77,6 +85,9 @@ private:
     // Should only be setting resize on amortized time.
     std::vector<RenderGroup*> m_renderGroups;
 
+    std::unordered_map<RenderUUID, gfx::Resource*> m_pGraphicsResources;
+    std::unordered_map<RenderUUID, gfx::VertexBufferView*> m_pVertexBufferViews;
+    std::unordered_map<RenderUUID, gfx::IndexBufferView*> m_pIndexBufferViews;
     void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };
 } //
