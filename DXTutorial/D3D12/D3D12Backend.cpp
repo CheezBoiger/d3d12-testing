@@ -3,6 +3,7 @@
 #include "D3D12Backend.h"
 #include "CommandListD3D12.h"
 #include "D3D12MemAlloc.h"
+#include "MemoryAllocatorD3D12.h"
 #include "RootSignatureD3D12.h"
 #include "PipelineStatesD3D12.h"
 #include "DescriptorTableD3D12.h"
@@ -20,6 +21,7 @@ D3D12Backend* getBackendD3D12()
 }
 
 D3D12MA::Allocator* pAllocator = nullptr;
+MemoryAllocatorD3D12* pCustomMemoryAllocator = nullptr;
 
 D3D12_RESOURCE_DIMENSION getDimension(ResourceDimension dimension)
 {
