@@ -134,6 +134,7 @@ public:
 
         // Doing a standard 64kb page size.
         m_minBlockSz = KB_1 * 64;
+        m_blockNums = regionSzBytes / m_minBlockSz;
 
         // We are just trying to find the highest order of power of 2.
         for (U64 i = 0; i < 64; ++i) {
@@ -157,7 +158,16 @@ public:
             D3D12_RESOURCE_STATES initState
         ) override 
     { 
-        
+        size_t bytesRequested = pDesc->Width * pDesc->Height * pDesc->DepthOrArraySize;
+        // determine order.
+        U64 order = 0;
+        for (U64 i = 1; i < m_maxOrder; ++i) {
+            U64  bytesNeeded = m_minBlockSz * i;
+            if (bytesNeeded >= bytesRequested) {
+                order = i - 1;
+                break;
+            }
+        }
     }
 
     void free(MemoryResource* pResource) override { }
@@ -176,6 +186,7 @@ private:
     size_t m_maxOrder;
     size_t m_baseOffset;
     size_t m_minBlockSz;
+    size_t m_blockNums;
 
     // Free blocks stored in the order they are found.
     std::vector<std::vector<BuddyBlock>> m_freeBlocks;
