@@ -410,6 +410,8 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
     allocDesc.PreferredBlockSize = 1 * GB_1;
     allocDesc.Flags = D3D12MA::ALLOCATOR_FLAG_NONE;
     D3D12MA::CreateAllocator(&allocDesc, &pAllocator);
+    pCustomMemoryAllocator = new MemoryAllocatorD3D12();
+    pCustomMemoryAllocator->initialize(m_pDevice);
 }
 
 
@@ -573,6 +575,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
                                                  &alloc, 
                                                  __uuidof(ID3D12Resource), 
                                                  (void**)&pResource); 
+    pCustomMemoryAllocator->allocate(m_pDevice, allocDesc.HeapType, state, pClearValue, desc);
     DX12ASSERT(result);
 
     if (debugName) {

@@ -22,9 +22,9 @@
 #include <vector>
 #include <map>
 
-#define KB_1 (1024)
-#define MB_1 (1024 * 1024)
-#define GB_1 (1024 * 1024 * 1024)
+#define KB_1 (1024ull)
+#define MB_1 (1024ull * 1024ull)
+#define GB_1 (1024ull * 1024ull * 1024ull)
 #define ALIGN(p, alignment) (( p ) + (( alignment ) - 1)) & (~(( alignment ) - 1))
 
 namespace gfx {
@@ -64,15 +64,16 @@ public:
         D3D12_HEAP_DESC heapDesc = { };
 
         heapDesc.SizeInBytes = regionSzBytes;
+        m_maxSzBytes = regionSzBytes;
 
         heapDesc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-        heapDesc.Flags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+        heapDesc.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
         heapDesc.Properties.Type = D3D12_HEAP_TYPE_UPLOAD;
-        heapDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE;
-        heapDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_L1;
+        heapDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heapDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
         heapDesc.Properties.CreationNodeMask = 0;
         
-        pDevice->CreateHeap(&heapDesc, __uuidof(ID3D12Heap), (void**)&m_pArena);
+        DX12ASSERT(pDevice->CreateHeap(&heapDesc, __uuidof(ID3D12Heap), (void**)&m_pArena));
     }
 
     void cleanUp
@@ -97,7 +98,7 @@ public:
         (
             ID3D12Device* pDevice,
             // Pointer resource, as output.
-            MemoryResource** ppResource, 
+            MemoryResource* ppResource, 
             // description struct request, as input.
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
@@ -138,6 +139,7 @@ public:
         // Doing a standard 64kb page size.
         m_minBlockSz = KB_1 * 64;
         m_blockNums = regionSzBytes / m_minBlockSz;
+        m_currBlockId = 0;
 
         // We are just trying to find the highest order of power of 2.
         for (U64 i = 0; i < 64; ++i) {
@@ -147,6 +149,8 @@ public:
                 break;
             }
         }
+
+        return true;
     }
 
     void allocate
@@ -154,7 +158,7 @@ public:
             // Device d3d12.
             ID3D12Device* pDevice,
             // Resource pointer as output.
-            MemoryResource** ppResource,
+            MemoryResource* ppResource,
             // Description of the resource allocation request as input. 
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
@@ -199,18 +203,25 @@ public:
                 m_allocatedBlocks.push_back(block._blockId);
                 
                 // Allocate the block, offset should be aligned.
-                pDevice->CreatePlacedResource(m_pArena, 
-                                              block._offset, 
-                                              pDesc, 
-                                              initState, 
-                                              clearValue, 
-                                              __uuidof(ID3D12Resource), 
-                                              (void**)ppResource);
+                DX12ASSERT(pDevice->CreatePlacedResource(m_pArena, 
+                                                         block._offset, 
+                                                         pDesc, 
+                                                         initState, 
+                                                         clearValue, 
+                                                         __uuidof(ID3D12Resource), 
+                                                         (void**)ppResource));
                 return;
             }
 
             // Recursively split the heap to find the min size block needed. Keep track of any split blocks.            
-            BuddyBlock block = allocateBlock(order, m_maxOrder, m_maxSzBytes);
+            BuddyBlock* pb = allocateBlock(order, m_maxOrder, 0, m_maxSzBytes);
+            DX12ASSERT(pDevice->CreatePlacedResource(m_pArena, 
+                                                     pb->_offset, 
+                                                     pDesc, 
+                                                     initState, 
+                                                     clearValue, 
+                                                     __uuidof(ID3D12Resource), 
+                                                     (void**)ppResource));
         }
     }
 
@@ -229,10 +240,22 @@ private:
     };
 
     // Split our block until we find a suitable order.
-    BuddyBlock allocateBlock(size_t order, size_t currentOrder, size_t currentSzBytes) 
+    BuddyBlock* allocateBlock(size_t order, I32 currentOrder, size_t start, size_t end) 
     {
-        
-        BuddyBlock b0 = allocateBlock(order, currentOrder - 1, currentSzBytes);
+        size_t midBytes = (end - start) / 2;
+
+        BuddyBlock b0; b0._memSz = midBytes; b0._offset = start; b0._blockId = m_currBlockId++;
+        BuddyBlock b1; b1._memSz = midBytes; b1._offset = midBytes; b1._blockId = m_currBlockId++;
+
+        m_freeBlocks[currentOrder].push_back(b0);
+        m_freeBlocks[currentOrder].push_back(b1);
+
+        if (currentOrder == order) return &m_freeBlocks[currentOrder].back();
+
+        BuddyBlock* pb0 = allocateBlock(order, currentOrder - 1, start, midBytes);
+        //BuddyBlock* pb1 = allocateBlock(order, currentOrder - 1, midBytes, end);
+
+        return pb0;
     }
     
 
@@ -240,6 +263,8 @@ private:
     size_t m_baseOffset;
     size_t m_minBlockSz;
     size_t m_blockNums;
+    size_t m_currBlockId;
+    size_t m_minOrder;
 
     // Free blocks stored in the order they are found. Each pair defines 
     // unallocated, split blocks down the tree.
@@ -263,7 +288,7 @@ public:
     void allocate
         (
             ID3D12Device* pDevice, 
-            MemoryResource** ppResource, 
+            MemoryResource* ppResource, 
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
             D3D12_RESOURCE_STATES initState,
@@ -288,6 +313,9 @@ public:
         ) 
     {
         m_garbageIndex = 0;
+        m_memPools.resize(1);
+        m_memPools[0] = new BuddyAllocator();
+        m_memPools[0]->initialize(pDevice, GB_1 * 2ull);
     }
 
 
@@ -296,9 +324,11 @@ public:
             // Device d3d12 native.
             ID3D12Device* pDevice, 
             // Resource usage.
-            ResourceUsage usage,
+            D3D12_HEAP_TYPE heapType,
             // Initial state of the resource.
             D3D12_RESOURCE_STATES initState,
+            //
+            const D3D12_CLEAR_VALUE* pClearValue,
             // Resource desc. 
             const D3D12_RESOURCE_DESC& desc
         ) 
@@ -308,9 +338,12 @@ public:
         
         for (U32 i = 0; i < m_memPools.size(); ++i) {
             D3D12_HEAP_DESC heapDesc = m_memPools[i]->getDesc();
-            
         }
-        return pResource; 
+
+        MemoryResource memResource = { };
+        m_memPools[0]->allocate(pDevice, &memResource, &desc, initState, pClearValue);
+
+        return memResource._pResource; 
     }
 
     void free
