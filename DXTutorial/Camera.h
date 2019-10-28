@@ -13,7 +13,12 @@ using namespace m;
 class Camera {
 public:
   
+  void initialize();
+  
+  void update();
+
 private:
+  
   R32 m_fov;
   R32 m_zNear;
   R32 m_zFar;

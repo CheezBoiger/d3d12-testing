@@ -20,6 +20,7 @@
 #include "../BackendRenderer.h"
 
 #include <vector>
+#include <map>
 
 #define KB_1 (1024)
 #define MB_1 (1024 * 1024)
@@ -100,7 +101,9 @@ public:
             // description struct request, as input.
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
-            D3D12_RESOURCE_STATES initState
+            D3D12_RESOURCE_STATES initState,
+            // Clear value default.
+            const D3D12_CLEAR_VALUE* clearValue
         ) 
     { 
     }
@@ -155,18 +158,59 @@ public:
             // Description of the resource allocation request as input. 
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
-            D3D12_RESOURCE_STATES initState
+            D3D12_RESOURCE_STATES initState,
+            //
+            const D3D12_CLEAR_VALUE* clearValue
         ) override 
     { 
         size_t bytesRequested = pDesc->Width * pDesc->Height * pDesc->DepthOrArraySize;
         // determine order.
+        U64 minU = 1ull << (m_maxOrder - 1);
         U64 order = 0;
-        for (U64 i = 1; i < m_maxOrder; ++i) {
+        for (U64 i = 1; i < m_maxOrder; ++i) 
+        {
             U64  bytesNeeded = m_minBlockSz * i;
-            if (bytesNeeded >= bytesRequested) {
+            if (bytesNeeded >= bytesRequested) 
+            {
                 order = i - 1;
                 break;
             }
+        }
+        
+        if (minU < bytesRequested && bytesRequested <= m_maxSzBytes) 
+        {
+            // Allocate the whole block.
+            pDevice->CreatePlacedResource(m_pArena, 
+                                          0, 
+                                          pDesc, 
+                                          initState, 
+                                          clearValue, 
+                                          __uuidof(ID3D12Resource), 
+                                          (void**)ppResource);  
+        } 
+        else 
+        {
+            // Search in the list of free blocks to see if there is already an appropriate sz.
+            if (m_freeBlocks.find(order) != m_freeBlocks.end()) 
+            {
+                // We found a potential large block. Pop the back and assign.
+                BuddyBlock block = m_freeBlocks[order].back();
+                m_freeBlocks[order].pop_back();
+                m_allocatedBlocks.push_back(block._blockId);
+                
+                // Allocate the block, offset should be aligned.
+                pDevice->CreatePlacedResource(m_pArena, 
+                                              block._offset, 
+                                              pDesc, 
+                                              initState, 
+                                              clearValue, 
+                                              __uuidof(ID3D12Resource), 
+                                              (void**)ppResource);
+                return;
+            }
+
+            // Recursively split the heap to find the min size block needed. Keep track of any split blocks.            
+            BuddyBlock block = allocateBlock(order, m_maxOrder, m_maxSzBytes);
         }
     }
 
@@ -176,23 +220,33 @@ public:
     }
 
 private:
-    struct BuddyBlock {
+    
+    struct BuddyBlock 
+    {
         size_t _memSz;
         size_t _offset;
+        size_t _blockId;
     };
 
-    BuddyBlock* m_pRoot;
+    // Split our block until we find a suitable order.
+    BuddyBlock allocateBlock(size_t order, size_t currentOrder, size_t currentSzBytes) 
+    {
+        
+        BuddyBlock b0 = allocateBlock(order, currentOrder - 1, currentSzBytes);
+    }
+    
 
     size_t m_maxOrder;
     size_t m_baseOffset;
     size_t m_minBlockSz;
     size_t m_blockNums;
 
-    // Free blocks stored in the order they are found.
-    std::vector<std::vector<BuddyBlock>> m_freeBlocks;
+    // Free blocks stored in the order they are found. Each pair defines 
+    // unallocated, split blocks down the tree.
+    std::map<U64, std::vector<BuddyBlock>> m_freeBlocks;
 
-    // Allocated blocks.
-    std::vector<BuddyBlock> m_allocatedBlocks;
+    // Allocated blocks. in the heap. values represent block index.
+    std::vector<size_t> m_allocatedBlocks;
 };
 
 
@@ -212,7 +266,9 @@ public:
             MemoryResource** ppResource, 
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
-            D3D12_RESOURCE_STATES initState
+            D3D12_RESOURCE_STATES initState,
+            //
+            const D3D12_CLEAR_VALUE* clearValue
         ) override 
     { 
     }
