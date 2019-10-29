@@ -121,7 +121,8 @@ public:
     void createComputePipelineState(ComputePipeline** pipeline,
                                     const ComputePipelineInfo* pInfo) override { }
 
-    void createRayTracingPipelineState(RayTracingPipeline** pPipeline) override { 
+    void createRayTracingPipelineState(RayTracingPipeline** pPipeline,
+                                       const RayTracingPipelineInfo* pInfo) override { 
         DEBUG("Ray Tracing pipeline not supported for D3D11 context!"); 
     }
 

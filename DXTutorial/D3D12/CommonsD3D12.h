@@ -18,3 +18,10 @@
 #else
 #define DX12ASSERT(x) x
 #endif
+
+// Five new shaders introduced to the pipeline.
+#define RAYTRACING_RAYGEN_NAME "raygeneration"
+#define RAYTRACING_INTERSECTION_NAME "intersection"
+#define RAYTRACING_MISS_NAME "miss"
+#define RAYTRACING_CLOSESTHIT_NAME "closesthit"
+#define RAYTRACING_ANYHIT_NAME "anyhit"

@@ -405,6 +405,45 @@ struct InputLayoutInfo
 };
 
 
+enum RayTracingHitGroupType
+{
+    RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE,
+    RAYTRCAING_HITGROUP_TYPE_TRIANGLES
+};
+
+
+enum RayTracingShader
+{
+    RAYTRACING_SHADER_RAYGEN = 0,
+    RAYTRACING_SHADER_INTERSECTION = (RAYTRACING_SHADER_RAYGEN + 1),
+    RAYTRACING_SHADER_MISS = (RAYTRACING_SHADER_INTERSECTION + 1),
+    RAYTRACING_SHADER_CLOSESTHIT = (RAYTRACING_SHADER_MISS + 1),
+    RAYTRACING_SHADER_ANYHIT = (RAYTRACING_SHADER_CLOSESTHIT + 1),
+    RAYTRACING_SHADER_END = (RAYTRACING_SHADER_ANYHIT + 1)
+};
+
+
+struct RayTracingPipelineInfo
+{
+    RootSignature* pGlobalRootSignature;
+
+    // Local Root signatures define which shaders can have unique arguments passed. 
+    RootSignature* pLocalRootSignatures [RAYTRACING_SHADER_END];
+    // Names of the entry points for the shader. Each name corresponds to the 
+    // entry point of each shader type denoted by semantics in shader code.
+    wchar_t* shaderNames                [RAYTRACING_SHADER_END];
+    // Name of the hit group, which defines the group within aabb or geometry that is intersected by a ray. Hitgroup interesected will execute shaders associated with it.
+    wchar_t* hitGroupName;
+    ShaderByteCode fullShaderCode;
+    RayTracingHitGroupType hitGroupType;
+    // Size of the payload.
+    UINT payloadSzBytes;
+    // Size of the attribute.
+    UINT attribSzBytes;
+    UINT maxRecursionDepth;
+};
+
+
 struct GraphicsPipelineInfo 
 {
   PrimitiveTopology _topology;
@@ -590,7 +629,8 @@ public:
                                              const GraphicsPipelineInfo* pInfo) { }
     virtual void createComputePipelineState(ComputePipeline** pipeline,
                                             const ComputePipelineInfo* pInfo) { }
-    virtual void createRayTracingPipelineState(RayTracingPipeline** ppPipeline) { }
+    virtual void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
+                                               const RayTracingPipelineInfo* pInfo) { }
 
     // creates acceleration structure for hardware ray tracing.
     virtual void createAccelerationStructure(Resource** ppResource) { }

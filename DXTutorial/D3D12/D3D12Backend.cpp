@@ -181,6 +181,16 @@ D3D12_INPUT_CLASSIFICATION getD3D12InputClassification(InputClassification c)
 }
 
 
+D3D12_HIT_GROUP_TYPE getHitGroupType(RayTracingHitGroupType type)
+{
+    switch (type) {
+        case RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE: return D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE; 
+        case RAYTRCAING_HITGROUP_TYPE_TRIANGLES:
+        default: return D3D12_HIT_GROUP_TYPE_TRIANGLES;
+    }
+}
+
+
 void processRasterizationState(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, 
                                const RasterizationStateInfo& rasterState)
 {
@@ -1096,7 +1106,7 @@ void D3D12Backend::createComputePipelineState(ComputePipeline** ppPipeline,
 }
 
 
-void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline)
+void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline, const RayTracingPipelineInfo* pInfo)
 {
     if (!m_hardwareRaytracingCompatible) {
         DEBUG("ERROR: This GPU is not compatible for hardware ray tracing! Skipping: ", __FUNCTION__);
@@ -1112,7 +1122,40 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
     desc.DXILLibrary.BytecodeLength = byteCode.BytecodeLength;
     desc.DXILLibrary.pShaderBytecode = byteCode.pShaderBytecode;
 
-   D3D12_EXPORT_DESC ex = { };
+    U32 numShaders = 0;
+    for (U32 i = 0; i < RAYTRACING_SHADER_END; ++i) {
+        if (pInfo->shaderNames[i]) numShaders++;
+    }
 
+    std::vector<D3D12_EXPORT_DESC> exports(numShaders);
+    desc.NumExports = numShaders;
+    desc.pExports = exports.data();
+
+    {
+        U32 count = 0;
+        for (U32 i = 0; i < RAYTRACING_SHADER_END; ++i) {
+            if (pInfo->shaderNames[i])
+                exports[count++].Name = pInfo->shaderNames[i];
+            
+        }
+    }
+
+    D3D12_HIT_GROUP_DESC hitGroup = { };
+    hitGroup.Type = getHitGroupType(pInfo->hitGroupType);
+    hitGroup.AnyHitShaderImport = pInfo->shaderNames[RAYTRACING_SHADER_ANYHIT];
+    hitGroup.ClosestHitShaderImport = pInfo->shaderNames[RAYTRACING_SHADER_CLOSESTHIT];
+    hitGroup.IntersectionShaderImport = pInfo->shaderNames[RAYTRACING_SHADER_INTERSECTION];
+    hitGroup.HitGroupExport = pInfo->hitGroupName;
+
+    D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = { };
+    D3D12_GLOBAL_ROOT_SIGNATURE globalRootSig = { };
+    D3D12_LOCAL_ROOT_SIGNATURE localRootSig = { };
+
+    for (U32 i = 0; i < RAYTRACING_SHADER_END; ++i) {
+        RootSignature* pLocalRootSig = pInfo->pLocalRootSignatures[i];
+        if (!pLocalRootSig) continue;
+        ID3D12RootSignature* pSignature = getRootSignature(pLocalRootSig->getUUID());
+        
+    }
 }
 } // gfx

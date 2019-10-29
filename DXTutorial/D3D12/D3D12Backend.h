@@ -145,7 +145,8 @@ public:
 
     void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
     void destroyCommandList(CommandList* pList) override;
-    void createRayTracingPipelineState(RayTracingPipeline** ppPipeline) override;
+    void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
+                                       const RayTracingPipelineInfo* pInfo) override;
 
     void createSampler(Sampler** sampler) override { }
     void destroySampler(Sampler* sampler) override { }
