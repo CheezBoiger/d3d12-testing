@@ -145,7 +145,7 @@ public:
         for (U64 i = 0; i < 64; ++i) {
             U64 p = 1ull << i;
             if (p >= regionSzBytes) {
-                m_maxOrder = i;
+                m_maxOrder = i - 1 - 16;
                 break;
             }
         }
@@ -169,14 +169,14 @@ public:
     { 
         size_t bytesRequested = pDesc->Width * pDesc->Height * pDesc->DepthOrArraySize;
         // determine order.
-        U64 minU = 1ull << (m_maxOrder - 1);
+        U64 minU = m_minBlockSz * (1ull << (m_maxOrder - 1));
         U64 order = 0;
         for (U64 i = 1; i < m_maxOrder; ++i) 
         {
-            U64  bytesNeeded = m_minBlockSz * i;
+            U64  bytesNeeded = m_minBlockSz * (1ull<<(i-1ull));
             if (bytesNeeded >= bytesRequested) 
             {
-                order = i - 1;
+                order = i - 1ull;
                 break;
             }
         }
@@ -200,7 +200,7 @@ public:
                 // We found a potential large block. Pop the back and assign.
                 BuddyBlock block = m_freeBlocks[order].back();
                 m_freeBlocks[order].pop_back();
-                m_allocatedBlocks.push_back(block._blockId);
+                m_allocatedBlocks[order].push_back(block);
                 
                 // Allocate the block, offset should be aligned.
                 DX12ASSERT(pDevice->CreatePlacedResource(m_pArena, 
@@ -214,7 +214,7 @@ public:
             }
 
             // Recursively split the heap to find the min size block needed. Keep track of any split blocks.            
-            BuddyBlock* pb = allocateBlock(order, m_maxOrder, 0, m_maxSzBytes);
+            BuddyBlock* pb = splitBlock(order, m_maxOrder, 0, m_maxSzBytes);
             DX12ASSERT(pDevice->CreatePlacedResource(m_pArena, 
                                                      pb->_offset, 
                                                      pDesc, 
@@ -240,22 +240,40 @@ private:
     };
 
     // Split our block until we find a suitable order.
-    BuddyBlock* allocateBlock(size_t order, I32 currentOrder, size_t start, size_t end) 
+    BuddyBlock* splitBlock(size_t order, I32 currentOrder, size_t start, size_t end) 
     {
+        if (start > end) return nullptr;
+
         size_t midBytes = (end - start) / 2;
 
         BuddyBlock b0; b0._memSz = midBytes; b0._offset = start; b0._blockId = m_currBlockId++;
         BuddyBlock b1; b1._memSz = midBytes; b1._offset = midBytes; b1._blockId = m_currBlockId++;
 
-        m_freeBlocks[currentOrder].push_back(b0);
         m_freeBlocks[currentOrder].push_back(b1);
+        m_freeBlocks[currentOrder].push_back(b0);
 
-        if (currentOrder == order) return &m_freeBlocks[currentOrder].back();
+        if (currentOrder == order) {
+            BuddyBlock block = m_freeBlocks[currentOrder].back();
+            m_freeBlocks[currentOrder].pop_back();
+            m_allocatedBlocks[currentOrder].push_back(block);
+            return &m_allocatedBlocks[currentOrder].back(); 
+        }
 
-        BuddyBlock* pb0 = allocateBlock(order, currentOrder - 1, start, midBytes);
-        //BuddyBlock* pb1 = allocateBlock(order, currentOrder - 1, midBytes, end);
+        // Remove one of the blocks, we are splitting it.
+        if (!m_freeBlocks[currentOrder].empty()) {
+            m_freeBlocks[currentOrder].pop_back();
+            BuddyBlock* pb0 = splitBlock(order, currentOrder - 1, start, midBytes);
+            if (pb0) return pb0;
+        }
 
-        return pb0;
+        // Remove the other block too if we split it.
+        if (!m_freeBlocks[currentOrder].empty()) {
+            m_freeBlocks[currentOrder].pop_back();
+            BuddyBlock* pb1 = splitBlock(order, currentOrder - 1, midBytes, end);
+        if (pb1) return pb1;
+        }
+
+        return nullptr;
     }
     
 
@@ -271,7 +289,7 @@ private:
     std::map<U64, std::vector<BuddyBlock>> m_freeBlocks;
 
     // Allocated blocks. in the heap. values represent block index.
-    std::vector<size_t> m_allocatedBlocks;
+    std::map<U64, std::vector<BuddyBlock>> m_allocatedBlocks;
 };
 
 

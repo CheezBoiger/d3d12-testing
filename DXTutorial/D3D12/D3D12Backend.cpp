@@ -585,6 +585,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
                                                  &alloc, 
                                                  __uuidof(ID3D12Resource), 
                                                  (void**)&pResource); 
+    desc.Width = KB_1 * 128ull;
     pCustomMemoryAllocator->allocate(m_pDevice, allocDesc.HeapType, state, pClearValue, desc);
     DX12ASSERT(result);
 
