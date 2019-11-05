@@ -116,6 +116,14 @@ class Fence : public GPUObject
 };
 
 
+enum CommandQueueType
+{
+    COMMAND_QUEUE_TYPE_DIRECT,
+    COMMAND_QUEUE_TYPE_COMPUTE,
+    COMMAND_QUEUE_TYPE_BUNDLE
+};
+
+
 class CommandQueue : public GPUObject
 {
 };
@@ -360,6 +368,15 @@ struct RenderTargetBlend
   BlendOp _blendOpAlpha;
   LogicOp _logicOp;
   U8 _renderTargetWriteMask;
+};
+
+
+enum AccelerationStructureType
+{
+    // Top Level acceleration structure for instanced geometry and the overall scene.
+    ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL,
+    // Bottom level acceleration structure for all geometry in the scene.
+    ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL
 };
 
 
@@ -617,7 +634,7 @@ public:
                                U32 depth = 1,
                                U32 structureByteStride = 0,
                                const TCHAR* debugName = nullptr) { }
-    virtual void createQueue(CommandQueue** ppQueue) { }
+    virtual void createQueue(CommandQueue** ppQueue, CommandQueueType type) { }
     virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture) { }
     virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture) { }
     virtual void createShaderResourceView(ShaderResourceView** srv, 

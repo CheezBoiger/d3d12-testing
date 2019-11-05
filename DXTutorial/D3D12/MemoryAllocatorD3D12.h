@@ -221,7 +221,7 @@ public:
                                                      initState, 
                                                      clearValue, 
                                                      __uuidof(ID3D12Resource), 
-                                                     (void**)ppResource));
+                                                     (void**)&ppResource->_pResource));
         }
     }
 
@@ -310,15 +310,22 @@ public:
             const D3D12_RESOURCE_DESC* pDesc,
             // Initial state for the resource to allocate as.
             D3D12_RESOURCE_STATES initState,
-            //
+            // clear value optimized as the standard value used to clear this resource, if it is a texture, rendertarget, or something else...
             const D3D12_CLEAR_VALUE* clearValue
         ) override 
     { 
+        size_t szBytesRequested = pDesc->Width * pDesc->Height * pDesc->DepthOrArraySize;
+        if (m_currentOffset < m_maxSzBytes) {
+            pDevice->CreatePlacedResource(m_pArena, m_currentOffset, pDesc, initState, clearValue, __uuidof(ID3D12Resource), (void**)&ppResource->_pResource);
+            m_currentOffset = m_currentOffset + szBytesRequested;
+            
+        }
     }
 
     void free(MemoryResource* pResource) override { }
     void reset() override { }
 private:
+    size_t m_currentOffset;
 };
 
 

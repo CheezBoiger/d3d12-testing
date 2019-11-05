@@ -1113,6 +1113,8 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
         DEBUG("ERROR: This GPU is not compatible for hardware ray tracing! Skipping: ", __FUNCTION__);
     }
 
+    std::vector<D3D12_STATE_SUBOBJECT> rayTracingSubobjects;
+
     ID3D12Device5* dxrDevice;
     m_pDevice->QueryInterface<ID3D12Device5>(&dxrDevice);
     D3D12_STATE_OBJECT_DESC rayTracingPipeline = { };
@@ -1149,14 +1151,37 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
     hitGroup.HitGroupExport = pInfo->hitGroupName;
 
     D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = { };
+    shaderConfig.MaxPayloadSizeInBytes = pInfo->payloadSzBytes;
+    shaderConfig.MaxAttributeSizeInBytes = pInfo->attribSzBytes;
+
     D3D12_GLOBAL_ROOT_SIGNATURE globalRootSig = { };
-    D3D12_LOCAL_ROOT_SIGNATURE localRootSig = { };
+    globalRootSig.pGlobalRootSignature = getRootSignature( pInfo->pGlobalRootSignature->getUUID() );
+
+    // Make some associations.
+    std::vector<D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION> associations;
+    std::vector<D3D12_LOCAL_ROOT_SIGNATURE> localRootSigs;
+    std::vector<D3D12_STATE_SUBOBJECT> stateSubObjects;
 
     for (U32 i = 0; i < RAYTRACING_SHADER_END; ++i) {
         RootSignature* pLocalRootSig = pInfo->pLocalRootSignatures[i];
         if (!pLocalRootSig) continue;
         ID3D12RootSignature* pSignature = getRootSignature(pLocalRootSig->getUUID());
-        
+        {
+            D3D12_LOCAL_ROOT_SIGNATURE localRootSig = { };
+            localRootSig.pLocalRootSignature = pSignature;
+            localRootSigs.push_back(localRootSig);
+        }
+        D3D12_STATE_SUBOBJECT subobj = { };
+        subobj.pDesc = &localRootSigs.back();
+        subobj.Type = D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
+        stateSubObjects.push_back(subobj);
+
+        D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION association = { };
+        association.NumExports = 1;
+        // TODO(): Need to test this.
+        association.pExports = (LPCWSTR*)&pInfo->shaderNames[i];
+        association.pSubobjectToAssociate = &stateSubObjects.back();
+        associations.push_back(association);
     }
 }
 } // gfx
