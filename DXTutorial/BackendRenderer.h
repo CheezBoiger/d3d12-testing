@@ -371,6 +371,18 @@ struct RenderTargetBlend
 };
 
 
+struct AccelerationStructureGeometry
+{
+    Resource* _indexBuffer;
+    U32 _indexCount;
+    DXGI_FORMAT _indexFormat;
+    DXGI_FORMAT _vertexFormat;
+    U32 _vertexCount;
+    Resource* _vertexBuffer;
+    U32 _vertexStrideInBytes;
+};
+
+
 enum AccelerationStructureType
 {
     // Top Level acceleration structure for instanced geometry and the overall scene.
@@ -650,7 +662,8 @@ public:
                                                const RayTracingPipelineInfo* pInfo) { }
 
     // creates acceleration structure for hardware ray tracing.
-    virtual void createAccelerationStructure(Resource** ppResource) { }
+    virtual void createAccelerationStructure(Resource** ppResource, 
+                                             const AccelerationStructureGeometry* geometryinfo) { }
   
     // Machine learning operators for ml assisted rendering.
     virtual void createMLOperator() { }

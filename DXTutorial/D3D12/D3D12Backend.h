@@ -158,6 +158,7 @@ public:
                                      const GraphicsPipelineInfo* pInfo) override;
     void createComputePipelineState(ComputePipeline** ppPipeline,
                                     const ComputePipelineInfo* pInfo) override;
+    void createAccelerationStructure(Resource** pResource, const AccelerationStructureGeometry* geometryInfo) override;
 
     ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
       size_t resourceMax = m_resources[uuid].size(); 
@@ -210,6 +211,10 @@ public:
 
     RendererT getSwapchainQueue() override { return kGraphicsQueueId; }
 
+    ID3D12StateObject* getStateObject(RendererT id) {
+        return m_pStateObjects[id];
+    }
+
 private:
 
     void queryForDevice(IDXGIFactory4* pFactory);
@@ -234,6 +239,7 @@ private:
     std::unordered_map<RendererT, ID3D12CommandQueue*> m_pCommandQueues;
     std::unordered_map<RendererT, ID3D12CommandAllocator*> m_pCommandAllocators;
     std::unordered_map<RendererT, ID3D12PipelineState*> m_pPipelineStates;
+    std::unordered_map<RendererT, ID3D12StateObject*> m_pStateObjects; 
     std::unordered_map<RendererT, ID3D12Fence*> m_fences;
     std::unordered_map<RendererT, HANDLE> m_fenceEvents;
     std::unordered_map<RendererT, U64> m_fenceValues;

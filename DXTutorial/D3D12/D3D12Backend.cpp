@@ -1113,17 +1113,22 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
         DEBUG("ERROR: This GPU is not compatible for hardware ray tracing! Skipping: ", __FUNCTION__);
     }
 
+    // Capture all of our subobjects that we need for our ray tracing pipeline.
+    // this actually sucks.
     std::vector<D3D12_STATE_SUBOBJECT> rayTracingSubobjects;
 
     ID3D12Device5* dxrDevice;
     m_pDevice->QueryInterface<ID3D12Device5>(&dxrDevice);
     D3D12_STATE_OBJECT_DESC rayTracingPipeline = { };
     rayTracingPipeline.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
-    
+
     D3D12_DXIL_LIBRARY_DESC desc = { };
     D3D12_SHADER_BYTECODE byteCode = { };
     desc.DXILLibrary.BytecodeLength = byteCode.BytecodeLength;
     desc.DXILLibrary.pShaderBytecode = byteCode.pShaderBytecode;
+    D3D12_STATE_SUBOBJECT lib;
+    lib.pDesc = &desc;
+    lib.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
 
     U32 numShaders = 0;
     for (U32 i = 0; i < RAYTRACING_SHADER_END; ++i) {
@@ -1143,6 +1148,8 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
         }
     }
 
+    rayTracingSubobjects.push_back(lib);
+
     D3D12_HIT_GROUP_DESC hitGroup = { };
     hitGroup.Type = getHitGroupType(pInfo->hitGroupType);
     hitGroup.AnyHitShaderImport = pInfo->shaderNames[RAYTRACING_SHADER_ANYHIT];
@@ -1150,12 +1157,24 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
     hitGroup.IntersectionShaderImport = pInfo->shaderNames[RAYTRACING_SHADER_INTERSECTION];
     hitGroup.HitGroupExport = pInfo->hitGroupName;
 
+    D3D12_STATE_SUBOBJECT hitSubobj = { };
+    hitSubobj.pDesc = &hitGroup;
+    hitSubobj.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+    rayTracingSubobjects.push_back(hitSubobj);
+
     D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = { };
     shaderConfig.MaxPayloadSizeInBytes = pInfo->payloadSzBytes;
     shaderConfig.MaxAttributeSizeInBytes = pInfo->attribSzBytes;
+    D3D12_STATE_SUBOBJECT shaderconfSubobj = {};
+    shaderconfSubobj.pDesc = &shaderConfig;
+    shaderconfSubobj.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
+    rayTracingSubobjects.push_back(shaderconfSubobj);
 
     D3D12_GLOBAL_ROOT_SIGNATURE globalRootSig = { };
     globalRootSig.pGlobalRootSignature = getRootSignature( pInfo->pGlobalRootSignature->getUUID() );
+    D3D12_STATE_SUBOBJECT globalRootSigSubobj = { };
+    globalRootSigSubobj.pDesc = &globalRootSig;
+    globalRootSigSubobj.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
 
     // Make some associations.
     std::vector<D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION> associations;
@@ -1183,5 +1202,17 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
         association.pSubobjectToAssociate = &stateSubObjects.back();
         associations.push_back(association);
     }
+
+
+    rayTracingPipeline.NumSubobjects = rayTracingSubobjects.size();
+    rayTracingPipeline.pSubobjects = rayTracingSubobjects.data();
+    ID3D12StateObject* pRayTracingPipeline = nullptr;
+    DX12ASSERT(dxrDevice->CreateStateObject(&rayTracingPipeline, 
+                                            __uuidof(ID3D12StateObject), 
+                                            (void**)&pRayTracingPipeline));
+
+    RayTracingPipeline* pPipeline = new RayTracingPipeline();
+    m_pStateObjects[pPipeline->getUUID()] = pRayTracingPipeline;
+    *ppPipeline = pPipeline;
 }
 } // gfx

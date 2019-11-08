@@ -17,6 +17,8 @@ public:
   
   void update();
 
+
+
 private:
   
   R32 m_fov;
@@ -24,7 +26,9 @@ private:
   R32 m_zFar;
   R32 m_aspect;
 
-  Matrix44 m_projection;
+  // Projection matrix.
+  Matrix44 m_viewToClip;
+  // View matrix.
   Matrix44 m_worldToView;  
 };
 } // jcl
