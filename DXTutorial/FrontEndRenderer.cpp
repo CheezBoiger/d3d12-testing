@@ -11,15 +11,16 @@ namespace jcl {
 
 struct Vertex {
   Vector4 pos;
+  Vector4 normal;
+  Vector4 tangent;
   Vector4 texCoords;
-  Vector4 color;
 };
 
 
 Vertex triangle[3] = {
-  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
 };
 
 
@@ -310,10 +311,10 @@ void FrontEndRenderer::createGraphicsPipelines()
   gfx::ShaderByteCode pixBytecode;
   vertBytecode._pByteCode = new I8[1024 * 1024 * 5];
   pixBytecode._pByteCode = new I8[1024 * 1024 * 5];
-  retrieveShader("PreZPass.vert.cso",
+  retrieveShader("PreZPass.vs.cso",
                  &vertBytecode._pByteCode,
                  vertBytecode._szBytes);
-  retrieveShader("PreZPass.cso",
+  retrieveShader("PreZPass.ps.cso",
                  &pixBytecode._pByteCode,
                  pixBytecode._szBytes);
 
