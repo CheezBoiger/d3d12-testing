@@ -383,15 +383,6 @@ struct AccelerationStructureGeometry
 };
 
 
-enum AccelerationStructureType
-{
-    // Top Level acceleration structure for instanced geometry and the overall scene.
-    ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL,
-    // Bottom level acceleration structure for all geometry in the scene.
-    ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL
-};
-
-
 struct BlendStateInfo
 {
   B8 _alphaToCoverageEnable;
@@ -662,8 +653,10 @@ public:
                                                const RayTracingPipelineInfo* pInfo) { }
 
     // creates acceleration structure for hardware ray tracing.
-    virtual void createAccelerationStructure(Resource** ppResource, 
-                                             const AccelerationStructureGeometry* geometryinfo) { }
+    virtual void createBottomLevelAccelerationStructure(Resource** ppResource, 
+                                                        const AccelerationStructureGeometry* geometryinfo) { }
+
+    virtual void createTopLevelAccelerationStructure(Resource** ppResource) { }
   
     // Machine learning operators for ml assisted rendering.
     virtual void createMLOperator() { }

@@ -1215,4 +1215,23 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
     m_pStateObjects[pPipeline->getUUID()] = pRayTracingPipeline;
     *ppPipeline = pPipeline;
 }
+
+void D3D12Backend::createBottomLevelAccelerationStructure(Resource** ppResource, const AccelerationStructureGeometry* geometryInfo)
+{
+    ID3D12Device5* dxrDevice;
+    m_pDevice->QueryInterface<ID3D12Device5>(&dxrDevice);
+
+    D3D12_RAYTRACING_GEOMETRY_DESC geom = {};
+    geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
+    input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+}
+
+
+void D3D12Backend::createTopLevelAccelerationStructure(Resource** ppResource)
+{
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
+    input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+}
 } // gfx

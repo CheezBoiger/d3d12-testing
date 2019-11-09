@@ -358,8 +358,8 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._blendState._renderTargets[0]._renderTargetWriteMask = gfx::COLOR_WRITE_ENABLE_ALL;
   
 
-  std::vector<gfx::InputElementInfo> elements(3);
-  std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TEXCOORD" };
+  std::vector<gfx::InputElementInfo> elements(4);
+  std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TANGENT", "TEXCOORD" };
   U32 offset = 0;
   for (size_t i = 0; i < elements.size(); ++i) {
     elements[i]._alignedByteOffset = offset;

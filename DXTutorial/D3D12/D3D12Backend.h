@@ -158,7 +158,9 @@ public:
                                      const GraphicsPipelineInfo* pInfo) override;
     void createComputePipelineState(ComputePipeline** ppPipeline,
                                     const ComputePipelineInfo* pInfo) override;
-    void createAccelerationStructure(Resource** pResource, const AccelerationStructureGeometry* geometryInfo) override;
+    void createBottomLevelAccelerationStructure(Resource** pResource,
+                                     const AccelerationStructureGeometry* geometryInfo) override;
+    void createTopLevelAccelerationStructure(Resource** ppResource) override;
 
     ID3D12Resource* getResource(RendererT uuid, size_t resourceIdx = 0xffffffffffffffffull) {
       size_t resourceMax = m_resources[uuid].size(); 
