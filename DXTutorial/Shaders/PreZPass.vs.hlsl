@@ -13,7 +13,7 @@ cbuffer PerMesh : register (b1)
 #else
     PSInputBasic
 #endif
-    VSMain 
+    main 
     (
         VSInputGeometry VertexInput
     )

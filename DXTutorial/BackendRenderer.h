@@ -358,28 +358,57 @@ enum ColorWriteEnable
 
 struct RenderTargetBlend
 {
-  B8 _blendEnable;
-  B8 _logicOpEnable;
-  Blend _srcBlend;
-  Blend _dstBlend;
-  BlendOp _blendOp;
-  Blend _srcBlendAlpha;
-  Blend _dstBlendAlpha;
-  BlendOp _blendOpAlpha;
-  LogicOp _logicOp;
-  U8 _renderTargetWriteMask;
+    B8 _blendEnable;
+    B8 _logicOpEnable;
+    Blend _srcBlend;
+    Blend _dstBlend;
+    BlendOp _blendOp;
+    Blend _srcBlendAlpha;
+    Blend _dstBlendAlpha;
+    BlendOp _blendOpAlpha;
+    LogicOp _logicOp;
+    U8 _renderTargetWriteMask;
 };
 
 
-struct AccelerationStructureGeometry
+enum RayTracingHitGroupType
 {
-    Resource* _indexBuffer;
-    U32 _indexCount;
-    DXGI_FORMAT _indexFormat;
-    DXGI_FORMAT _vertexFormat;
-    U32 _vertexCount;
-    Resource* _vertexBuffer;
-    U32 _vertexStrideInBytes;
+    RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE,
+    RAYTRACING_HITGROUP_TYPE_TRIANGLES
+};
+
+
+struct AccelerationStructureInputs
+{
+};
+
+
+struct AccelerationStructureGeometry : public AccelerationStructureInputs
+{
+    RayTracingHitGroupType _type;
+    union {
+        struct {
+            Resource* _aabbResource;
+            U32 _count;
+            U32 strideInBytes;
+        } aabbs;
+        struct {
+            Resource* _indexBuffer;
+            Resource* _vertexBuffer;
+            U32 strideInBytes;
+            U32 _indexCount;
+            DXGI_FORMAT _indexFormat;
+            DXGI_FORMAT _vertexFormat;
+            U32 _vertexCount;
+            U32 _vertexStrideInBytes;
+        } _tris;
+    };
+};
+
+
+struct AccelerationStructureTopLevelInfo : public AccelerationStructureInputs
+{
+    U32 _instances;
 };
 
 
@@ -422,13 +451,6 @@ struct InputLayoutInfo
 {
   InputElementInfo* _pInputElements;
   U32 _elementCount;
-};
-
-
-enum RayTracingHitGroupType
-{
-    RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE,
-    RAYTRCAING_HITGROUP_TYPE_TRIANGLES
 };
 
 
@@ -656,7 +678,8 @@ public:
     virtual void createBottomLevelAccelerationStructure(Resource** ppResource, 
                                                         const AccelerationStructureGeometry* geometryinfo) { }
 
-    virtual void createTopLevelAccelerationStructure(Resource** ppResource) { }
+    virtual void createTopLevelAccelerationStructure(Resource** ppResource,
+                                                     const AccelerationStructureTopLevelInfo* info) { }
   
     // Machine learning operators for ml assisted rendering.
     virtual void createMLOperator() { }
@@ -695,14 +718,16 @@ public:
     virtual void createFence(Fence** ppFence) { }
     virtual void destroyFence(Fence* pFence) { }
 
-    bool isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
-    bool isHardwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }
+    B32 isHardwareRaytracingCompatible() const { return m_hardwareRaytracingCompatible; }
+    B32 isHardwareMachineLearningCompatible() const { return m_harwareMachineLearningCompatible; }
+    B32 isHardwareMeshShadingCompatible() const { return m_hardwareMeshShadingCompatible; }
 
 protected:
 
     IDXGISwapChain1* m_pSwapChain;
     B32 m_hardwareRaytracingCompatible;
     B32 m_harwareMachineLearningCompatible;
+    B32 m_hardwareMeshShadingCompatible;
 };
 
 } // gfx
