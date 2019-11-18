@@ -24,8 +24,6 @@ struct RenderPassD3D12 : public RenderPass {
     _depthStencilResourceId = depthstencil;
   }
 
-  void finalize() override {};
-
   DepthStencilView* _depthStencilResourceId;
   std::vector<RenderTargetView*> _renderTargetViews;
 };

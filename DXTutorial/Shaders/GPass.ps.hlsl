@@ -8,12 +8,6 @@ cbuffer Global : register (b0)
 };
 
 
-cbuffer PerMesh : register (b1)
-{
-    MeshTransforms Mesh;
-};
-
-
 cbuffer PerMaterial : register (b2)
 {
     MeshMaterials Material;
@@ -34,8 +28,8 @@ PSOutputGBuffer main ( PSInputGeometry Input )
     float3 BiTangent = Input.BiTangent.xyz;
     float3 Normal = Input.Normal.xyz;
 
-    float3 AlbedoColor = AlbedoMap.Sample( SurfaceSampler, Input.TexCoords.xy );
-    float3 NormalColor = NormalMap.Sample( SurfaceSampler, Input.TexCoords.xy );
+    float3 AlbedoColor = AlbedoMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
+    float3 NormalColor = NormalMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
     float4 RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
     float4 EmissionColor = EmissionMap.Sample( SurfaceSampler, Input.TexCoords.xy );
 

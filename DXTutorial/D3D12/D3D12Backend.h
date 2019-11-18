@@ -148,7 +148,7 @@ public:
     void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
                                        const RayTracingPipelineInfo* pInfo) override;
 
-    void createSampler(Sampler** sampler) override { }
+    void createSampler(Sampler** sampler, const SamplerDesc* pDesc) override;
     void destroySampler(Sampler* sampler) override { }
     void createDescriptorTable(DescriptorTable** table) override;
     void destroyDescriptorTable(DescriptorTable* table) override { }
@@ -218,6 +218,10 @@ public:
         return m_pStateObjects[id];
     }
 
+    D3D12_CPU_DESCRIPTOR_HANDLE getSamplerDescriptorHandle(RendererT key) {
+        return m_samplers[key];
+    }
+
 private:
 
     void queryForDevice(IDXGIFactory4* pFactory);
@@ -250,6 +254,7 @@ private:
     std::unordered_map<DescriptorHeapT, D3D12_CPU_DESCRIPTOR_HANDLE> m_descriptorHeapCurrentOffset; 
     std::unordered_map<RendererT, D3D12_VERTEX_BUFFER_VIEW> m_vertexBufferViews;
     std::unordered_map<RendererT, D3D12_INDEX_BUFFER_VIEW> m_indexBufferViews;
+    std::unordered_map<RendererT, D3D12_CPU_DESCRIPTOR_HANDLE> m_samplers;
 
     MemoryAllocatorD3D12 m_memAllocator;
     ID3D12Device* m_pDevice;

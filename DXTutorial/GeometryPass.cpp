@@ -12,7 +12,7 @@ void GeometryPass::initialize
 {
     pBackend->createRootSignature(&m_pRootSignature);
 
-    gfx::PipelineLayout pLayouts[3] = { };
+    gfx::PipelineLayout pLayouts[5] = { };
     pLayouts[0]._numConstantBuffers = 1;
     pLayouts[0]._type = gfx::PIPELINE_LAYOUT_TYPE_CBV;
 
@@ -22,7 +22,13 @@ void GeometryPass::initialize
     pLayouts[2]._numConstantBuffers = 1;
     pLayouts[2]._type = gfx::PIPELINE_LAYOUT_TYPE_CBV;
 
-    m_pRootSignature->initialize(gfx::SHADER_VISIBILITY_PIXEL | gfx::SHADER_VISIBILITY_VERTEX, pLayouts, 3);
+    pLayouts[3]._numSamplers = 1;
+    pLayouts[3]._type = gfx::PIPELINE_LAYOUT_TYPE_SAMPLERS;
+
+    pLayouts[4]._numShaderResourceViews = 4;
+    pLayouts[4]._type = gfx::PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE;
+
+    m_pRootSignature->initialize(gfx::SHADER_VISIBILITY_PIXEL | gfx::SHADER_VISIBILITY_VERTEX, pLayouts, 5);
 
     gfx::GraphicsPipelineInfo pipeInfo = { };
     pipeInfo._pRootSignature = m_pRootSignature;
@@ -36,9 +42,11 @@ void GeometryPass::initialize
     pipeInfo._depthStencilState._depthEnable = true;
     pipeInfo._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_EQUAL;
     pipeInfo._depthStencilState._depthWriteMask  = gfx::DEPTH_WRITE_MASK_ZERO;
-
-    pipeInfo._pixelShader;
-    pipeInfo._vertexShader;
+    
+    pipeInfo._pixelShader._pByteCode = new I8[1024* 1024 * 5];
+    pipeInfo._vertexShader._pByteCode = new I8[1024 * 1024 * 5];
+    retrieveShader("GeometryTransform.vs.cso", &pipeInfo._vertexShader._pByteCode, pipeInfo._vertexShader._szBytes);
+    retrieveShader("GPass.ps.cso", &pipeInfo._pixelShader._pByteCode, pipeInfo._pixelShader._szBytes);
 
     pipeInfo._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
     pipeInfo._rtvFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -59,7 +67,7 @@ void GeometryPass::initialize
     pipeInfo._rasterizationState._conservativeRasterizationEnable = false;
     pipeInfo._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
     pipeInfo._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
-    pipeInfo._rasterizationState._forcedSampleCount = 1;
+    pipeInfo._rasterizationState._forcedSampleCount = 0;
     pipeInfo._rasterizationState._frontCounterClockwise = false;
     pipeInfo._rasterizationState._depthClipEnable = false;
     pipeInfo._rasterizationState._depthBias = 0.0f;
@@ -67,8 +75,8 @@ void GeometryPass::initialize
     // 16bit index buffers passed?
     pipeInfo._ibCutValue = gfx::IB_CUT_VALUE_CUT_0xFFFF;
 
-    std::vector<gfx::InputElementInfo> elements(3);
-    std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TEXCOORD" };
+    std::vector<gfx::InputElementInfo> elements(4);
+    std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TANGENT", "TEXCOORD" };
     U32 offset = 0;
     for (size_t i = 0; i < elements.size(); ++i) {
         elements[i]._alignedByteOffset = offset;
@@ -84,6 +92,9 @@ void GeometryPass::initialize
     pipeInfo._inputLayout._pInputElements = elements.data();
 
     pBackend->createGraphicsPipelineState(&m_pPSO, &pipeInfo);
+
+    delete[] pipeInfo._pixelShader._pByteCode;
+    delete[] pipeInfo._vertexShader._pByteCode;
 }
 
 
@@ -123,8 +134,8 @@ void GeometryPass::generateCommands
     for (U32 i = 0; i < meshCount; ++i) {
         RenderUUID meshUUID = pMeshes[i]._meshDescriptor;
         RenderUUID matUUID = pMeshes[i]._materialDescriptor;
-        RenderUUID vertUUID = pMeshes[i]._vertexBuffer;
-        RenderUUID indUUID = pMeshes[i]._indexBuffer;
+        RenderUUID vertUUID = pMeshes[i]._vertexBufferView;
+        RenderUUID indUUID = pMeshes[i]._indexBufferView;
 
         gfx::Resource* pMeshDescriptor = pRenderer->getResource(meshUUID);
         gfx::Resource* pMatDescriptor = pRenderer->getResource(matUUID);
@@ -132,10 +143,10 @@ void GeometryPass::generateCommands
         gfx::VertexBufferView* pView = pRenderer->getVertexBufferView(vertUUID);
 
         pList->setGraphicsRootConstantBufferView(MESH_TRANSFORM_SLOT, pMeshDescriptor);
-        pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
+        //pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
 
         pList->setVertexBuffers(0, &pView, 1);
-        pList->drawInstanced(pMeshes[i]._vertCount, pMeshes[i]._vertInst, 0, 0);
+        pList->drawInstanced(pMeshes[i]._vertCount, pMeshes[i]._vertInst, pMeshes[i]._startVert, 0);
     }
 }
 } // jcl

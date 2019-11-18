@@ -161,6 +161,63 @@ D3D12_COMPARISON_FUNC getComparisonFunc(ComparisonFunc func)
 }
 
 
+D3D12_FILTER getNativeFilter(SamplerFilter filter)
+{
+    switch (filter) {
+        case SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MIN_POINT_MAG_MIP_LINEAR: return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_MIN_LINEAR_MAG_MIP_POINT: return D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+        case SAMPLER_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MIN_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MIN_MAG_MIP_LINEAR: return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_ANISOTROPIC: return D3D12_FILTER_ANISOTROPIC;
+        case SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_POINT: return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+        case SAMPLER_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR: return D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT: return D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT;
+        case SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR: return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;   
+        case SAMPLER_FILTER_COMPARISON_ANISOTROPIC: return D3D12_FILTER_COMPARISON_ANISOTROPIC;
+        case SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_POINT: return D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT;
+        case SAMPLER_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR: return D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT: return D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT;
+        case SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR: return D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_MINIMUM_ANISOTROPIC: return D3D12_FILTER_MINIMUM_ANISOTROPIC;
+        case SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_POINT: return D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT;
+        case SAMPLER_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR: return D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT: return D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT;
+        case SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR: return D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+        case SAMPLER_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT: return D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT;
+        case SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR: return D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR;
+        case SAMPLER_FILTER_MAXIMUM_ANISOTROPIC: return D3D12_FILTER_MAXIMUM_ANISOTROPIC;
+        case SAMPLER_FILTER_MIN_MAG_MIP_POINT: 
+        default: return D3D12_FILTER_MIN_MAG_MIP_POINT;
+    }   
+}   
+
+
+D3D12_TEXTURE_ADDRESS_MODE getNativeTextureAddress(SamplerAddressMode mode)
+{
+    switch (mode) {
+        case SAMPLER_ADDRESS_MODE_BORDER: return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+        case SAMPLER_ADDRESS_MODE_MIRROR: return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+        case SAMPLER_ADDRESS_MODE_MIRROR_ONCE: return D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE;
+        case SAMPLER_ADDRESS_MODE_WRAP: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        case SAMPLER_ADDRESS_MODE_CLAMP: 
+        default: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    }
+}
+
+
 D3D12_DEPTH_WRITE_MASK getDepthWriteMask(DepthWriteMask mask)
 {
   switch (mask) {
@@ -1093,11 +1150,14 @@ void D3D12Backend::createGraphicsPipelineState(GraphicsPipeline** ppPipeline,
 void D3D12Backend::createComputePipelineState(ComputePipeline** ppPipeline,
                                               const ComputePipelineInfo* pInfo)
 {
-  *ppPipeline = new ComputePipelineStateD3D12();
+    *ppPipeline = new ComputePipelineStateD3D12();
 
-  D3D12_COMPUTE_PIPELINE_STATE_DESC compDesc = { };
+    D3D12_COMPUTE_PIPELINE_STATE_DESC compDesc = { };
+    compDesc.pRootSignature = getRootSignature(pInfo->_pRootSignature->getUUID());
+    compDesc.CS.BytecodeLength = pInfo->_computeShader._szBytes;
+    compDesc.CS.pShaderBytecode = pInfo->_computeShader._pByteCode;
 
-  ID3D12PipelineState* pPipelineState = nullptr;
+    ID3D12PipelineState* pPipelineState = nullptr;
 
   DX12ASSERT(m_pDevice->CreateComputePipelineState(&compDesc, 
                                                    __uuidof(ID3D12PipelineState), 
@@ -1267,5 +1327,32 @@ void D3D12Backend::createTopLevelAccelerationStructure(Resource** ppResource,
 {
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
     input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+}
+
+
+void D3D12Backend::createSampler(Sampler** ppSampler, const SamplerDesc* pDesc)
+{
+    D3D12_SAMPLER_DESC desc = { };
+    desc.MaxAnisotropy = pDesc->_maxAnisotropy;
+    desc.MinLOD = pDesc->_minLod;
+    desc.MaxLOD = pDesc->_maxLod;
+    desc.MipLODBias = pDesc->_mipLodBias;
+    desc.Filter = getNativeFilter(pDesc->_filter);
+    desc.AddressU = getNativeTextureAddress(pDesc->_addressU);
+    desc.AddressV = getNativeTextureAddress(pDesc->_addressV);
+    desc.AddressW = getNativeTextureAddress(pDesc->_addressW);
+    desc.BorderColor[0] = pDesc->_borderColor[0];
+    desc.BorderColor[1] = pDesc->_borderColor[1];
+    desc.BorderColor[2] = pDesc->_borderColor[2];
+    desc.BorderColor[3] = pDesc->_borderColor[3];
+
+    D3D12_CPU_DESCRIPTOR_HANDLE heapOffset = m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_SAMPLER];
+    m_pDevice->CreateSampler(&desc, heapOffset);
+
+    UINT atomSz = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_SAMPLER].ptr += atomSz;
+
+    *ppSampler = new Sampler();
+    m_samplers[(*ppSampler)->getUUID()] = heapOffset;
 }
 } // gfx

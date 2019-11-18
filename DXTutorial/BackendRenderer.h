@@ -356,6 +356,72 @@ enum ColorWriteEnable
 };
 
 
+enum SamplerAddressMode
+{
+    SAMPLER_ADDRESS_MODE_BORDER,
+    SAMPLER_ADDRESS_MODE_CLAMP,
+    SAMPLER_ADDRESS_MODE_MIRROR,
+    SAMPLER_ADDRESS_MODE_MIRROR_ONCE,
+    SAMPLER_ADDRESS_MODE_WRAP
+};
+
+
+enum SamplerFilter
+{
+        SAMPLER_FILTER_MIN_MAG_MIP_POINT	= 0,
+        SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR	= 0x1,
+        SAMPLER_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x4,
+        SAMPLER_FILTER_MIN_POINT_MAG_MIP_LINEAR	= 0x5,
+        SAMPLER_FILTER_MIN_LINEAR_MAG_MIP_POINT	= 0x10,
+        SAMPLER_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x11,
+        SAMPLER_FILTER_MIN_MAG_LINEAR_MIP_POINT	= 0x14,
+        SAMPLER_FILTER_MIN_MAG_MIP_LINEAR	= 0x15,
+        SAMPLER_FILTER_ANISOTROPIC	= 0x55,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_POINT	= 0x80,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR	= 0x81,
+        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x84,
+        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR	= 0x85,
+        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT	= 0x90,
+        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x91,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT	= 0x94,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR	= 0x95,
+        SAMPLER_FILTER_COMPARISON_ANISOTROPIC	= 0xd5,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_POINT	= 0x100,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x101,
+        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x104,
+        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x105,
+        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x110,
+        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x111,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x114,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR	= 0x115,
+        SAMPLER_FILTER_MINIMUM_ANISOTROPIC	= 0x155,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_POINT	= 0x180,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x181,
+        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x184,
+        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x185,
+        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x190,
+        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x191,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x194,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR	= 0x195,
+        SAMPLER_FILTER_MAXIMUM_ANISOTROPIC	= 0x1d5
+};
+
+
+struct SamplerDesc
+{
+    SamplerAddressMode _addressU;
+    SamplerAddressMode _addressV;
+    SamplerAddressMode _addressW;
+    R32 _borderColor[4];
+    ComparisonFunc _comparisonFunc;
+    SamplerFilter _filter;    
+    R32 _maxAnisotropy;
+    R32 _minLod;
+    R32 _maxLod;
+    R32 _mipLodBias;
+};
+
+
 struct RenderTargetBlend
 {
     B8 _blendEnable;
@@ -488,29 +554,30 @@ struct RayTracingPipelineInfo
 
 struct GraphicsPipelineInfo 
 {
-  PrimitiveTopology _topology;
-  DXGI_FORMAT _dsvFormat;
-  U32 _numRenderTargets;
-  U32 _sampleMask;
-  DXGI_FORMAT _rtvFormats[8];
-  ShaderByteCode _vertexShader;
-  ShaderByteCode _hullShader;
-  ShaderByteCode _domainShader;
-  ShaderByteCode _geometryShader;
-  ShaderByteCode _pixelShader;
+    PrimitiveTopology _topology;
+    DXGI_FORMAT _dsvFormat;
+    U32 _numRenderTargets;
+    U32 _sampleMask;
+    DXGI_FORMAT _rtvFormats[8];
+    ShaderByteCode _vertexShader;
+    ShaderByteCode _hullShader;
+    ShaderByteCode _domainShader;
+    ShaderByteCode _geometryShader;
+    ShaderByteCode _pixelShader;
 
-  RootSignature* _pRootSignature;
-  RasterizationStateInfo _rasterizationState;
-  DepthStencilStateInfo _depthStencilState;
-  BlendStateInfo _blendState;
-  IBCutValue _ibCutValue;
-  InputLayoutInfo _inputLayout;
+    RootSignature* _pRootSignature;
+    RasterizationStateInfo _rasterizationState;
+    DepthStencilStateInfo _depthStencilState;
+    BlendStateInfo _blendState;
+    IBCutValue _ibCutValue;
+    InputLayoutInfo _inputLayout;
 };
 
 
 struct ComputePipelineInfo 
 {
-  ShaderByteCode _computeShader;
+    ShaderByteCode _computeShader;
+    RootSignature* _pRootSignature;
 };
 
 class GraphicsPipeline : public GPUObject
@@ -548,7 +615,6 @@ class RenderPass : public GPUObject
 public:
     virtual void setRenderTargets(RenderTargetView** pRenderTargets, U32 renderTargetCount) { }
     virtual void setDepthStencil(DepthStencilView* pDepthStencil) { }
-    virtual void finalize() { }
 };
 
 
@@ -705,7 +771,7 @@ public:
     virtual void destroyCommandList(CommandList* pCmdList) { }
     virtual void destroyRenderPass(RenderPass* pPass) { }
 
-    virtual void createSampler(Sampler** sampler) { }
+    virtual void createSampler(Sampler** sampler, const SamplerDesc* pDesc) { }
     virtual void destroySampler(Sampler* sampler) { }
     virtual void destroyDescriptorTable(DescriptorTable* table) { }
 

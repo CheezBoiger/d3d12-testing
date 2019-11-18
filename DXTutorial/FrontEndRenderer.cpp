@@ -68,17 +68,19 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            sizeof(Globals),
                            0, TEXT("Globals"));
 
-  m_pBackend->createBuffer(&pMeshBuffer,
-                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
-                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
-                           sizeof(PerMeshDescriptor), 
-                           0, TEXT("MeshData"));
+    m_pBackend->createBuffer(&pMeshBuffer,
+                                gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                                gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                                sizeof(PerMeshDescriptor), 
+                                0, TEXT("MeshData"));
+    m_pGraphicsResources[pMeshBuffer->getUUID()] = pMeshBuffer;
 
   m_pBackend->createBuffer(&pOtherMeshBuffer,
                            gfx::RESOURCE_USAGE_CPU_TO_GPU,
                            gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                            sizeof(PerMeshDescriptor), 
                            0, TEXT("OtherMeshData"));
+    m_pGraphicsResources[pOtherMeshBuffer->getUUID()] = pOtherMeshBuffer;
 
   m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
                            gfx::RESOURCE_DIMENSION_2D,
@@ -90,7 +92,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            1,
                            0,
                            TEXT("GBufferAlbedo"));
-  m_pBackend->createRenderTargetView(&m_pAlbedoRenderTargetView,
+  m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
                                      m_gbuffer.pAlbedoTexture);
 
   m_pBackend->createDescriptorTable(&m_pConstBufferTable);
@@ -122,11 +124,13 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            sizeof(triangle), 
                            sizeof(Vertex), 
                            TEXT("Triangle"));
+    m_pGraphicsResources[m_pTriangleVertexBuffer->getUUID()] = m_pTriangleVertexBuffer;
 
   m_pBackend->createVertexBufferView(&m_pTriangleVertexBufferView,
                                      m_pTriangleVertexBuffer,
                                      sizeof(Vertex),
                                      sizeof(triangle));
+    m_pVertexBufferViews[m_pTriangleVertexBufferView->getUUID()] = m_pTriangleVertexBufferView;
 
   m_pBackend->createTexture(&m_pSceneDepth,
                             gfx::RESOURCE_DIMENSION_2D,
@@ -140,7 +144,6 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 
   m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
   m_pPreZPass->setDepthStencil(m_pSceneDepthView);
-  m_pPreZPass->finalize();
 
   createGraphicsPipelines();
 
@@ -175,8 +178,12 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_pBackend->destroyCommandList(pList);
   }
 
-  m_geometryPass.setGBuffer(&m_gbuffer);
-  m_geometryPass.initialize(m_pBackend);
+    // Set the scene depth view to be used as read only in gbuffer pass.
+    m_pBackend->createRenderPass(&m_gbuffer.pRenderPass, 4, true);
+    m_gbuffer.pRenderPass->setRenderTargets(&m_gbuffer.pAlbedoRTV, 1);
+    m_gbuffer.pRenderPass->setDepthStencil(m_pSceneDepthView);
+    m_geometryPass.setGBuffer(&m_gbuffer);
+    m_geometryPass.initialize(m_pBackend);
 }
 
 
@@ -212,7 +219,7 @@ void FrontEndRenderer::render()
     m_pList->reset("Cool Comamand List");
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
-    m_pList->clearRenderTarget(m_pAlbedoRenderTargetView, rgba, 1, &rect);
+    m_pList->clearRenderTarget(m_gbuffer.pAlbedoRTV, rgba, 1, &rect);
     m_pList->clearDepthStencil(m_pSceneDepthView, 
                                gfx::CLEAR_FLAG_DEPTH,
                                1.0f, 
@@ -231,13 +238,21 @@ void FrontEndRenderer::render()
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
     m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
     m_pList->setIndexBuffer(nullptr);
-    for (U32 i = 0; i < 1; ++i) {
-      m_pList->setGraphicsRootConstantBufferView(1, pMeshBuffer);
-      m_pList->drawInstanced(3, 1, 0, 0);
+
+    for (U32 i = 0; i < m_opaqueMeshes.size(); ++i) {
+        RenderUUID meshId = m_opaqueMeshes[i]._meshDescriptor;
+        RenderUUID vertId = m_opaqueMeshes[i]._vertexBufferView;
+        RenderUUID indId = m_opaqueMeshes[i]._indexBufferView;
+        gfx::Resource* pMeshDescriptor = getResource(meshId);
+        gfx::VertexBufferView* view = getVertexBufferView(vertId);
+
+        m_pList->setVertexBuffers(0, &view, 1);
+        m_pList->setGraphicsRootConstantBufferView(1, pMeshDescriptor);
+        m_pList->drawInstanced(m_opaqueMeshes[i]._vertCount, m_opaqueMeshes[i]._vertInst, m_opaqueMeshes[i]._startVert, 0);
     }
 
-    m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
-    m_pList->drawInstanced(3, 1, 0, 0);
+    //m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
+    //m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->setMarker("GBuffer Pass");
 
@@ -253,12 +268,21 @@ void FrontEndRenderer::render()
 
 void FrontEndRenderer::beginFrame()
 {
+    GeometryMesh mesh = { };
+    mesh._vertexBufferView = m_pTriangleVertexBufferView->getUUID();
+    mesh._meshDescriptor = pMeshBuffer->getUUID();
+    mesh._startVert = 0;
+    mesh._vertCount = 3;
+    mesh._vertInst = 1;
+    m_opaqueMeshes.push_back(mesh);
 }
 
 
 void FrontEndRenderer::endFrame()
 {
-  m_pBackend->present();
+    m_pBackend->present();
+    m_opaqueMeshes.clear();
+    m_transparentMeshes.clear();
 }
 
 
@@ -382,7 +406,7 @@ void FrontEndRenderer::createGraphicsPipelines()
 }
 
 
-void FrontEndRenderer::retrieveShader(const std::string& filepath,
+void retrieveShader(const std::string& filepath,
                                     void** bytecode,
                                     size_t& length)
 {

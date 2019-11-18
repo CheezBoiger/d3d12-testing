@@ -45,6 +45,10 @@ public:
 
     gfx::IndexBufferView* getIndexBufferView(RenderUUID uuid) { return m_pIndexBufferViews[uuid]; }
 
+    gfx::DepthStencilView* getSceneDepthView() { return m_pSceneDepthView; }
+
+    gfx::ShaderResourceView* getSceneResourceView() { return m_pSceneDepthResourceView; }
+
 private:
     PerMeshDescriptor mm;
     PerMeshDescriptor mm2;
@@ -75,6 +79,17 @@ private:
 
     GeometryPass m_geometryPass;
 
+    // To be run after PreZPass.
+    gfx::ComputePipeline* m_clusterAssignmentPipeline;
+    gfx::ComputePipeline* m_lightAssignmentPipeline;
+
+    // To be Run after Light assignement AND GBuffer pass.
+    gfx::ComputePipeline* m_pLightShadingPipeline;
+
+    // They don't have to be asyncronous.
+    gfx::ComputePipeline* m_pToneMapPipeline;
+    gfx::ComputePipeline* m_motionBlurPipeline;
+
     // Define your transparent meshes, sort them from your opaques.
     std::vector<GeometryMesh> m_transparentMeshes;
 
@@ -88,6 +103,5 @@ private:
     std::unordered_map<RenderUUID, gfx::Resource*> m_pGraphicsResources;
     std::unordered_map<RenderUUID, gfx::VertexBufferView*> m_pVertexBufferViews;
     std::unordered_map<RenderUUID, gfx::IndexBufferView*> m_pIndexBufferViews;
-    void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 };
 } //

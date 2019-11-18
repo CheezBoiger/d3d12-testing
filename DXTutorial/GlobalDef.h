@@ -78,11 +78,12 @@ struct GeometryMesh
  {
     RenderUUID _meshDescriptor;
     RenderUUID _materialDescriptor;
-    RenderUUID _vertexBuffer;
-    RenderUUID _indexBuffer;
+    RenderUUID _vertexBufferView;
+    RenderUUID _indexBufferView;
 
     U32 _vertCount;
     U32 _vertInst;
+    U32 _startVert;
 };
 
 struct RenderGroup 
@@ -99,4 +100,8 @@ struct RenderGroup
     GeometryMesh* _geometryMeshes;
     U32 meshCount;
 };
+
+
+
+void retrieveShader(const std::string& filepath, void** bytecode, size_t& length);
 } // jcl

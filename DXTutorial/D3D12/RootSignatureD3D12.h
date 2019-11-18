@@ -48,8 +48,8 @@ public:
   void initialize(ShaderVisibilityFlags visibleFlags, 
                   PipelineLayout* pLayouts, 
                   U32 numLayouts) override {
-    static D3D12_ROOT_PARAMETER kParameters[128];
-    static D3D12_STATIC_SAMPLER_DESC kStaticSamplerDescs[128];
+    static D3D12_ROOT_PARAMETER kParameters[64];
+    static D3D12_STATIC_SAMPLER_DESC kStaticSamplerDescs[32];
     U32 parameterCount = 0;
 
     std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> kDescriptorRanges(numLayouts);
@@ -57,6 +57,7 @@ public:
     ID3D12RootSignature* pRootSig = nullptr;
     D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
     U32 cbvRegister = 0;
+    U32 srvRegister = 0;
 
     for (U32 i = 0; i < numLayouts; ++i) {
       D3D12_ROOT_PARAMETER rootParam = {};
@@ -84,7 +85,7 @@ public:
             range.NumDescriptors = static_cast<U32>(pLayouts[i]._numShaderResourceViews);
             range.OffsetInDescriptorsFromTableStart =
                 D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            range.BaseShaderRegister = 0;
+            range.BaseShaderRegister = srvRegister++;
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
             range.RegisterSpace = 0;
             kDescriptorRanges[i].push_back(range);
@@ -121,6 +122,12 @@ public:
           rootParam.Descriptor.RegisterSpace = 0;
           rootParam.Descriptor.ShaderRegister = cbvRegister++;
           break;
+        }
+        case D3D12_ROOT_PARAMETER_TYPE_SRV: {
+            rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+            rootParam.Descriptor.RegisterSpace = 0;
+            rootParam.Descriptor.ShaderRegister = srvRegister++;
+            break;
         }
       }
 
