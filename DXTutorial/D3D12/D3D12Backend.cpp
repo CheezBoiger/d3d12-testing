@@ -1276,57 +1276,92 @@ void D3D12Backend::createRayTracingPipelineState(RayTracingPipeline** ppPipeline
     *ppPipeline = pPipeline;
 }
 
-void D3D12Backend::createBottomLevelAccelerationStructure(Resource** ppResource, const AccelerationStructureGeometry* geometryInfo)
+void D3D12Backend::createAccelerationStructure(Resource** ppResource,
+                                const AccelerationStructureGeometry* geometryInfos,
+                                U32 geometryCount,
+                                const AccelerationStructureTopLevelInfo* pTopLevelInfo)
 {
     ID3D12Device5* dxrDevice;
     m_pDevice->QueryInterface<ID3D12Device5>(&dxrDevice);
 
-    D3D12_RAYTRACING_GEOMETRY_DESC geom = {};
-    switch (geometryInfo->_type) 
-    {   
-        case RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE: {
-            ID3D12Resource* pResource = getResource(geometryInfo->aabbs._aabbResource->getUUID());
-            geom.AABBs.AABBCount = geometryInfo->aabbs._count;
+    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geomDescs(geometryCount);
 
-            D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE gpuAddrAndStride = { 
-                pResource->GetGPUVirtualAddress(), 
-                geometryInfo->aabbs.strideInBytes };
+    for (U32 i = 0; i < geometryCount; ++i) {
+        D3D12_RAYTRACING_GEOMETRY_DESC& geom = geomDescs[i];
+        geom = { };
 
-            geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS;
-            geom.AABBs.AABBs = gpuAddrAndStride;
-            break;
-        }
+        switch (geometryInfos[i]._type) 
+        {   
+            case RAYTRACING_HITGROUP_TYPE_PROCEDURAL_PRIMITIVE: 
+            {
+                ID3D12Resource* pResource = getResource(geometryInfos[i].aabbs._aabbResource->getUUID());
+                geom.AABBs.AABBCount = geometryInfos[i].aabbs._count;
+                
+                geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS;
+                geom.AABBs.AABBs.StartAddress = pResource->GetGPUVirtualAddress();
+                geom.AABBs.AABBs.StrideInBytes = geometryInfos[i].aabbs.strideInBytes;
+                break;
+            }
 
-        case RAYTRACING_HITGROUP_TYPE_TRIANGLES:
-        default: {
-            ID3D12Resource* pVertexBuffer = getResource(geometryInfo->_tris._vertexBuffer->getUUID());
-            ID3D12Resource* pIndexBuffer = getResource(geometryInfo->_tris._indexBuffer->getUUID());
-            geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-            geom.Triangles.IndexBuffer = pIndexBuffer->GetGPUVirtualAddress();
-            geom.Triangles.IndexFormat = geometryInfo->_tris._indexFormat;
-            geom.Triangles.IndexCount = geometryInfo->_tris._indexCount;
-            
-            D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE gpuAddrAndStride = { 
-                pVertexBuffer->GetGPUVirtualAddress(), geometryInfo->_tris.strideInBytes };
-            geom.Triangles.VertexBuffer = gpuAddrAndStride;
-            geom.Triangles.VertexCount = geometryInfo->_tris._vertexCount;
-            geom.Triangles.VertexFormat = geometryInfo->_tris._vertexFormat;
+            case RAYTRACING_HITGROUP_TYPE_TRIANGLES:
+            default: 
+            {
+                ID3D12Resource* pVertexBuffer = getResource(geometryInfos[i]._tris._vertexBuffer->getUUID());
+                ID3D12Resource* pIndexBuffer = getResource(geometryInfos[i]._tris._indexBuffer->getUUID());
+                geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+                geom.Triangles.IndexBuffer = pIndexBuffer->GetGPUVirtualAddress();
+                geom.Triangles.IndexFormat = geometryInfos[i]._tris._indexFormat;
+                geom.Triangles.IndexCount = geometryInfos[i]._tris._indexCount;
+                // TODO: Add offsetting for this address if needed.
+                geom.Triangles.VertexBuffer.StartAddress = pVertexBuffer->GetGPUVirtualAddress();
+                geom.Triangles.VertexBuffer.StrideInBytes - geometryInfos[i]._tris.strideInBytes;
+                geom.Triangles.VertexCount = geometryInfos[i]._tris._vertexCount;
+                geom.Triangles.VertexFormat = geometryInfos[i]._tris._vertexFormat;
 
-            geom.Triangles.Transform3x4 = 0;
-            break;
+                geom.Triangles.Transform3x4 = 0;
+                break;
+            }
         }
     }
 
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
-    input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-}
+    // TODO: Allow build types to be used by the application.
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO topLevelPrebuildInfo = { };
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO bottomLevelPrebuildInfo = { };
 
+    {
+        D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS topLevelInputs = { };
+        topLevelInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+        topLevelInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+        topLevelInputs.NumDescs = 1;
+        topLevelInputs.pGeometryDescs = nullptr;
+        topLevelInputs.Flags = buildFlags;
+        dxrDevice->GetRaytracingAccelerationStructurePrebuildInfo(&topLevelInputs, &topLevelPrebuildInfo);
+    }
+    
+    {
+        D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
+        input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+        input.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;    
+        input.Flags = buildFlags;
+        input.pGeometryDescs = geomDescs.data();
+        input.NumDescs = geometryCount;
+        dxrDevice->GetRaytracingAccelerationStructurePrebuildInfo(&input, &bottomLevelPrebuildInfo);
+    }
 
-void D3D12Backend::createTopLevelAccelerationStructure(Resource** ppResource,
-                                                       const AccelerationStructureTopLevelInfo* info)
-{
-    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS input = { };
-    input.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottomLevelAS = { };
+
+    ID3D12Resource* pScratchBuffer = nullptr;
+    D3D12_RESOURCE_DESC scratchDesc = { };
+    scratchDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    scratchDesc.Alignment = 0;
+    scratchDesc.Width = max(topLevelPrebuildInfo.ScratchDataSizeInBytes, bottomLevelPrebuildInfo.ScratchDataSizeInBytes);
+    scratchDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    scratchDesc.Height = scratchDesc.DepthOrArraySize = 1;
+    scratchDesc.Format = DXGI_FORMAT_UNKNOWN;
+    scratchDesc.SampleDesc.Count = 1;
+    scratchDesc.SampleDesc.Quality = 0;
+    pCustomMemoryAllocator->allocate(m_pDevice, D3D12_HEAP_TYPE_CUSTOM, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, scratchDesc);
 }
 
 

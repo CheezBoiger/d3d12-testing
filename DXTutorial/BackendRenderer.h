@@ -740,12 +740,10 @@ public:
     virtual void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
                                                const RayTracingPipelineInfo* pInfo) { }
 
-    // creates acceleration structure for hardware ray tracing.
-    virtual void createBottomLevelAccelerationStructure(Resource** ppResource, 
-                                                        const AccelerationStructureGeometry* geometryinfo) { }
-
-    virtual void createTopLevelAccelerationStructure(Resource** ppResource,
-                                                     const AccelerationStructureTopLevelInfo* info) { }
+    virtual void createAccelerationStructure(Resource** ppResource,
+                                             const AccelerationStructureGeometry* geometryInfos, 
+                                             U32 geometryCount,
+                                             const AccelerationStructureTopLevelInfo* pTopLevelInfo) { }
   
     // Machine learning operators for ml assisted rendering.
     virtual void createMLOperator() { }
