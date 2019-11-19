@@ -1390,4 +1390,15 @@ void D3D12Backend::createSampler(Sampler** ppSampler, const SamplerDesc* pDesc)
     *ppSampler = new Sampler();
     m_samplers[(*ppSampler)->getUUID()] = heapOffset;
 }
+
+
+void D3D12Backend::destroySampler(Sampler* pSampler)
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = getSamplerDescriptorHandle(pSampler->getUUID());
+    if (!cpuHandle.ptr) return;
+    
+    m_samplers[pSampler->getUUID()].ptr = 0;
+    
+    delete pSampler; 
+}
 } // gfx

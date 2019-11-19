@@ -149,7 +149,7 @@ public:
                                        const RayTracingPipelineInfo* pInfo) override;
 
     void createSampler(Sampler** sampler, const SamplerDesc* pDesc) override;
-    void destroySampler(Sampler* sampler) override { }
+    void destroySampler(Sampler* sampler) override;
     void createDescriptorTable(DescriptorTable** table) override;
     void destroyDescriptorTable(DescriptorTable* table) override { }
     void createFence(Fence** ppFence) override;
