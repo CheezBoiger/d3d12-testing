@@ -14,6 +14,8 @@ struct Vertex
 {
     struct { R32 _x, _y, _z, _w; } _position;
     struct { R32 _x, _y, _z, _w; } _normal;
+    struct { R32 _x, _y, _z, _w; } _tangent;
+    struct { R32 _x, _y, _z, _w; } _texcoords;
 };
 
 
@@ -33,7 +35,7 @@ std::vector<Material> loadMaterials(tinygltf::Model* pModel)
 }
 
 
-void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<SubMesh>& submeshes)
+void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>& vertices, std::vector<U32> indices, std::vector<SubMesh>& submeshes)
 {
     // contains mesh.
     if (node.mesh) {
@@ -41,16 +43,28 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<SubMesh
         for (U32 i = 0; i < mmesh.primitives.size(); ++i) {
             tinygltf::Primitive& primitive = mmesh.primitives[i];
             if (primitive.attributes.find("POSITION") != primitive.attributes.end()) {
+                const tinygltf::Accessor& positionAccessor = pModel->accessors[primitive.attributes["POSITION"]];
+                const tinygltf::BufferView& bufView = pModel->bufferViews[positionAccessor.bufferView];
                 
             }
 
-            if (primitive.attributes.find("TANGENT"))
+            if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
+                const tinygltf::Accessor& normalAccessor = pModel->accessors[primitive.attributes["NORMAL"]];
+            }
+
+            if (primitive.attributes.find("TANGENT") != primitive.attributes.end()) {
+                const tinygltf::Accessor& tangentAccessor = pModel->accessors[primitive.attributes["TANGENT"]];
+            }
+
+            if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+                const tinygltf::Accessor& texcoordAccessor = pModel->accessors[primitive.attributes["TEXCOORD_0"]];
+            }
         }
     }
 
     for (U32 child = 0; child < node.children.size(); ++child) {
         tinygltf::Node& childNode = pModel->nodes[node.children[child]];
-        loadNode(pModel, childNode, submeshes);
+        loadNode(pModel, childNode, vertices, indices, submeshes);
     }
 }
 
@@ -64,7 +78,7 @@ std::vector<SubMesh> loadMeshes(tinygltf::Model* pModel, gfx::BackendRenderer* p
     tinygltf::Scene& scene = pModel->scenes[pModel->defaultScene];
     for (U32 i = 0; i < scene.nodes.size(); ++i) {
         tinygltf::Node& node = pModel->nodes[scene.nodes[i]];
-        loadNode(pModel, node, submeshes);
+        loadNode(pModel, node, vertices, indices, submeshes);
     }
 
     gfx::Resource* pVertexBuffer = nullptr;
