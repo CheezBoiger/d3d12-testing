@@ -4,7 +4,7 @@
 #include "../Math/Matrix44.h"
 #include "../Math/Vector4.h"
 #include "../GlobalDef.h"
-#include "../BackEndRenderer.h"
+#include "../FrontEndRenderer.h"
 
 #include <string>
 #include <vector>
@@ -48,20 +48,23 @@ private:
 class SubMesh
 {
 public:
-    SubMesh() { }
+    SubMesh() : m_vertCount(0), m_vertOffset(0) { }
 
-    void initialize();
+    void initialize(U64 vertOffset, U64 vertCount,
+                    U64 indOffset, U64 indCount);
 
 private:
     U64 m_vertOffset;
     U64 m_vertCount;
+    U64 m_indOffset;
+    U64 m_indCount;
 };
 
 class Model
 {
 public:
 
-    B32 initialize(const std::string& path, gfx::BackendRenderer* pRenderer);
+    B32 initialize(const std::string& path, FrontEndRenderer* pRenderer);
     B32 cleanUp();
 
 private:
@@ -70,5 +73,7 @@ private:
     RenderUUID m_indBufferId;
     std::vector<SubMesh> m_submeshes;
     std::vector<Material> m_materials;
+    std::vector<RenderUUID> m_textures;
+    std::vector<RenderUUID> m_samplers;
 };
 } // namespace

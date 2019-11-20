@@ -29,6 +29,8 @@ public:
       RENDERER_RHI_D3D_12
     };
 
+    gfx::BackendRenderer* getBackendRenderer() { return m_pBackend; }
+
     void init(HWND winHandle, RendererRHI rhi);
 
     void cleanUp();
@@ -48,6 +50,8 @@ public:
     gfx::DepthStencilView* getSceneDepthView() { return m_pSceneDepthView; }
 
     gfx::ShaderResourceView* getSceneResourceView() { return m_pSceneDepthResourceView; }
+
+    RenderUUID createBuffer(gfx::ResourceUsage usage, gfx::ResourceBindFlags flags, U64 sz, U64 strideBytes, const TCHAR* debug) { return 0; }
 
 private:
     PerMeshDescriptor mm;
