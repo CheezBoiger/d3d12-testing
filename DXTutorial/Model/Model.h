@@ -4,6 +4,7 @@
 #include "../Math/Matrix44.h"
 #include "../Math/Vector4.h"
 #include "../GlobalDef.h"
+#include "../BackEndRenderer.h"
 
 #include <string>
 #include <vector>
@@ -44,10 +45,10 @@ private:
 };
 
 
-class Mesh
+class SubMesh
 {
 public:
-    Mesh() { }
+    SubMesh() { }
 
     void initialize();
 
@@ -60,13 +61,14 @@ class Model
 {
 public:
 
-    B32 initialize(const std::string& path);
+    B32 initialize(const std::string& path, gfx::BackendRenderer* pRenderer);
     B32 cleanUp();
 
 private:
+
     RenderUUID m_vertBufferId;
     RenderUUID m_indBufferId;
-    std::vector<Mesh> m_meshes;
+    std::vector<SubMesh> m_submeshes;
     std::vector<Material> m_materials;
 };
 } // namespace
