@@ -116,8 +116,18 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
                         indices.push_back(buf[idx]);
                     }
                 } break;
-                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
+                    const U16* buf = (const U16*)&indBuf.data[indicesAccessor.byteOffset + indBufView.byteOffset];
+                    for (U32 idx = 0; i < indicesCount; ++idx) {
+                        indices.push_back((U32)buf[idx]);
+                    }
+                } break;
+                case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
+                    const U8* buf = (const U8*)&indBuf.data[indicesAccessor.byteOffset + indBufView.byteOffset];
+                    for (U32 idx = 0; i < indicesCount; ++idx) {
+                        indices.push_back((U32)buf[idx]);
+                    }
+                } break;
                 default: {
                 } break;
             }
