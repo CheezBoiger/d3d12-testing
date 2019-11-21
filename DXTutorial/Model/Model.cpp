@@ -111,7 +111,10 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
             U64 indicesCount = indicesAccessor.count;
             switch (indicesAccessor.componentType) {
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
-                    
+                    const U32* buf = (const U32*)&indBuf.data[indicesAccessor.byteOffset + indBufView.byteOffset];
+                    for (U32 idx = 0; idx < indicesCount; ++idx) {
+                        indices.push_back(buf[idx]);
+                    }
                 } break;
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:

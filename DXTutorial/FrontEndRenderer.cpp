@@ -222,7 +222,7 @@ void FrontEndRenderer::render()
     m_pList->clearRenderTarget(m_gbuffer.pAlbedoRTV, rgba, 1, &rect);
     m_pList->clearDepthStencil(m_pSceneDepthView, 
                                gfx::CLEAR_FLAG_DEPTH,
-                               1.0f, 
+                               0.0f, 
                                0, 1, &rect);
 
     //m_pList->setComputePipeline(nullptr);
@@ -354,7 +354,7 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._depthStencilState._frontFace = info._depthStencilState._backFace;
 
   info._depthStencilState._depthEnable = true;
-  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_LESS;
+  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_GREATER;
   info._depthStencilState._depthWriteMask = gfx::DEPTH_WRITE_MASK_ALL;
 
   info._depthStencilState._stencilReadMask = 0x1;
