@@ -9,7 +9,6 @@
 
 namespace jcl {
 
-
 /*/
     Front End Renderer is the front end rendering engine, whose sole responsibility
     is to run the application as programmed for the game. Graphics Programmers mainly
@@ -52,6 +51,16 @@ public:
     gfx::ShaderResourceView* getSceneResourceView() { return m_pSceneDepthResourceView; }
 
     RenderUUID createBuffer(gfx::ResourceUsage usage, gfx::ResourceBindFlags flags, U64 sz, U64 strideBytes, const TCHAR* debug) { return 0; }
+
+    RenderUUID createTexture(   gfx::ResourceDimension dimension, 
+                                gfx::ResourceUsage usage, 
+                                gfx::ResourceBindFlags binds, 
+                                DXGI_FORMAT format, 
+                                U64 width, 
+                                U64 height, 
+                                U64 depth, 
+                                U64 strideBytes, 
+                                const TCHAR* debugName);
 
 private:
     PerMeshDescriptor mm;

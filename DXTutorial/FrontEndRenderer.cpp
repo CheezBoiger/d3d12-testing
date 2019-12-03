@@ -24,6 +24,17 @@ Vertex triangle[3] = {
 };
 
 
+class GPUCache
+{
+public:
+    static RenderUUID cacheGPUResource(gfx::Resource* pResource);
+    static gfx::Resource* getGPUResource(RenderUUID uuid);
+};
+
+
+RenderUUID idd = 0;
+
+
 void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 {
   {
@@ -422,5 +433,24 @@ void retrieveShader(const std::string& filepath,
   
   fileinput.read((I8*)*bytecode, length);
   fileinput.close();
+}
+
+
+RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx::ResourceUsage usage, gfx::ResourceBindFlags binds, DXGI_FORMAT format, U64 width, U64 height, U64 depth, U64 strideBytes, const TCHAR* debugName)
+{
+    gfx::Resource* pResource = nullptr;
+    m_pBackend->createTexture(  &pResource, 
+                                dimension, 
+                                usage, 
+                                binds, 
+                                format, 
+                                width, 
+                                height, 
+                                depth, 
+                                strideBytes, 
+                                debugName);
+    RenderUUID id = idd++;
+    m_pGraphicsResources[id] = pResource;
+    return id;
 }
 } // jcl

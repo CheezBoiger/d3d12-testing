@@ -27,19 +27,30 @@ void loadSamplers(tinygltf::Model* pModel, gfx::BackendRenderer* pRenderer)
 }
 
 
-void loadTextures(tinygltf::Model* pModel, std::vector<RenderUUID>& textures, FrontEndRenderer* pRenderer)
+void loadTextures(tinygltf::Model* pModel, std::vector<gfx::Resource*>& textures, gfx::BackendRenderer* pRenderer)
 {
     for (U32 i = 0; i < pModel->images.size(); ++i) {
         tinygltf::Image& image = pModel->images[i];
         gfx::Resource* pTexture = nullptr;
+        
+        pRenderer->createTexture(   &pTexture, 
+                                    gfx::RESOURCE_DIMENSION_2D, 
+                                    gfx::RESOURCE_USAGE_DEFAULT, 
+                                    gfx::RESOURCE_BIND_SHADER_RESOURCE,
+                                    DXGI_FORMAT_R8G8B8A8_TYPELESS,
+                                    image.width, image.height, 1, 0, TEXT("ttext"));
+        textures.push_back(pTexture);
     }
 }
 
 
-std::vector<Material> loadMaterials(tinygltf::Model* pModel)
+std::vector<Material> loadMaterials(tinygltf::Model* pModel, std::vector<gfx::Resource*>& textures)
 {
     std::vector<Material> materials;
-    pModel->materials[0];
+    for (U32 i = 0; i < pModel->materials.size(); ++i) {
+        tinygltf::Material& mat = pModel->materials[i];
+        Material materials;
+    }
     return materials;
 }
 
@@ -180,8 +191,9 @@ B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
     bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
     ASSERT(ret);
 
-    loadTextures(&model, m_textures, pRenderer);
-    m_materials = loadMaterials(&model);
+    std::vector<gfx::Resource*> textureResources;
+    loadTextures(&model, textureResources, pRenderer->getBackendRenderer());
+    m_materials = loadMaterials(&model, textureResources);
     m_submeshes = loadMeshes(&model, pRenderer, &m_vertBufferId, &m_indBufferId);
     return false;
 }
