@@ -44,11 +44,12 @@ std::vector<Material> loadMaterials(tinygltf::Model* pModel, std::vector<RenderU
     std::vector<Material> materials;
     for (U32 i = 0; i < pModel->materials.size(); ++i) {
         tinygltf::Material& mat = pModel->materials[i];
-        Material materials;
+        Material material = { };
         if (mat.values.find("baseColorTexture") != mat.values.end()) {
             tinygltf::Texture& texture = pModel->textures[mat.values["baseColorTexture"].TextureIndex()];
-            materials.setAlbedoId(textures[mat.values["baseColorTexture"].TextureIndex()]);
+            material.setAlbedoId(textures[mat.values["baseColorTexture"].TextureIndex()]);
         }
+        materials.push_back(material);
     }
     return materials;
 }
