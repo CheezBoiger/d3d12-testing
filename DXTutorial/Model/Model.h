@@ -34,11 +34,14 @@ public:
     R32 getRoughFactor() const { return m_roughFactor; }
     B32 isUsingBumpmapping() const { return m_useBumpmapping; }
 
+    gfx::DescriptorTable* getDescriptorTable() { }
+
 private:
     RenderUUID m_albedoId;
     RenderUUID m_roughMetalId;
     RenderUUID m_normalId;
     RenderUUID m_emissionId;
+    gfx::DescriptorTable* m_pDescriptorTable;
     B32 m_useBumpmapping;
     R32 m_metalFactor;
     R32 m_roughFactor;
@@ -51,13 +54,12 @@ public:
     SubMesh() : m_vertCount(0), m_vertOffset(0) { }
 
     void initialize(U64 vertOffset, U64 vertCount,
-                    U64 indOffset, U64 indCount);
-
-private:
+                    U64 indOffset, U64 indCount, Material* mat);
     U64 m_vertOffset;
     U64 m_vertCount;
     U64 m_indOffset;
     U64 m_indCount;
+    Material* m_materialId;
 };
 
 class Model
@@ -67,10 +69,14 @@ public:
     B32 initialize(const std::string& path, FrontEndRenderer* pRenderer);
     B32 cleanUp();
 
-private:
+    RenderUUID getVertexBufferView() const { return m_vertexBuffer.vertexBufferView; }
+    RenderUUID getIndexBufferView() const { return m_indexBuffer.indexBufferView; }
+    SubMesh* getSubMesh(size_t i) { return &m_submeshes[i]; }
 
-    RenderUUID m_vertBufferId;
-    RenderUUID m_indBufferId;
+private:
+    VertexBuffer m_vertexBuffer;
+    IndexBuffer m_indexBuffer;
+    
     std::vector<SubMesh> m_submeshes;
     std::vector<Material> m_materials;
     std::vector<RenderUUID> m_textures;

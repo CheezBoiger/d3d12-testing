@@ -72,6 +72,10 @@ void GeometryPass::initialize
     pipeInfo._rasterizationState._depthClipEnable = false;
     pipeInfo._rasterizationState._depthBias = 0.0f;
 
+    pipeInfo._blendState._renderTargets[0]._renderTargetWriteMask = 0xf;
+    pipeInfo._blendState._renderTargets[1]._renderTargetWriteMask = 0xf;
+    pipeInfo._blendState._renderTargets[2]._renderTargetWriteMask = 0xf;
+
     // 16bit index buffers passed?
     pipeInfo._ibCutValue = gfx::IB_CUT_VALUE_CUT_0xFFFF;
 
@@ -95,6 +99,26 @@ void GeometryPass::initialize
 
     delete[] pipeInfo._pixelShader._pByteCode;
     delete[] pipeInfo._vertexShader._pByteCode;
+
+    gfx::SamplerDesc samplerDesc = { };
+    samplerDesc._addressU = gfx::SAMPLER_ADDRESS_MODE_CLAMP;
+    samplerDesc._addressV = gfx::SAMPLER_ADDRESS_MODE_CLAMP;
+    samplerDesc._addressW = samplerDesc._addressV;
+    samplerDesc._borderColor[0] = 1.0;
+    samplerDesc._borderColor[1] = 1.0f;
+    samplerDesc._borderColor[2] = 1.0f;
+    samplerDesc._borderColor[3] = 1.0f;
+    samplerDesc._comparisonFunc = gfx::COMPARISON_FUNC_ALWAYS;
+    samplerDesc._filter = gfx::SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+    samplerDesc._maxAnisotropy = 1.0f;
+    samplerDesc._mipLodBias = 0.0f;
+    samplerDesc._maxLod = 8.0f;
+    samplerDesc._minLod = 1.0f;
+    pBackend->createSampler(&m_pSampler, &samplerDesc);
+
+    pBackend->createDescriptorTable(&m_pSamplerTable);
+    m_pSamplerTable->setSamplers(&m_pSampler, 1);
+    m_pSamplerTable->finalize();
 }
 
 
@@ -114,7 +138,7 @@ void GeometryPass::generateCommands
         // list to record our commands to. 
         gfx::CommandList* pList, 
         // Meshes to render onto this gpass.
-        GeometryMesh* pMeshes, 
+        GeometryMesh** pMeshes, 
         // Number of meshes in this mesh array.
         U32 meshCount
     )
@@ -126,27 +150,37 @@ void GeometryPass::generateCommands
     
     pList->setRenderPass(_pGBuffer->pRenderPass);
 
+    gfx::DescriptorTable* ppTables[] = { pRenderer->getConstBufferDescriptorTable(), m_pSamplerTable };
     // Set the graphics pipeline, assuming we aren't doing any animation skinning, or dynamic mesh rendering,
     // we can just have one pipeline state that is handling static meshes.
+    pList->setDescriptorTables(ppTables, 2);
     pList->setGraphicsPipeline(m_pPSO);
     pList->setGraphicsRootSignature(m_pRootSignature);
 
     for (U32 i = 0; i < meshCount; ++i) {
-        RenderUUID meshUUID = pMeshes[i]._meshDescriptor;
-        RenderUUID matUUID = pMeshes[i]._materialDescriptor;
-        RenderUUID vertUUID = pMeshes[i]._vertexBufferView;
-        RenderUUID indUUID = pMeshes[i]._indexBufferView;
+        RenderUUID meshUUID = pMeshes[i]->_meshDescriptor;
+        RenderUUID matUUID = pMeshes[i]->_materialDescriptor;
+        RenderUUID vertUUID = pMeshes[i]->_vertexBufferView;
+        RenderUUID indUUID = pMeshes[i]->_indexBufferView;
 
         gfx::Resource* pMeshDescriptor = pRenderer->getResource(meshUUID);
         gfx::Resource* pMatDescriptor = pRenderer->getResource(matUUID);
 
         gfx::VertexBufferView* pView = pRenderer->getVertexBufferView(vertUUID);
 
+        pList->setGraphicsRootConstantBufferView(GLOBAL_CONST_SLOT, pRenderer->getGlobalsBuffer());
         pList->setGraphicsRootConstantBufferView(MESH_TRANSFORM_SLOT, pMeshDescriptor);
-        //pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
+        pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
+        pList->setGraphicsRootDescriptorTable(3, m_pSamplerTable);
 
         pList->setVertexBuffers(0, &pView, 1);
-        pList->drawInstanced(pMeshes[i]._vertCount, pMeshes[i]._vertInst, pMeshes[i]._startVert, 0);
+
+        if (indUUID != 0) {
+            pList->setIndexBuffer(pRenderer->getIndexBufferView(indUUID));
+            pList->drawIndexedInstanced(pMeshes[i]->_indCount, pMeshes[i]->_vertInst, pMeshes[i]->_indOffset, pMeshes[i]->_startVert, 0);
+        } else {
+            pList->drawInstanced(pMeshes[i]->_vertCount, pMeshes[i]->_vertInst, pMeshes[i]->_startVert, 0);
+        }
     }
 }
 } // jcl

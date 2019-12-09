@@ -226,7 +226,13 @@ struct Matrix44 {
     }
 
     static Matrix44 orthographicRH(R32 width, R32 height, R32 zNear, R32 zFar);
-    static Matrix44 translate(const Matrix44& mat, const Vector4& translation);
+    static Matrix44 translate(const Matrix44& mat, const Vector4& translation) {
+        Matrix44 m = mat;
+        m[3][0] += translation._x;
+        m[3][1] += translation._y;
+        m[3][2] += translation._z;
+        return m;
+    }
     static Matrix44 scale(const Matrix44& mat, const Vector4& sc);
     static Matrix44 rotate(const Matrix44& mat);
 

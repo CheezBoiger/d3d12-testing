@@ -34,6 +34,7 @@ D3D12_ROOT_PARAMETER_TYPE getRootParameterType(PipelineLayoutType type)
     case PIPELINE_LAYOUT_TYPE_CBV: return D3D12_ROOT_PARAMETER_TYPE_CBV;
     case PIPELINE_LAYOUT_TYPE_CONSTANTS: return D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
     case PIPELINE_LAYOUT_TYPE_SRV: return D3D12_ROOT_PARAMETER_TYPE_SRV;    
+    case PIPELINE_LAYOUT_TYPE_UAV: return D3D12_ROOT_PARAMETER_TYPE_UAV;
     default:
     case PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE: return D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
   }
@@ -58,6 +59,8 @@ public:
     D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
     U32 cbvRegister = 0;
     U32 srvRegister = 0;
+    U32 uavRegister = 0;
+    U32 samplerRegister = 0;
 
     for (U32 i = 0; i < numLayouts; ++i) {
       D3D12_ROOT_PARAMETER rootParam = {};
@@ -96,7 +99,7 @@ public:
             range.NumDescriptors = static_cast<U32>(pLayouts[i]._numUnorderedAcessViews);
             range.OffsetInDescriptorsFromTableStart =
                 D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            range.BaseShaderRegister = 0;
+            range.BaseShaderRegister = uavRegister++;
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
             range.RegisterSpace = 0;
             kDescriptorRanges[i].push_back(range);
@@ -107,7 +110,7 @@ public:
             range.NumDescriptors = pLayouts[i]._numSamplers;
             range.OffsetInDescriptorsFromTableStart = 
                 D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            range.BaseShaderRegister = 0;
+            range.BaseShaderRegister = samplerRegister++;
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
             range.RegisterSpace = 0;
             kDescriptorRanges[i].push_back(range);
@@ -129,6 +132,11 @@ public:
             rootParam.Descriptor.ShaderRegister = srvRegister++;
             break;
         }
+        case D3D12_ROOT_PARAMETER_TYPE_UAV: {
+            rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
+            rootParam.Descriptor.RegisterSpace = 0;
+            rootParam.Descriptor.ShaderRegister = uavRegister++;
+        } break;
       }
 
       kParameters[parameterCount++] = rootParam;

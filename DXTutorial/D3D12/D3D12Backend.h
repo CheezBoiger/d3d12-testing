@@ -222,6 +222,14 @@ public:
         return m_samplers[key];
     }
 
+    void setSamplerDescriptorHeap(RendererT key, ID3D12DescriptorHeap* pHeap) {
+        m_pSamplerDescriptorHeaps[key] = pHeap;
+    }
+
+    ID3D12DescriptorHeap* getSamplerDescriptorHeap(RendererT key) {
+        return m_pSamplerDescriptorHeaps[key];    
+    }
+
 private:
 
     void queryForDevice(IDXGIFactory4* pFactory);
@@ -242,6 +250,7 @@ private:
     std::unordered_map<RendererT, std::vector<ID3D12Resource*>> m_resources;
     std::unordered_map<DescriptorHeapT, ID3D12Heap*> m_pHeaps;
     std::unordered_map<DescriptorHeapT, ID3D12DescriptorHeap*> m_pDescriptorHeaps;
+    std::unordered_map<DescriptorHeapT, ID3D12DescriptorHeap*> m_pSamplerDescriptorHeaps;
     std::unordered_map<RendererT, ID3D12RootSignature*> m_pRootSignatures;
     std::unordered_map<RendererT, ID3D12CommandQueue*> m_pCommandQueues;
     std::unordered_map<RendererT, ID3D12CommandAllocator*> m_pCommandAllocators;

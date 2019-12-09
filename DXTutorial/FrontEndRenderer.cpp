@@ -9,21 +9,6 @@
 namespace jcl {
 
 
-struct Vertex {
-  Vector4 pos;
-  Vector4 normal;
-  Vector4 tangent;
-  Vector4 texCoords;
-};
-
-
-Vertex triangle[3] = {
-  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-};
-
-
 class GPUCache
 {
 public:
@@ -50,6 +35,8 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
         m_pBackend = new gfx::BackendRenderer();
     }
   }
+
+    m_pGlobals = nullptr;
 
   gfx::GpuConfiguration config = { };
   config._desiredBuffers = 2;
@@ -103,8 +90,18 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            1,
                            0,
                            TEXT("GBufferAlbedo"));
+    m_pBackend->createTexture(&m_gbuffer.pNormalTexture,
+                                gfx::RESOURCE_DIMENSION_2D,
+                                gfx::RESOURCE_USAGE_DEFAULT,
+                                gfx::RESOURCE_BIND_RENDER_TARGET,
+                                DXGI_FORMAT_R8G8B8A8_UNORM,
+                                1920,
+                                1080,
+                                1, 0, TEXT("GBufferNormal"));
   m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
                                      m_gbuffer.pAlbedoTexture);
+    m_pBackend->createRenderTargetView(&m_gbuffer.pNormalRTV,
+                                        m_gbuffer.pNormalTexture);
 
   m_pBackend->createDescriptorTable(&m_pConstBufferTable);
 
@@ -129,20 +126,6 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                layouts.data(), 
                                2);
 
-  m_pBackend->createBuffer(&m_pTriangleVertexBuffer, 
-                           gfx::RESOURCE_USAGE_DEFAULT,
-                           gfx::RESOURCE_BIND_VERTEX_BUFFER, 
-                           sizeof(triangle), 
-                           sizeof(Vertex), 
-                           TEXT("Triangle"));
-    m_pGraphicsResources[m_pTriangleVertexBuffer->getUUID()] = m_pTriangleVertexBuffer;
-
-  m_pBackend->createVertexBufferView(&m_pTriangleVertexBufferView,
-                                     m_pTriangleVertexBuffer,
-                                     sizeof(Vertex),
-                                     sizeof(triangle));
-    m_pVertexBufferViews[m_pTriangleVertexBufferView->getUUID()] = m_pTriangleVertexBufferView;
-
   m_pBackend->createTexture(&m_pSceneDepth,
                             gfx::RESOURCE_DIMENSION_2D,
                             gfx::RESOURCE_USAGE_DEFAULT,
@@ -156,42 +139,12 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
   m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
   m_pPreZPass->setDepthStencil(m_pSceneDepthView);
 
-  createGraphicsPipelines();
-
-  {
-    gfx::Fence* pFence = nullptr;
-    gfx::Resource* pStaging = nullptr;
-    gfx::CommandList* pList = nullptr;
-    m_pBackend->createBuffer(&pStaging,
-                             gfx::RESOURCE_USAGE_CPU_TO_GPU,
-                             gfx::RESOURCE_BIND_VERTEX_BUFFER,
-                             sizeof(triangle),
-                             sizeof(Vertex),
-                             TEXT("staging"));
-
-    void* ptr = pStaging->map(0, sizeof(triangle));
-    memcpy(ptr, triangle, sizeof(triangle));
-    pStaging->unmap(0, sizeof(triangle));
-
-    m_pBackend->createFence(&pFence);
-    m_pBackend->createCommandList(&pList);
-    pList->init();
-    pList->reset();
-    pList->copyResource(m_pTriangleVertexBuffer, pStaging);
-    pList->close();
-    
-    m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
-    m_pBackend->signalFence(m_pBackend->getSwapchainQueue(), pFence);
-
-    m_pBackend->waitFence(pFence);
-    m_pBackend->destroyResource(pStaging);
-    m_pBackend->destroyFence(pFence);
-    m_pBackend->destroyCommandList(pList);
-  }
-
+    createGraphicsPipelines();
+    createComputePipelines();
     // Set the scene depth view to be used as read only in gbuffer pass.
     m_pBackend->createRenderPass(&m_gbuffer.pRenderPass, 4, true);
-    m_gbuffer.pRenderPass->setRenderTargets(&m_gbuffer.pAlbedoRTV, 1);
+    gfx::RenderTargetView* rtvs[] = { m_gbuffer.pAlbedoRTV, m_gbuffer.pNormalRTV };
+    m_gbuffer.pRenderPass->setRenderTargets(rtvs, 2);
     m_gbuffer.pRenderPass->setDepthStencil(m_pSceneDepthView);
     m_geometryPass.setGBuffer(&m_gbuffer);
     m_geometryPass.initialize(m_pBackend);
@@ -205,8 +158,8 @@ void FrontEndRenderer::render()
     gfx::Viewport viewport = { };
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.w = 1920.0f;
-    viewport.h = 1080.0f;
+    viewport.w = (R32)m_pGlobals->_targetSize[0];
+    viewport.h = (R32)m_pGlobals->_targetSize[1];
     viewport.mind = 0.0f;
     viewport.maxd = 1.0f;
   
@@ -245,21 +198,29 @@ void FrontEndRenderer::render()
     m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
     m_pList->setGraphicsRootDescriptorTable(GLOBAL_CONST_SLOT, m_pConstBufferTable);
+
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
-    m_pList->setVertexBuffers(0, &m_pTriangleVertexBufferView, 1);
-    m_pList->setIndexBuffer(nullptr);
 
     for (U32 i = 0; i < m_opaqueMeshes.size(); ++i) {
-        RenderUUID meshId = m_opaqueMeshes[i]._meshDescriptor;
-        RenderUUID vertId = m_opaqueMeshes[i]._vertexBufferView;
-        RenderUUID indId = m_opaqueMeshes[i]._indexBufferView;
+        RenderUUID meshId = m_opaqueMeshes[i]->_meshDescriptor;
+        RenderUUID vertId = m_opaqueMeshes[i]->_vertexBufferView;
+        RenderUUID indId = m_opaqueMeshes[i]->_indexBufferView;
         gfx::Resource* pMeshDescriptor = getResource(meshId);
         gfx::VertexBufferView* view = getVertexBufferView(vertId);
 
         m_pList->setVertexBuffers(0, &view, 1);
         m_pList->setGraphicsRootConstantBufferView(1, pMeshDescriptor);
-        m_pList->drawInstanced(m_opaqueMeshes[i]._vertCount, m_opaqueMeshes[i]._vertInst, m_opaqueMeshes[i]._startVert, 0);
+
+        if (indId != 0) {
+            m_pList->setIndexBuffer(getIndexBufferView(indId));
+            m_pList->drawIndexedInstanced(  m_opaqueMeshes[i]->_indCount, 
+                                            m_opaqueMeshes[i]->_vertInst, 
+                                            m_opaqueMeshes[i]->_indOffset, 
+                                            m_opaqueMeshes[i]->_startVert, 0);
+        } else {
+            m_pList->drawInstanced(m_opaqueMeshes[i]->_vertCount, m_opaqueMeshes[i]->_vertInst, m_opaqueMeshes[i]->_startVert, 0);
+        }
     }
 
     //m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
@@ -279,13 +240,6 @@ void FrontEndRenderer::render()
 
 void FrontEndRenderer::beginFrame()
 {
-    GeometryMesh mesh = { };
-    mesh._vertexBufferView = m_pTriangleVertexBufferView->getUUID();
-    mesh._meshDescriptor = pMeshBuffer->getUUID();
-    mesh._startVert = 0;
-    mesh._vertCount = 3;
-    mesh._vertInst = 1;
-    m_opaqueMeshes.push_back(mesh);
 }
 
 
@@ -305,36 +259,22 @@ void FrontEndRenderer::cleanUp()
 
 void FrontEndRenderer::update(R32 dt, Globals& globals)
 {
-  globals._targetSize[0] = 1920;
-  globals._targetSize[1] = 1080;
-  globals._targetSize[2] = 0;
-  globals._targetSize[3] = 0;
-  Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
-  Matrix44 V = m::Matrix44::lookAtRH(Vector3(3.0f, 0.0f, 3.0f), 
-                                     Vector3(0.0f, 0.0f, 0.0f), 
-                                     Vector3(0.0f, 1.0f, 0.0f));
-  globals._viewToClip = V * P;
+    void* pMatPtr = nullptr;
+    void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
+    memcpy(pPtr, m_pGlobals, sizeof(Globals));
+    pGlobalsBuffer->unmap(0, sizeof(Globals));
 
-  void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
-  memcpy(pPtr, &globals, sizeof(Globals));
-  pGlobalsBuffer->unmap(0, sizeof(Globals));
-
-  mm._worldToViewClip = Matrix44() * V * P;
-  mm2._worldToViewClip = Matrix44(
-     1.0f, 0.0f, 0.0f,  0.0f,
-     0.0f, 1.0f, 0.0f,  0.0f,
-     0.0f, 0.0f, 1.0f,  0.0f,
-    -1.0f, 0.0f, 0.0f,  1.0f
-  ) * V * P;
-  
-
-  pPtr = pMeshBuffer->map(0, sizeof(PerMeshDescriptor));
-  memcpy(pPtr, &mm, sizeof(PerMeshDescriptor));
-  pMeshBuffer->unmap(0, sizeof(PerMeshDescriptor));
-
-  pPtr = pOtherMeshBuffer->map(0, sizeof(PerMeshDescriptor));
-  memcpy(pPtr, &mm2, sizeof(PerMeshDescriptor));
-  pOtherMeshBuffer->unmap(0, sizeof(PerMeshDescriptor));
+    for (U64 i = 0; i < m_opaqueMeshes.size(); ++i) {
+        gfx::Resource* pDescriptor = m_pGraphicsResources[ m_opaqueMeshes[i]->_meshDescriptor ];
+        gfx::Resource* pMatDescriptor = m_pGraphicsResources[ m_opaqueMeshes[i]->_materialDescriptor ];
+        pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));
+        pMatPtr = pMatDescriptor->map(0, sizeof(PerMaterialDescriptor));
+        memcpy(pPtr, m_opaqueMeshes[i]->_meshTransform, sizeof(PerMeshDescriptor));
+        memcpy(pMatPtr, m_opaqueMeshes[i]->_matData, sizeof(PerMaterialDescriptor));
+        pDescriptor->unmap(0, sizeof(PerMeshDescriptor));
+        pMatDescriptor->unmap(0, sizeof(PerMaterialDescriptor));
+        
+    }
 }
 
 
@@ -452,5 +392,186 @@ RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx
     RenderUUID id = idd++;
     m_pGraphicsResources[id] = pResource;
     return id;
+}
+
+
+RenderUUID FrontEndRenderer::createBuffer(gfx::ResourceUsage usage, gfx::ResourceBindFlags flags, U64 sz, U64 strideBytes, const TCHAR* debug)
+{
+    gfx::Resource* pResource = nullptr;
+    m_pBackend->createBuffer(&pResource, usage, flags, sz, strideBytes, debug);
+    RenderUUID id = idd++;
+    m_pGraphicsResources[id] = pResource;
+    return id;
+}
+
+
+VertexBuffer FrontEndRenderer::createVertexBuffer(void* meshRaw, U64 vertexSzBytes, U64 meshSzBytes)
+{
+    VertexBuffer vertexBuffer = { 0, 0 };
+    gfx::Resource* vertexMesh = nullptr;
+    gfx::VertexBufferView* vertexBufferView = nullptr;
+
+    m_pBackend->createBuffer(&vertexMesh, 
+                            gfx::RESOURCE_USAGE_DEFAULT, 
+                            gfx::RESOURCE_BIND_VERTEX_BUFFER, 
+                            meshSzBytes, 
+                            vertexSzBytes,
+                            TEXT("VertBuffer"));
+    m_pBackend->createVertexBufferView( &vertexBufferView,
+                                         vertexMesh,
+                                         vertexSzBytes,
+                                         meshSzBytes);
+  {
+    gfx::Fence* pFence = nullptr;
+    gfx::Resource* pStaging = nullptr;
+    gfx::CommandList* pList = nullptr;
+    m_pBackend->createBuffer(&pStaging,
+                             gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                             gfx::RESOURCE_BIND_VERTEX_BUFFER,
+                             meshSzBytes,
+                             vertexSzBytes,
+                             TEXT("staging"));
+
+    void* ptr = pStaging->map(0, meshSzBytes);
+    memcpy(ptr, meshRaw, meshSzBytes);
+    pStaging->unmap(0, meshSzBytes);
+
+    m_pBackend->createFence(&pFence);
+    m_pBackend->createCommandList(&pList);
+    pList->init();
+    pList->reset();
+    pList->copyResource(vertexMesh, pStaging);
+    pList->close();
+    
+    m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
+    m_pBackend->signalFence(m_pBackend->getSwapchainQueue(), pFence);
+
+    m_pBackend->waitFence(pFence);
+    m_pBackend->destroyResource(pStaging);
+    m_pBackend->destroyFence(pFence);
+    m_pBackend->destroyCommandList(pList);
+  }
+
+
+    RenderUUID vertId = idd++;
+    RenderUUID viewId = idd++;
+    m_pGraphicsResources[vertId] = vertexMesh;
+    m_pVertexBufferViews[viewId] = vertexBufferView;
+
+    vertexBuffer.resource = vertId;
+    vertexBuffer.vertexBufferView = viewId;
+
+    return vertexBuffer;
+}
+
+
+RenderUUID FrontEndRenderer::createTransformBuffer()
+{
+    RenderUUID transformId;
+    gfx::Resource* pResource = nullptr;
+    m_pBackend->createBuffer(&pResource,
+                               gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                               gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                               sizeof(PerMeshDescriptor), 
+                               0, TEXT("MeshTranform"));
+    transformId = idd++;
+    m_pGraphicsResources[transformId] = pResource;
+    return transformId;
+}
+
+
+RenderUUID FrontEndRenderer::createMaterialBuffer()
+{
+    RenderUUID transformId;
+    gfx::Resource* pResource = nullptr;
+    m_pBackend->createBuffer(&pResource,
+                               gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                               gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                               sizeof(PerMaterialDescriptor), 
+                               0, TEXT("MaterialDescription"));
+    transformId = idd++;
+    m_pGraphicsResources[transformId] = pResource;
+    return transformId;
+}
+
+
+void FrontEndRenderer::createComputePipelines()
+{
+    m_pBackend->createRootSignature(&m_pBitonicSortSig);
+    gfx::PipelineLayout pLayouts[2] = { };
+    pLayouts[0]._type = gfx::PIPELINE_LAYOUT_TYPE_UAV;
+    pLayouts[0]._numUnorderedAcessViews = 1;
+
+    pLayouts[1]._type = gfx::PIPELINE_LAYOUT_TYPE_CBV;
+    pLayouts[1]._numConstantBuffers = 1;
+
+    m_pBitonicSortSig->initialize(gfx::SHADER_VISIBILITY_ALL, pLayouts, 2);
+
+    gfx::ShaderByteCode bytecode = { };
+    bytecode._pByteCode = new U8[1024 * 1024 * 2];
+    retrieveShader("BitonicSort.cs.cso", &bytecode._pByteCode, bytecode._szBytes);
+    gfx::ComputePipelineInfo info = { };
+    info._pRootSignature = m_pBitonicSortSig;
+    info._computeShader = bytecode;
+    m_pBackend->createComputePipelineState(&m_bitonicSort, &info);
+    
+    //retrieveShader("Reflection.cs.cso", &bytecode._pByteCode, bytecode._szBytes);
+    //m_pBackend->createComputePipelineState(&m_pReflectionPipeline, &info);
+    
+    //retrieveShader("ScreenSpaceReflections.cs.cso", &bytecode._pByteCode, bytecode._szBytes);
+    //m_pBackend->createComputePipelineState(&m_pSSRPipeline, &info);
+
+    delete[] bytecode._pByteCode;
+}
+
+
+IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
+{
+    IndexBuffer b = { };
+    RenderUUID id = idd++;
+    RenderUUID res = createBuffer(  gfx::RESOURCE_USAGE_DEFAULT,
+                    gfx::RESOURCE_BIND_INDEX_BUFFER,
+                    szBytes,
+                    0,
+                    TEXT("SceneIndexBuffer"));
+
+    {
+        gfx::Fence* pFence = nullptr;
+        gfx::Resource* pStaging = nullptr;
+        gfx::CommandList* pList = nullptr;
+        m_pBackend->createBuffer(&pStaging,
+                                    gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                                    gfx::RESOURCE_BIND_INDEX_BUFFER,
+                                    szBytes,
+                                    sizeof(U32),
+                                    TEXT("staging"));
+
+        void* ptr = pStaging->map(0, szBytes);
+        memcpy(ptr, raw, szBytes);
+        pStaging->unmap(0, szBytes);
+
+        m_pBackend->createFence(&pFence);
+        m_pBackend->createCommandList(&pList);
+        pList->init();
+        pList->reset();
+        pList->copyResource(m_pGraphicsResources[res], pStaging);
+        pList->close();
+    
+        m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
+        m_pBackend->signalFence(m_pBackend->getSwapchainQueue(), pFence);
+
+        m_pBackend->waitFence(pFence);
+        m_pBackend->destroyResource(pStaging);
+        m_pBackend->destroyFence(pFence);
+        m_pBackend->destroyCommandList(pList);
+    }
+
+    gfx::IndexBufferView* view = nullptr;
+    m_pBackend->createIndexBufferView(&view, m_pGraphicsResources[res], DXGI_FORMAT_R32_UINT, szBytes);
+    m_pIndexBufferViews[id] = view;
+
+    b.indexBufferView = id;
+    b.resource = res;
+    return b;
 }
 } // jcl

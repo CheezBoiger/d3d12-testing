@@ -162,11 +162,12 @@ public:
 
 enum PipelineLayoutType
 {
-  PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE,
-  PIPELINE_LAYOUT_TYPE_CONSTANTS,
-  PIPELINE_LAYOUT_TYPE_CBV,
-  PIPELINE_LAYOUT_TYPE_SRV,
-  PIPELINE_LAYOUT_TYPE_SAMPLERS
+    PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE,
+    PIPELINE_LAYOUT_TYPE_CONSTANTS,
+    PIPELINE_LAYOUT_TYPE_CBV,
+    PIPELINE_LAYOUT_TYPE_SRV,
+    PIPELINE_LAYOUT_TYPE_UAV,
+    PIPELINE_LAYOUT_TYPE_SAMPLERS
 };
 
 
@@ -678,7 +679,7 @@ protected:
 };
 
 /*
-    Behind every great renderer is a powerful engine that handles the translation between
+    Behind every great renderer is a powerful Hardware Interface that handles the translation between
     front end rendering, to native gpu calls. The backend renderer has an important duty to ensure
     that there is a fine line between getting the visuals needed, and getting the visuals to work on anything,
     this module is responsible for the low level work. Settting up a Rendering engine in this way will allow for

@@ -705,7 +705,7 @@ void D3D12Backend::createTexture(Resource** texture,
   D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
 
   D3D12_CLEAR_VALUE* pClearValue = &clearValue;
-  if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
+  if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER || !(state & RESOURCE_BIND_RENDER_TARGET)) {
     pClearValue = NULL;
   } else {
     D3D12_RESOURCE_ALLOCATION_INFO rAllocInfo =
@@ -936,7 +936,7 @@ void D3D12Backend::createDescriptorHeaps()
         desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
         break;
       case DESCRIPTOR_HEAP_SAMPLER:
-        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
         break;
       default:
@@ -1372,6 +1372,7 @@ void D3D12Backend::createSampler(Sampler** ppSampler, const SamplerDesc* pDesc)
     desc.MinLOD = pDesc->_minLod;
     desc.MaxLOD = pDesc->_maxLod;
     desc.MipLODBias = pDesc->_mipLodBias;
+    desc.ComparisonFunc = getComparisonFunc( pDesc->_comparisonFunc );
     desc.Filter = getNativeFilter(pDesc->_filter);
     desc.AddressU = getNativeTextureAddress(pDesc->_addressU);
     desc.AddressV = getNativeTextureAddress(pDesc->_addressV);
@@ -1386,7 +1387,7 @@ void D3D12Backend::createSampler(Sampler** ppSampler, const SamplerDesc* pDesc)
 
     UINT atomSz = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_SAMPLER].ptr += atomSz;
-
+    
     *ppSampler = new Sampler();
     m_samplers[(*ppSampler)->getUUID()] = heapOffset;
 }

@@ -1,5 +1,6 @@
 //
 #include "Model.h"
+#include "../GlobalDef.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_IMPLEMENTATION
@@ -10,15 +11,6 @@
 namespace jcl {
 
 
-struct Vertex
-{
-    struct { R32 _x, _y, _z, _w; } _position;
-    struct { R32 _x, _y, _z, _w; } _normal;
-    struct { R32 _x, _y, _z, _w; } _tangent;
-    struct { R32 _x, _y, _z, _w; } _texcoords;
-};
-
-
 void loadSamplers(tinygltf::Model* pModel, gfx::BackendRenderer* pRenderer)
 {
     for (U32 i = 0; i < pModel->samplers.size(); ++i) {
@@ -27,38 +19,45 @@ void loadSamplers(tinygltf::Model* pModel, gfx::BackendRenderer* pRenderer)
 }
 
 
-void loadTextures(tinygltf::Model* pModel, std::vector<gfx::Resource*>& textures, gfx::BackendRenderer* pRenderer)
+void loadTextures(tinygltf::Model* pModel, std::vector<RenderUUID>& textures, FrontEndRenderer* pRenderer)
 {
     for (U32 i = 0; i < pModel->images.size(); ++i) {
         tinygltf::Image& image = pModel->images[i];
         gfx::Resource* pTexture = nullptr;
         
-        pRenderer->createTexture(   &pTexture, 
-                                    gfx::RESOURCE_DIMENSION_2D, 
+        if (image.component == 3) {
+            
+        }
+       
+        RenderUUID id = pRenderer->createTexture(   gfx::RESOURCE_DIMENSION_2D, 
                                     gfx::RESOURCE_USAGE_DEFAULT, 
                                     gfx::RESOURCE_BIND_SHADER_RESOURCE,
-                                    DXGI_FORMAT_R8G8B8A8_TYPELESS,
+                                    DXGI_FORMAT_R8G8B8A8_UNORM,
                                     image.width, image.height, 1, 0, TEXT("ttext"));
-        textures.push_back(pTexture);
+        textures.push_back(id);
     }
 }
 
 
-std::vector<Material> loadMaterials(tinygltf::Model* pModel, std::vector<gfx::Resource*>& textures)
+std::vector<Material> loadMaterials(tinygltf::Model* pModel, std::vector<RenderUUID>& textures)
 {
     std::vector<Material> materials;
     for (U32 i = 0; i < pModel->materials.size(); ++i) {
         tinygltf::Material& mat = pModel->materials[i];
         Material materials;
+        if (mat.values.find("baseColorTexture") != mat.values.end()) {
+            tinygltf::Texture& texture = pModel->textures[mat.values["baseColorTexture"].TextureIndex()];
+            materials.setAlbedoId(textures[mat.values["baseColorTexture"].TextureIndex()]);
+        }
     }
     return materials;
 }
 
 
-void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>& vertices, std::vector<U32> indices, std::vector<SubMesh>& submeshes)
+void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>& vertices, std::vector<U32>& indices, std::vector<SubMesh>& submeshes, std::vector<Material>& materials)
 {
     // contains mesh.
-    if (node.mesh) {
+    if (node.mesh > -1) {
         tinygltf::Mesh& mmesh = pModel->meshes[node.mesh];
         for (U32 i = 0; i < mmesh.primitives.size(); ++i) {
             SubMesh submesh = { };
@@ -71,24 +70,24 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
             // POSITION should always be garuanteed.
             const tinygltf::Accessor& positionAccessor = pModel->accessors[primitive.attributes["POSITION"]];
             const tinygltf::BufferView& bufView = pModel->bufferViews[positionAccessor.bufferView];
-            positionAttribs = reinterpret_cast<R32*>(pModel->buffers[bufView.buffer].data[positionAccessor.byteOffset + bufView.byteOffset]);
+            positionAttribs = reinterpret_cast<R32*>(&pModel->buffers[bufView.buffer].data[positionAccessor.byteOffset + bufView.byteOffset]);
 
             if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
                 const tinygltf::Accessor& normalAccessor = pModel->accessors[primitive.attributes["NORMAL"]];
                 const tinygltf::BufferView& bufView = pModel->bufferViews[normalAccessor.bufferView];
-                normalAttribs = reinterpret_cast<R32*>(pModel->buffers[bufView.buffer].data[normalAccessor.byteOffset + bufView.byteOffset]);
+                normalAttribs = reinterpret_cast<R32*>(&pModel->buffers[bufView.buffer].data[normalAccessor.byteOffset + bufView.byteOffset]);
             }
 
             if (primitive.attributes.find("TANGENT") != primitive.attributes.end()) {
                 const tinygltf::Accessor& tangentAccessor = pModel->accessors[primitive.attributes["TANGENT"]];
                 const tinygltf::BufferView& bufView = pModel->bufferViews[tangentAccessor.bufferView];
-                tangentAttribs = reinterpret_cast<R32*>(pModel->buffers[bufView.buffer].data[tangentAccessor.byteOffset + bufView.byteOffset]);         
+                tangentAttribs = reinterpret_cast<R32*>(&pModel->buffers[bufView.buffer].data[tangentAccessor.byteOffset + bufView.byteOffset]);         
             }
 
             if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
                 const tinygltf::Accessor& texcoordAccessor = pModel->accessors[primitive.attributes["TEXCOORD_0"]];
                 const tinygltf::BufferView& bufView = pModel->bufferViews[texcoordAccessor.bufferView];    
-                texCoordAttribs = reinterpret_cast<R32*>(pModel->buffers[bufView.buffer].data[texcoordAccessor.byteOffset + bufView.byteOffset]);
+                texCoordAttribs = reinterpret_cast<R32*>(&pModel->buffers[bufView.buffer].data[texcoordAccessor.byteOffset + bufView.byteOffset]);
             }
 
             U64 currVertCount = vertices.size();
@@ -105,9 +104,12 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
                 vert._normal._z = normalAttribs[i * 3 + 2];
                 vert._normal._w = 1.0f;
 
-                vert._tangent._x = tangentAttribs[i * 3 + 0];
-                vert._tangent._y = tangentAttribs[i * 3 + 1];
-                vert._tangent._z = tangentAttribs[i * 3 + 2];
+                if (tangentAttribs) {
+                    vert._tangent._x = tangentAttribs[i * 3 + 0];
+                    vert._tangent._y = tangentAttribs[i * 3 + 1];
+                    vert._tangent._z = tangentAttribs[i * 3 + 2];
+                }
+
                 vert._tangent._w = 1.0f;
 
                 vert._texcoords._x = texCoordAttribs[i * 2 + 0];
@@ -129,13 +131,13 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
                 } break;
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
                     const U16* buf = (const U16*)&indBuf.data[indicesAccessor.byteOffset + indBufView.byteOffset];
-                    for (U32 idx = 0; i < indicesCount; ++idx) {
+                    for (U32 idx = 0; idx < indicesCount; ++idx) {
                         indices.push_back((U32)buf[idx]);
                     }
                 } break;
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
                     const U8* buf = (const U8*)&indBuf.data[indicesAccessor.byteOffset + indBufView.byteOffset];
-                    for (U32 idx = 0; i < indicesCount; ++idx) {
+                    for (U32 idx = 0; idx < indicesCount; ++idx) {
                         indices.push_back((U32)buf[idx]);
                     }
                 } break;
@@ -143,19 +145,19 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
                 } break;
             }
 
-            submesh.initialize(currVertCount, positionAccessor.count, indicesOffset, indicesCount);
+            submesh.initialize(currVertCount, positionAccessor.count, indicesOffset, indicesCount, &materials[primitive.material]);
             submeshes.push_back(submesh);
         }
     }
 
     for (U32 child = 0; child < node.children.size(); ++child) {
         tinygltf::Node& childNode = pModel->nodes[node.children[child]];
-        loadNode(pModel, childNode, vertices, indices, submeshes);
+        loadNode(pModel, childNode, vertices, indices, submeshes, materials);
     }
 }
 
 
-std::vector<SubMesh> loadMeshes(tinygltf::Model* pModel, FrontEndRenderer* pRenderer, RenderUUID* pVert, RenderUUID* pInd)
+std::vector<SubMesh> loadMeshes(tinygltf::Model* pModel, FrontEndRenderer* pRenderer, VertexBuffer* vertBuffer, IndexBuffer* pInd, std::vector<Material>& materials)
 {
     std::vector<Vertex> vertices;
     std::vector<U32> indices;
@@ -164,31 +166,24 @@ std::vector<SubMesh> loadMeshes(tinygltf::Model* pModel, FrontEndRenderer* pRend
     tinygltf::Scene& scene = pModel->scenes[pModel->defaultScene];
     for (U32 i = 0; i < scene.nodes.size(); ++i) {
         tinygltf::Node& node = pModel->nodes[scene.nodes[i]];
-        loadNode(pModel, node, vertices, indices, submeshes);
+        loadNode(pModel, node, vertices, indices, submeshes, materials);
     }
 
-    *pVert = pRenderer->createBuffer(   gfx::RESOURCE_USAGE_DEFAULT,
-                                        gfx::RESOURCE_BIND_VERTEX_BUFFER, 
-                                        vertices.size() * sizeof(Vertex), 
-                                        0, 
-                                        TEXT("SceneVertexBuffer"));
+    *vertBuffer = pRenderer->createVertexBuffer(vertices.data(), sizeof(Vertex), sizeof(Vertex) * vertices.size());
 
-    *pInd = pRenderer->createBuffer(    gfx::RESOURCE_USAGE_DEFAULT,
-                                        gfx::RESOURCE_BIND_INDEX_BUFFER,
-                                        indices.size() * sizeof(U32),
-                                        0,
-                                        TEXT("SceneIndexBuffer"));
+    *pInd = pRenderer->createIndexBufferView(indices.data(), indices.size() * sizeof(U32));
 
     return submeshes;
 }
 
 
-void SubMesh::initialize(U64 vertOffset, U64 vertCount, U64 indOffset, U64 indCount)
+void SubMesh::initialize(U64 vertOffset, U64 vertCount, U64 indOffset, U64 indCount, Material* mat)
 {
     m_vertOffset = vertOffset;
     m_vertCount = vertCount;
     m_indCount = indCount;
     m_indOffset = indOffset;
+    m_materialId = mat;
 }
 
 
@@ -198,13 +193,14 @@ B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
     tinygltf::Model model;
     std::string err;
     std::string warn;
-    bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+    bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
     ASSERT(ret);
 
-    std::vector<gfx::Resource*> textureResources;
-    loadTextures(&model, textureResources, pRenderer->getBackendRenderer());
+    std::vector<RenderUUID> textureResources;
+    loadTextures(&model, textureResources, pRenderer);
     m_materials = loadMaterials(&model, textureResources);
-    m_submeshes = loadMeshes(&model, pRenderer, &m_vertBufferId, &m_indBufferId);
+    m_submeshes = loadMeshes(&model, pRenderer, &m_vertexBuffer, &m_indexBuffer, m_materials);
+    
     return false;
 }
 

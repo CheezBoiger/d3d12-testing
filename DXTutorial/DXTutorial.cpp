@@ -5,6 +5,15 @@
 #include "DXTutorial.h"
 #include "Math/Vector4.h"
 #include "FrontEndRenderer.h"
+#include "Model/Model.h"
+
+using namespace jcl;
+
+Vertex triangle[3] = {
+  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+};
 
 #define MAX_LOADSTRING 100
 
@@ -73,13 +82,59 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DXTUTORIAL));
 
+    jcl::Model model;
+    model.initialize("DamagedHelmet/DamagedHelmet.gltf", pRenderer);
+    
+
     jcl::Globals globals;
-    globals._cameraPos = { 1.0f, 1.0f, 1.0f, 1.0f };
+    pRenderer->setGlobals(&globals);
+    globals._targetSize[0] = 1920;
+    globals._targetSize[1] = 1080;
+    globals._targetSize[2] = 0;
+    globals._targetSize[3] = 0;
+    globals._cameraPos = { 3.0f, -5.0f, 3.0f, 1.0f };
+    Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+    Matrix44 V = m::Matrix44::lookAtRH(Vector3(3.0f, -5.0f, 3.0f), 
+                                        Vector3(0.0f, 0.0f, 0.0f), 
+                                        Vector3(0.0f, 1.0f, 0.0f));
+    globals._viewToClip = V * P;
+    VertexBuffer buffer = pRenderer->createVertexBuffer(triangle, sizeof(Vertex), sizeof(triangle));
+    RenderUUID transformId = pRenderer->createTransformBuffer();
+    RenderUUID materialId = pRenderer->createMaterialBuffer();
+    PerMeshDescriptor descriptor = { };
+
+    PerMaterialDescriptor mat = { };
+    mat._color = Vector4(1.0f, 0.0f, 0.0f);
+    mat._matrialFlags = 0;
+    mat._albedoFactor = Vector4(1.0f, 1.0f, 1.0f);
+ 
+    descriptor._worldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
+    descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
+    descriptor._n = descriptor._world;
+    descriptor._n[3][0] = 0.0f;
+    descriptor._n[3][1] = 0.0f;
+    descriptor._n[3][2] = 0.0f;
+    descriptor._n = descriptor._n.inverse().transpose();
+
+    GeometryMesh mesh = { };
+    mesh._vertexBufferView = model.getVertexBufferView();
+    mesh._indexBufferView = model.getIndexBufferView();
+    mesh._meshTransform = &descriptor;
+    mesh._meshDescriptor = transformId;
+    mesh._materialDescriptor = materialId;
+    mesh._matData = &mat;
+    mesh._startVert = model.getSubMesh(0)->m_vertOffset;
+    mesh._vertCount = model.getSubMesh(0)->m_vertCount;
+    mesh._indCount = model.getSubMesh(0)->m_indCount;
+    mesh._indOffset = model.getSubMesh(0)->m_indOffset;
+    
+    mesh._vertInst = 1;
 
     while (!bShouldClose) {
-      pollEvent();
-      pRenderer->update(0.0f, globals);
-      pRenderer->render();
+        pollEvent();
+        pRenderer->pushMesh(&mesh);
+        pRenderer->update(0.0f, globals);
+        pRenderer->render();
     }
 
     cleanUpEngine();

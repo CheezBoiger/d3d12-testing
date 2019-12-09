@@ -16,39 +16,80 @@ namespace jcl {
 
 using namespace m;
 
+struct Vertex
+{
+    struct { R32 _x, _y, _z, _w; } _position;
+    struct { R32 _x, _y, _z, _w; } _normal;
+    struct { R32 _x, _y, _z, _w; } _tangent;
+    struct { R32 _x, _y, _z, _w; } _texcoords;
+};
+
+typedef U64 RenderUUID;
+
+struct VertexBuffer
+{
+    RenderUUID resource;
+    RenderUUID vertexBufferView;
+};
+
+
+struct IndexBuffer
+{
+    RenderUUID resource;
+    RenderUUID indexBufferView;
+};
+
 // Global descriptor, to be used throughout each graphics render pass.
 // Keep in mind that buffers in gpu MUST ALWAYS BE ALIGNED 16 BYTES (multiple of 16 bytes).
 struct Globals 
 {
-  // Camera Position in world space.
-  Vector4 _cameraPos;
-  // Inverse View. View To World
-  Matrix44 _viewToWorld;
-  // View
-  Matrix44 _worldToView;
-  // Projection
-  Matrix44 _proj;
-  // View-Projection.
-  Matrix44 _viewToClip;
-  // Inverse View-Projection.
-  Matrix44 _clipToView;
-  // target view size.
-  U32 _targetSize[4]; 
+    // Camera Position in world space.
+    Vector4 _cameraPos;
+    // Inverse View. View To World
+    Matrix44 _viewToWorld;
+    // View
+    Matrix44 _worldToView;
+    // Projection
+    Matrix44 _proj;
+    // View-Projection.
+    Matrix44 _viewToClip;
+    // Inverse View-Projection.
+    Matrix44 _clipToView;
+    // target view size.
+    U32 _targetSize[4]; 
+    // Allow bump mapping texturing.
+    U32 _allowBumpMapping;
+    // Near Z Plane.
+    R32 _near;
+    // Far Z Plane.
+    R32 _far;
+    // PAdding.
+    R32 _pad0;
 };
 
 
 struct PerMeshDescriptor
 {
-  // Model World transform.
-  Matrix44 _world;
-  // Model-View-Projection transform.
-  Matrix44 _worldToViewClip;
-  // Previous frame Model-View-Projection transform.
-  Matrix44 _previousWorldToViewClip;
-  // Normal Correction 
-  Matrix44 _n;
-  // Materials
-  Vector4 _matrialFlags;
+    // Model World transform.
+    Matrix44 _world;
+    // Model-View-Projection transform.
+    Matrix44 _worldToViewClip;
+    // Previous frame Model-View-Projection transform.
+    Matrix44 _previousWorldToViewClip;
+    // Normal Correction 
+    Matrix44 _n;
+};
+
+
+struct PerMaterialDescriptor
+{
+    Vector4 _color;
+    Vector4 _roughnessMetallicFactor;
+    Vector4 _emissionFactor;
+    Vector4 _albedoFactor;
+    Vector4 _fresnelFactor;
+      // Materials
+      U32 _matrialFlags;
 };
 
 
@@ -70,20 +111,20 @@ struct GBuffer
     gfx::RenderPass* pRenderPass;
 };
 
-
-
-typedef U64 RenderUUID;
-
 struct GeometryMesh
  {
     RenderUUID _meshDescriptor;
     RenderUUID _materialDescriptor;
     RenderUUID _vertexBufferView;
     RenderUUID _indexBufferView;
+    PerMeshDescriptor* _meshTransform;
+    PerMaterialDescriptor* _matData;
 
     U32 _vertCount;
     U32 _vertInst;
     U32 _startVert;
+    U32 _indCount;
+    U32 _indOffset;
 };
 
 struct RenderGroup 

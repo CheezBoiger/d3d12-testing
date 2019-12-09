@@ -28,8 +28,17 @@ PSOutputGBuffer main ( PSInputGeometry Input )
     float3 BiTangent = Input.BiTangent.xyz;
     float3 Normal = Input.Normal.xyz;
 
-    float3 AlbedoColor = AlbedoMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
-    float3 NormalColor = NormalMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
+    float3 AlbedoColor = Material.Color;
+    float3 NormalColor = Normal;
+
+    if ( Material.MaterialFlags.x & MATERIAL_USE_ALBEDO_MAP) { 
+        AlbedoColor = AlbedoMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
+    }
+
+    if ( Material.MaterialFlags.x & MATERIAL_USE_NORMAL_MAP ) {
+        NormalColor = NormalMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
+    }
+
     float4 RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
     float4 EmissionColor = EmissionMap.Sample( SurfaceSampler, Input.TexCoords.xy );
 
@@ -44,7 +53,7 @@ PSOutputGBuffer main ( PSInputGeometry Input )
         NormalColor = BumpNormal;
     }
 
-    GBuffer.Albedo = float4( AlbedoColor, 1.0 );
+    GBuffer.Albedo = float4( AlbedoColor * Material.AlbedoFactor.xyz , 1.0 );
     GBuffer.Normal = float4( NormalColor, 1.0 );
     GBuffer.RoughnessMetallic = float4( RoughMetalColor.xy, 0.0, 1.0 );
     GBuffer.Emission = float4( EmissionColor.xyz, Material.EmissionFactor.x );

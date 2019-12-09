@@ -11,8 +11,8 @@ PSInputGeometry main( VSInputGeometry Input )
 {
     PSInputGeometry Ps;
 
-    Ps.Position = mul( Input.Position, Mesh.WorldToViewClip );
-    Ps.Normal = mul( Input.Normal, Mesh.N );
+    Ps.Position = mul( Mesh.WorldToViewClip, Input.Position);
+    Ps.Normal = mul(Mesh.N, Input.Normal);
 
     Ps.TexCoords = Input.TexCoord;
     Ps.Tangent = Input.Tangent;
