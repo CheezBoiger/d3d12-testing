@@ -46,8 +46,9 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
   config._windowed = true;
   m_pBackend->initialize(handle, false, config);
 
-  if (m_pBackend->isHardwareRaytracingCompatible()) {
-  }
+    if (m_pBackend->isHardwareRaytracingCompatible()) {
+    
+    }
 
   if (m_pBackend->isHardwareMachineLearningCompatible()) {
     
@@ -573,5 +574,54 @@ IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
     b.indexBufferView = id;
     b.resource = res;
     return b;
+}
+
+
+RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData, DXGI_FORMAT format)
+{
+    gfx::Resource* pResource = nullptr;
+    RenderUUID id = idd++;
+    m_pBackend->createTexture(&pResource,
+                                gfx::RESOURCE_DIMENSION_2D,
+                                gfx::RESOURCE_USAGE_DEFAULT,
+                                gfx::RESOURCE_BIND_SHADER_RESOURCE,
+                                format,
+                                width, height);
+    {
+        gfx::Fence* pFence = nullptr;
+        gfx::Resource* pStaging = nullptr;
+        gfx::CommandList* pList = nullptr;
+        U64 szBytes = width * height * 4;
+        m_pBackend->createBuffer(&pStaging,
+            gfx::RESOURCE_USAGE_CPU_TO_GPU,
+            gfx::RESOURCE_BIND_SHADER_RESOURCE,
+            szBytes,
+            0,
+            TEXT("staging"));
+
+        void* ptr = pStaging->map(0, szBytes);
+        memcpy(ptr, pData, szBytes);
+        pStaging->unmap(0, szBytes);
+
+        m_pBackend->createFence(&pFence);
+        m_pBackend->createCommandList(&pList);
+        pList->init();
+        pList->reset();
+        pList->copyResource(pResource, pStaging);
+        pList->close();
+
+        m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
+        m_pBackend->signalFence(m_pBackend->getSwapchainQueue(), pFence);
+
+        m_pBackend->waitFence(pFence);
+        m_pBackend->destroyResource(pStaging);
+        m_pBackend->destroyFence(pFence);
+        m_pBackend->destroyCommandList(pList);
+    }
+
+    gfx::ShaderResourceView* pView = nullptr;
+    m_pBackend->createShaderResourceView(&pView, pResource, 0, width * height);
+    m_pGraphicsResources[id] = pResource;
+    return id;
 }
 } // jcl

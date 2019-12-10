@@ -61,6 +61,7 @@ public:
     RenderUUID createTransformBuffer();
     RenderUUID createMaterialBuffer();
     IndexBuffer createIndexBufferView(void* raw, U64 szBytes);
+    RenderUUID createTexture2D(U64 width, U64 height, void* pData, DXGI_FORMAT format);
 
     RenderUUID createBuffer(gfx::ResourceUsage usage, gfx::ResourceBindFlags flags, U64 sz, U64 strideBytes, const TCHAR* debug);
     VertexBuffer createVertexBuffer(void* meshRaw, U64 vertexSzBytes, U64 meshSzBytes);
