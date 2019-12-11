@@ -11,6 +11,7 @@ PSInputVelocity main( VSInputGeometry Input )
 
     Output.ClipPosition = mul(Mesh.WorldToViewClip, Input.Position);
     Output.PrevClipPosition = mul(Mesh.PrevWorldToViewClip, Input.Position);
-
+    
+    Output.Position = Output.ClipPosition;
 	return Output;
 }

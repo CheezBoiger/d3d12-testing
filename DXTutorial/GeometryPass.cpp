@@ -1,6 +1,7 @@
 //
 #include "FrontEndRenderer.h"
 #include "GeometryPass.h"
+#include "GraphicsResources.h"
 
 namespace jcl {
 
@@ -163,10 +164,10 @@ void GeometryPass::generateCommands
         RenderUUID vertUUID = pMeshes[i]->_vertexBufferView;
         RenderUUID indUUID = pMeshes[i]->_indexBufferView;
 
-        gfx::Resource* pMeshDescriptor = pRenderer->getResource(meshUUID);
-        gfx::Resource* pMatDescriptor = pRenderer->getResource(matUUID);
+        gfx::Resource* pMeshDescriptor = getResource(meshUUID);
+        gfx::Resource* pMatDescriptor = getResource(matUUID);
 
-        gfx::VertexBufferView* pView = pRenderer->getVertexBufferView(vertUUID);
+        gfx::VertexBufferView* pView = getVertexBufferView(vertUUID);
 
         pList->setGraphicsRootConstantBufferView(GLOBAL_CONST_SLOT, pRenderer->getGlobalsBuffer());
         pList->setGraphicsRootConstantBufferView(MESH_TRANSFORM_SLOT, pMeshDescriptor);
@@ -176,7 +177,7 @@ void GeometryPass::generateCommands
         pList->setVertexBuffers(0, &pView, 1);
 
         if (indUUID != 0) {
-            pList->setIndexBuffer(pRenderer->getIndexBufferView(indUUID));
+            pList->setIndexBuffer(getIndexBufferView(indUUID));
             pList->drawIndexedInstanced(pMeshes[i]->_indCount, pMeshes[i]->_vertInst, pMeshes[i]->_indOffset, pMeshes[i]->_startVert, 0);
         } else {
             pList->drawInstanced(pMeshes[i]->_vertCount, pMeshes[i]->_vertInst, pMeshes[i]->_startVert, 0);

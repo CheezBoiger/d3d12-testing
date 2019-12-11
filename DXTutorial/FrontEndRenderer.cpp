@@ -3,21 +3,12 @@
 #include "D3D12/D3D12Backend.h"
 #include "D3D11/D3D11Backend.h"
 #include "GlobalDef.h"
+#include "VelocityRenderer.h"
+#include "GraphicsResources.h"
 
 #include <fstream>
 
 namespace jcl {
-
-
-class GPUCache
-{
-public:
-    static RenderUUID cacheGPUResource(gfx::Resource* pResource);
-    static gfx::Resource* getGPUResource(RenderUUID uuid);
-};
-
-
-RenderUUID idd = 0;
 
 
 void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
@@ -66,20 +57,6 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                            gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                            sizeof(Globals),
                            0, TEXT("Globals"));
-
-    m_pBackend->createBuffer(&pMeshBuffer,
-                                gfx::RESOURCE_USAGE_CPU_TO_GPU,
-                                gfx::RESOURCE_BIND_CONSTANT_BUFFER,
-                                sizeof(PerMeshDescriptor), 
-                                0, TEXT("MeshData"));
-    m_pGraphicsResources[pMeshBuffer->getUUID()] = pMeshBuffer;
-
-  m_pBackend->createBuffer(&pOtherMeshBuffer,
-                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
-                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
-                           sizeof(PerMeshDescriptor), 
-                           0, TEXT("OtherMeshData"));
-    m_pGraphicsResources[pOtherMeshBuffer->getUUID()] = pOtherMeshBuffer;
 
   m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
                            gfx::RESOURCE_DIMENSION_2D,
@@ -149,6 +126,8 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_gbuffer.pRenderPass->setDepthStencil(m_pSceneDepthView);
     m_geometryPass.setGBuffer(&m_gbuffer);
     m_geometryPass.initialize(m_pBackend);
+
+    initializeVelocityRenderer(m_pBackend, m_pSceneDepthView);
 }
 
 
@@ -230,6 +209,7 @@ void FrontEndRenderer::render()
     m_pList->setMarker("GBuffer Pass");
 
     m_geometryPass.generateCommands(this, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
+    submitVelocityCommands(m_pBackend, pGlobalsBuffer, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
 
 
     m_pList->close();
@@ -266,8 +246,8 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
     pGlobalsBuffer->unmap(0, sizeof(Globals));
 
     for (U64 i = 0; i < m_opaqueMeshes.size(); ++i) {
-        gfx::Resource* pDescriptor = m_pGraphicsResources[ m_opaqueMeshes[i]->_meshDescriptor ];
-        gfx::Resource* pMatDescriptor = m_pGraphicsResources[ m_opaqueMeshes[i]->_materialDescriptor ];
+        gfx::Resource* pDescriptor = getResource(m_opaqueMeshes[i]->_meshDescriptor);
+        gfx::Resource* pMatDescriptor = getResource(m_opaqueMeshes[i]->_materialDescriptor);
         pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));
         pMatPtr = pMatDescriptor->map(0, sizeof(PerMaterialDescriptor));
         memcpy(pPtr, m_opaqueMeshes[i]->_meshTransform, sizeof(PerMeshDescriptor));
@@ -389,10 +369,8 @@ RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx
                                 height, 
                                 depth, 
                                 strideBytes, 
-                                debugName);
-    RenderUUID id = idd++;
-    m_pGraphicsResources[id] = pResource;
-    return id;
+                                debugName); 
+    return cacheResource(pResource);
 }
 
 
@@ -400,9 +378,7 @@ RenderUUID FrontEndRenderer::createBuffer(gfx::ResourceUsage usage, gfx::Resourc
 {
     gfx::Resource* pResource = nullptr;
     m_pBackend->createBuffer(&pResource, usage, flags, sz, strideBytes, debug);
-    RenderUUID id = idd++;
-    m_pGraphicsResources[id] = pResource;
-    return id;
+    return cacheResource(pResource);
 }
 
 
@@ -454,10 +430,8 @@ VertexBuffer FrontEndRenderer::createVertexBuffer(void* meshRaw, U64 vertexSzByt
   }
 
 
-    RenderUUID vertId = idd++;
-    RenderUUID viewId = idd++;
-    m_pGraphicsResources[vertId] = vertexMesh;
-    m_pVertexBufferViews[viewId] = vertexBufferView;
+    RenderUUID vertId = cacheResource(vertexMesh);
+    RenderUUID viewId = cacheVertexBufferView(vertexBufferView);
 
     vertexBuffer.resource = vertId;
     vertexBuffer.vertexBufferView = viewId;
@@ -468,32 +442,26 @@ VertexBuffer FrontEndRenderer::createVertexBuffer(void* meshRaw, U64 vertexSzByt
 
 RenderUUID FrontEndRenderer::createTransformBuffer()
 {
-    RenderUUID transformId;
     gfx::Resource* pResource = nullptr;
     m_pBackend->createBuffer(&pResource,
                                gfx::RESOURCE_USAGE_CPU_TO_GPU,
                                gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                                sizeof(PerMeshDescriptor), 
                                0, TEXT("MeshTranform"));
-    transformId = idd++;
-    m_pGraphicsResources[transformId] = pResource;
-    return transformId;
+    return cacheResource(pResource);
 }
 
 
 RenderUUID FrontEndRenderer::createMaterialBuffer()
 {
-    RenderUUID transformId;
     gfx::Resource* pResource = nullptr;
     m_pBackend->createBuffer(&pResource,
                                gfx::RESOURCE_USAGE_CPU_TO_GPU,
                                gfx::RESOURCE_BIND_CONSTANT_BUFFER,
                                sizeof(PerMaterialDescriptor), 
                                0, TEXT("MaterialDescription"));
-    transformId = idd++;
-    m_pGraphicsResources[transformId] = pResource;
-    return transformId;
-}
+    return cacheResource(pResource);
+ }
 
 
 void FrontEndRenderer::createComputePipelines()
@@ -529,7 +497,6 @@ void FrontEndRenderer::createComputePipelines()
 IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
 {
     IndexBuffer b = { };
-    RenderUUID id = idd++;
     RenderUUID res = createBuffer(  gfx::RESOURCE_USAGE_DEFAULT,
                     gfx::RESOURCE_BIND_INDEX_BUFFER,
                     szBytes,
@@ -555,7 +522,7 @@ IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
         m_pBackend->createCommandList(&pList);
         pList->init();
         pList->reset();
-        pList->copyResource(m_pGraphicsResources[res], pStaging);
+        pList->copyResource(getResource(res), pStaging);
         pList->close();
     
         m_pBackend->submit(m_pBackend->getSwapchainQueue(), &pList, 1);
@@ -568,10 +535,10 @@ IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
     }
 
     gfx::IndexBufferView* view = nullptr;
-    m_pBackend->createIndexBufferView(&view, m_pGraphicsResources[res], DXGI_FORMAT_R32_UINT, szBytes);
-    m_pIndexBufferViews[id] = view;
+    m_pBackend->createIndexBufferView(&view, getResource(res), DXGI_FORMAT_R32_UINT, szBytes);
+    RenderUUID viewId = cacheIndexBufferView(view);
 
-    b.indexBufferView = id;
+    b.indexBufferView = viewId;
     b.resource = res;
     return b;
 }
@@ -580,7 +547,6 @@ IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
 RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData, DXGI_FORMAT format)
 {
     gfx::Resource* pResource = nullptr;
-    RenderUUID id = idd++;
     m_pBackend->createTexture(&pResource,
                                 gfx::RESOURCE_DIMENSION_2D,
                                 gfx::RESOURCE_USAGE_DEFAULT,
@@ -621,7 +587,7 @@ RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData,
 
     gfx::ShaderResourceView* pView = nullptr;
     m_pBackend->createShaderResourceView(&pView, pResource, 0, width * height);
-    m_pGraphicsResources[id] = pResource;
+    RenderUUID id = cacheResource(pResource);
     return id;
 }
 } // jcl

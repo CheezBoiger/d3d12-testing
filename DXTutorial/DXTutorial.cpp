@@ -109,6 +109,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mat._albedoFactor = Vector4(1.0f, 1.0f, 1.0f);
  
     descriptor._worldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
+    descriptor._previousWorldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, -1.0, -1.0)) * V * P;
     descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
     descriptor._n = descriptor._world;
     descriptor._n[3][0] = 0.0f;

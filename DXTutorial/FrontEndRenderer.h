@@ -3,6 +3,7 @@
 #include "BackendRenderer.h"
 #include <vector>
 #include "GlobalDef.h"
+#include "VelocityRenderer.h"
 #include "GeometryPass.h"
 
 #include <unordered_map>
@@ -46,12 +47,6 @@ public:
     void update(R32 dt, Globals& globals);
 
     void pushMesh(GeometryMesh* pMesh) { m_opaqueMeshes.push_back(pMesh); }
-
-    gfx::Resource* getResource(RenderUUID uuid) { return m_pGraphicsResources[uuid]; }
-
-    gfx::VertexBufferView* getVertexBufferView(RenderUUID uuid) { return m_pVertexBufferViews[uuid]; }
-
-    gfx::IndexBufferView* getIndexBufferView(RenderUUID uuid) { return m_pIndexBufferViews[uuid]; }
 
     gfx::DepthStencilView* getSceneDepthView() { return m_pSceneDepthView; }
 
@@ -134,9 +129,5 @@ private:
     // RenderGroups define the pass set for this particular set of calls.
     // Should only be setting resize on amortized time.
     std::vector<RenderGroup*> m_renderGroups;
-
-    std::unordered_map<RenderUUID, gfx::Resource*> m_pGraphicsResources;
-    std::unordered_map<RenderUUID, gfx::VertexBufferView*> m_pVertexBufferViews;
-    std::unordered_map<RenderUUID, gfx::IndexBufferView*> m_pIndexBufferViews;
 };
 } //

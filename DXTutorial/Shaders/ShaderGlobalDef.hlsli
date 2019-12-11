@@ -89,7 +89,8 @@ struct VSDepthInputGeometry
 
 struct PSInputVelocity
 {
-    float4 ClipPosition : SV_POSITION;
+    float4 Position : SV_POSITION;
+    float4 ClipPosition : POSITION0;
     float4 PrevClipPosition : POSITION1;
 };
 
@@ -117,12 +118,6 @@ struct PSOutputGBuffer
 
 
 struct PSVelocityOutput
-{
-    float4 Velocity : SV_TARGET0;
-};
-
-
-struct PSOutputVelocity
 {
     float4 Velocity : SV_TARGET0;
 };

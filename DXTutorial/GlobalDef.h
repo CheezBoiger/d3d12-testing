@@ -100,13 +100,11 @@ struct GBuffer
     gfx::Resource* pMaterialTexture;
     gfx::Resource* pNormalTexture;
     gfx::Resource* pEmissiveTexture;
-    gfx::Resource* pVelocityTexture;
 
     gfx::RenderTargetView* pAlbedoRTV;
     gfx::RenderTargetView* pMaterialRTV;
     gfx::RenderTargetView* pNormalRTV;
     gfx::RenderTargetView* pEmissiveRTV;
-    gfx::RenderTargetView* pVelocityRTV;
 
     gfx::RenderPass* pRenderPass;
 };

@@ -98,7 +98,7 @@ public:
 
         if (!tag) t = "";
 
-        PIXSetMarker(m_pCmdList[getBackendD3D12()->getFrameIndex()], 0, tag);
+        PIXSetMarker(m_pCmdList[getBackendD3D12()->getFrameIndex()], 0, t);
     }
 
     virtual void drawInstanced
