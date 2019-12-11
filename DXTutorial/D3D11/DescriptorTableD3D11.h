@@ -13,7 +13,7 @@ namespace gfx {
 struct DescriptorTableD3D11 : public DescriptorTable
 {
 
-  void setShaderResourceViews(Resource** resources, U32 bufferCount) override {}
+  void setShaderResourceViews(ShaderResourceView** resources, U32 bufferCount) override {}
   void setUnorderedAccessViews(Resource** resources, U32 bufferCount) override {}
   
   void setConstantBuffers(Resource** buffer, U32 bufferCount) override {

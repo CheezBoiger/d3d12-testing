@@ -80,6 +80,8 @@ private:
     Globals* m_pGlobals;
     void beginFrame();
     void createGraphicsPipelines();
+    void createFinalPipeline();
+    void createFinalRootSignature();
     void createComputePipelines();
     void endFrame();
 
@@ -119,6 +121,10 @@ private:
     // They don't have to be asyncronous.
     gfx::ComputePipeline* m_pToneMapPipeline;
     gfx::ComputePipeline* m_motionBlurPipeline;
+
+    gfx::GraphicsPipeline* m_pFinalBackBufferPipeline;
+    gfx::RootSignature* m_pFinalRootSig;
+    gfx::DescriptorTable* m_pFinalDescriptorTable;
 
     // Define your transparent meshes, sort them from your opaques.
     std::vector<GeometryMesh*> m_transparentMeshes;

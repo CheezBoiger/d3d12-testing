@@ -816,6 +816,31 @@ void D3D12Backend::createShaderResourceView(ShaderResourceView** srv,
                                             U32 firstElement,
                                             U32 numElements) 
 {
+    ViewHandleD3D12* pView = new ViewHandleD3D12();
+    ID3D12DescriptorHeap* srvHeap = getDescriptorHeap(DESCRIPTOR_HEAP_SRV_UAV_CBV);
+    D3D12_CPU_DESCRIPTOR_HANDLE& cpuHandle = m_descriptorHeapCurrentOffset[DESCRIPTOR_HEAP_SRV_UAV_CBV];
+    U32 incSz = m_pDevice->GetDescriptorHandleIncrementSize(srvHeap->GetDesc().Type);
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = { };
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.PlaneSlice = 0;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    m_viewHandles[pView->getUUID()].resize(m_resources[buffer->getUUID()].size());
+    for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
+        ID3D12Resource* pResource = getResource(buffer->getUUID(), i);
+        D3D12_RESOURCE_DESC desc = pResource->GetDesc();
+        srvDesc.Format = desc.Format;
+        m_pDevice->CreateShaderResourceView(pResource, &srvDesc, cpuHandle);
+        m_viewHandles[pView->getUUID()][i] = cpuHandle;
+        cpuHandle.ptr += incSz;
+    }
+    
+    pView->_currentState = D3D12_RESOURCE_STATE_COMMON;
+    pView->_buffer = buffer->getUUID();
+    
+    *srv = pView;
 }
 
 
@@ -940,7 +965,6 @@ void D3D12Backend::createDescriptorHeaps()
         desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
         break;
       default:
-        desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         break;
     }

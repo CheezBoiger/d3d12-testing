@@ -3,7 +3,7 @@
 
 Texture2D<float4> InputTex : register( t0 );
 
-SamplerState BuiltInSampler 
+sampler BuiltInSampler : register( s0 )
 {
     Filter = MIN_MAG_MIP_LINEAR;
     AddressU = Wrap;

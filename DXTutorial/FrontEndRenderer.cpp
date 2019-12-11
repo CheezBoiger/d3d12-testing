@@ -71,11 +71,14 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_pBackend->createTexture(&m_gbuffer.pNormalTexture,
                                 gfx::RESOURCE_DIMENSION_2D,
                                 gfx::RESOURCE_USAGE_DEFAULT,
-                                gfx::RESOURCE_BIND_RENDER_TARGET,
+                                gfx::RESOURCE_BIND_RENDER_TARGET | gfx::RESOURCE_BIND_SHADER_RESOURCE,
                                 DXGI_FORMAT_R8G8B8A8_UNORM,
                                 1920,
                                 1080,
                                 1, 0, TEXT("GBufferNormal"));
+    m_pBackend->createShaderResourceView(&m_gbuffer.pNormalSRV,
+                                            m_gbuffer.pNormalTexture,
+                                            0, 1);
   m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
                                      m_gbuffer.pAlbedoTexture);
     m_pBackend->createRenderTargetView(&m_gbuffer.pNormalRTV,
@@ -117,6 +120,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
   m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
   m_pPreZPass->setDepthStencil(m_pSceneDepthView);
 
+    createFinalRootSignature();
     createGraphicsPipelines();
     createComputePipelines();
     // Set the scene depth view to be used as read only in gbuffer pass.
@@ -211,6 +215,13 @@ void FrontEndRenderer::render()
     m_geometryPass.generateCommands(this, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
     submitVelocityCommands(m_pBackend, pGlobalsBuffer, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
 
+    m_pList->setMarker("Final Backbuffer Pass");
+    m_pList->setRenderPass(m_pBackend->getBackbufferRenderPass());
+    m_pList->setDescriptorTables(&m_pFinalDescriptorTable, 1);
+    m_pList->setGraphicsRootSignature(m_pFinalRootSig);
+    m_pList->setGraphicsRootDescriptorTable(0, m_pFinalDescriptorTable);
+    m_pList->setGraphicsPipeline(m_pFinalBackBufferPipeline);
+    m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->close();
   }
@@ -335,6 +346,9 @@ void FrontEndRenderer::createGraphicsPipelines()
 
   delete[] vertBytecode._pByteCode;
   delete[] pixBytecode._pByteCode;
+
+    // Final pipeline for quad rendering.
+    createFinalPipeline();
 }
 
 
@@ -589,5 +603,78 @@ RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData,
     m_pBackend->createShaderResourceView(&pView, pResource, 0, width * height);
     RenderUUID id = cacheResource(pResource);
     return id;
+}
+
+
+void FrontEndRenderer::createFinalRootSignature()
+{
+    gfx::PipelineLayout layouts[1] = { };
+    layouts[0]._type = gfx::PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE;
+    layouts[0]._numShaderResourceViews = 1;
+    
+    gfx::StaticSamplerDesc staticSampler = { };
+    staticSampler._addressU = gfx::SAMPLER_ADDRESS_MODE_WRAP;
+    staticSampler._addressV = staticSampler._addressU;
+    staticSampler._addressW = staticSampler._addressV;
+    staticSampler._comparisonFunc = gfx::COMPARISON_FUNC_ALWAYS;
+    staticSampler._filter = gfx::SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+    staticSampler._registerSpace = 0;
+    staticSampler._shaderRegister = 0;
+    staticSampler._minLod = 1.0f;
+    staticSampler._maxLod = 8.0f;
+    staticSampler._maxAnisotropy = 1.0f;
+
+    m_pBackend->createRootSignature(&m_pFinalRootSig);
+    m_pFinalRootSig->initialize(gfx::SHADER_VISIBILITY_VERTEX | gfx::SHADER_VISIBILITY_PIXEL,
+                                layouts, 1, &staticSampler, 1);
+
+    m_pBackend->createDescriptorTable(&m_pFinalDescriptorTable);
+    m_pFinalDescriptorTable->setShaderResourceViews(&m_gbuffer.pNormalSRV, 1);
+    m_pFinalDescriptorTable->finalize();
+}
+
+
+void FrontEndRenderer::createFinalPipeline()
+{
+    gfx::GraphicsPipelineInfo gInfo = { };
+    gInfo._blendState._renderTargets[0]._blendEnable = false;
+    gInfo._blendState._renderTargets[0]._renderTargetWriteMask = 0xf;
+    
+    gInfo._depthStencilState._depthEnable = false;
+    gInfo._depthStencilState._stencilEnable = false;
+
+    gInfo._numRenderTargets = 1;
+    gInfo._rtvFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    
+    gInfo._inputLayout._elementCount = 0;
+    gInfo._inputLayout._pInputElements = nullptr;
+    
+    gInfo._pRootSignature = m_pFinalRootSig;
+    gInfo._sampleMask = 0xffffffff;
+    gInfo._dsvFormat = DXGI_FORMAT_D32_FLOAT;
+    
+    gInfo._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
+    gInfo._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
+    gInfo._rasterizationState._forcedSampleCount = 0;
+    gInfo._rasterizationState._frontCounterClockwise = false;
+    gInfo._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
+
+    gfx::ShaderByteCode vB = { };
+    gfx::ShaderByteCode pB = { };
+
+    vB._pByteCode = new U8[KB_1 * 64];
+    pB._pByteCode = new U8[KB_1 * 64];
+
+    retrieveShader("Composite.ps.cso", &pB._pByteCode, pB._szBytes);
+    retrieveShader("Quad.vs.cso", &vB._pByteCode, vB._szBytes);
+    
+    gInfo._vertexShader = vB;
+    gInfo._pixelShader = pB;
+    
+    m_pBackend->createGraphicsPipelineState(&m_pFinalBackBufferPipeline, &gInfo);
+
+    delete[] vB._pByteCode;
+    delete[] pB._pByteCode;
+    
 }
 } // jcl

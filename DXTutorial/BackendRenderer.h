@@ -111,6 +111,18 @@ public:
 };
 
 
+class TargetView : public GPUObject
+{
+};
+
+
+typedef TargetView RenderTargetView;
+typedef TargetView DepthStencilView;
+typedef TargetView ShaderResourceView;
+typedef TargetView UnorderedAccessView;
+typedef TargetView VertexBufferView;
+
+
 class Fence : public GPUObject
 {
 };
@@ -147,54 +159,56 @@ class Sampler : public GPUObject
 };
 
 
-class DescriptorTable : public GPUObject
+
+enum SamplerAddressMode
 {
-public:
-    virtual ~DescriptorTable() { }
-    virtual void setShaderResourceViews(Resource** resources, U32 bufferCount) { }
-    virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
-    virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
-    virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
-    virtual void finalize() { }
-    virtual void update() { }
+    SAMPLER_ADDRESS_MODE_BORDER,
+    SAMPLER_ADDRESS_MODE_CLAMP,
+    SAMPLER_ADDRESS_MODE_MIRROR,
+    SAMPLER_ADDRESS_MODE_MIRROR_ONCE,
+    SAMPLER_ADDRESS_MODE_WRAP
 };
 
 
-enum PipelineLayoutType
+enum SamplerFilter
 {
-    PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE,
-    PIPELINE_LAYOUT_TYPE_CONSTANTS,
-    PIPELINE_LAYOUT_TYPE_CBV,
-    PIPELINE_LAYOUT_TYPE_SRV,
-    PIPELINE_LAYOUT_TYPE_UAV,
-    PIPELINE_LAYOUT_TYPE_SAMPLERS
+        SAMPLER_FILTER_MIN_MAG_MIP_POINT	= 0,
+        SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR	= 0x1,
+        SAMPLER_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x4,
+        SAMPLER_FILTER_MIN_POINT_MAG_MIP_LINEAR	= 0x5,
+        SAMPLER_FILTER_MIN_LINEAR_MAG_MIP_POINT	= 0x10,
+        SAMPLER_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x11,
+        SAMPLER_FILTER_MIN_MAG_LINEAR_MIP_POINT	= 0x14,
+        SAMPLER_FILTER_MIN_MAG_MIP_LINEAR	= 0x15,
+        SAMPLER_FILTER_ANISOTROPIC	= 0x55,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_POINT	= 0x80,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR	= 0x81,
+        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x84,
+        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR	= 0x85,
+        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT	= 0x90,
+        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x91,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT	= 0x94,
+        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR	= 0x95,
+        SAMPLER_FILTER_COMPARISON_ANISOTROPIC	= 0xd5,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_POINT	= 0x100,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x101,
+        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x104,
+        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x105,
+        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x110,
+        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x111,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x114,
+        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR	= 0x115,
+        SAMPLER_FILTER_MINIMUM_ANISOTROPIC	= 0x155,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_POINT	= 0x180,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x181,
+        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x184,
+        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x185,
+        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x190,
+        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x191,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x194,
+        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR	= 0x195,
+        SAMPLER_FILTER_MAXIMUM_ANISOTROPIC	= 0x1d5
 };
-
-
-struct PipelineLayout
-{
-  PipelineLayoutType _type;
-  U32 _numConstantBuffers;
-  U32 _numSamplers;
-  U32 _numUnorderedAcessViews;
-  U32 _numShaderResourceViews;
-};
-
-class RootSignature : public GPUObject
-{
-public:
-  virtual void initialize(ShaderVisibilityFlags visibleFlags,
-                          PipelineLayout* pLayouts, 
-                          U32 numLayouts) { }
-};
-
-
-struct ShaderByteCode 
-{
-  void* _pByteCode;
-  size_t _szBytes;
-};
-
 
 enum PrimitiveTopology 
 {
@@ -266,6 +280,79 @@ enum DepthWriteMask
 {
   DEPTH_WRITE_MASK_ZERO,
   DEPTH_WRITE_MASK_ALL
+};
+
+
+struct SamplerDesc
+{
+    SamplerAddressMode _addressU;
+    SamplerAddressMode _addressV;
+    SamplerAddressMode _addressW;
+    R32 _borderColor[4];
+    ComparisonFunc _comparisonFunc;
+    SamplerFilter _filter;    
+    R32 _maxAnisotropy;
+    R32 _minLod;
+    R32 _maxLod;
+    R32 _mipLodBias;
+};
+
+
+struct StaticSamplerDesc : public SamplerDesc
+{
+    U32 _registerSpace;
+    U32 _shaderRegister;
+};
+
+
+class DescriptorTable : public GPUObject
+{
+public:
+    virtual ~DescriptorTable() { }
+    virtual void setShaderResourceViews(ShaderResourceView** resources, U32 bufferCount) { }
+    virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
+    virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
+    virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
+    virtual void finalize() { }
+    virtual void update() { }
+};
+
+
+enum PipelineLayoutType
+{
+    PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE,
+    PIPELINE_LAYOUT_TYPE_CONSTANTS,
+    PIPELINE_LAYOUT_TYPE_CBV,
+    PIPELINE_LAYOUT_TYPE_SRV,
+    PIPELINE_LAYOUT_TYPE_UAV,
+    PIPELINE_LAYOUT_TYPE_SAMPLERS
+};
+
+
+struct PipelineLayout
+{
+  PipelineLayoutType _type;
+  U32 _numConstantBuffers;
+  U32 _numSamplers;
+  U32 _numUnorderedAcessViews;
+  U32 _numShaderResourceViews;
+};
+
+class RootSignature : public GPUObject
+{
+public:
+    virtual void initialize(ShaderVisibilityFlags visibleFlags,
+                            PipelineLayout* pLayouts, 
+                            U32 numLayouts,
+                            StaticSamplerDesc* pStaticSamplers = nullptr,
+                            U32 staticSamplerCount = 0) { }
+};
+
+
+struct ShaderByteCode 
+{
+  void* _pByteCode;
+  size_t _szBytes;
 };
 
 
@@ -354,72 +441,6 @@ enum ColorWriteEnable
       (((COLOR_WRITE_ENABLE_RED | COLOR_WRITE_ENABLE_GREEN) |
         COLOR_WRITE_ENABLE_BLUE) |
         COLOR_WRITE_ENABLE_ALPHA)
-};
-
-
-enum SamplerAddressMode
-{
-    SAMPLER_ADDRESS_MODE_BORDER,
-    SAMPLER_ADDRESS_MODE_CLAMP,
-    SAMPLER_ADDRESS_MODE_MIRROR,
-    SAMPLER_ADDRESS_MODE_MIRROR_ONCE,
-    SAMPLER_ADDRESS_MODE_WRAP
-};
-
-
-enum SamplerFilter
-{
-        SAMPLER_FILTER_MIN_MAG_MIP_POINT	= 0,
-        SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR	= 0x1,
-        SAMPLER_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x4,
-        SAMPLER_FILTER_MIN_POINT_MAG_MIP_LINEAR	= 0x5,
-        SAMPLER_FILTER_MIN_LINEAR_MAG_MIP_POINT	= 0x10,
-        SAMPLER_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x11,
-        SAMPLER_FILTER_MIN_MAG_LINEAR_MIP_POINT	= 0x14,
-        SAMPLER_FILTER_MIN_MAG_MIP_LINEAR	= 0x15,
-        SAMPLER_FILTER_ANISOTROPIC	= 0x55,
-        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_POINT	= 0x80,
-        SAMPLER_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR	= 0x81,
-        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x84,
-        SAMPLER_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR	= 0x85,
-        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT	= 0x90,
-        SAMPLER_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x91,
-        SAMPLER_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT	= 0x94,
-        SAMPLER_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR	= 0x95,
-        SAMPLER_FILTER_COMPARISON_ANISOTROPIC	= 0xd5,
-        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_POINT	= 0x100,
-        SAMPLER_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x101,
-        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x104,
-        SAMPLER_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x105,
-        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x110,
-        SAMPLER_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x111,
-        SAMPLER_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x114,
-        SAMPLER_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR	= 0x115,
-        SAMPLER_FILTER_MINIMUM_ANISOTROPIC	= 0x155,
-        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_POINT	= 0x180,
-        SAMPLER_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR	= 0x181,
-        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT	= 0x184,
-        SAMPLER_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR	= 0x185,
-        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT	= 0x190,
-        SAMPLER_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR	= 0x191,
-        SAMPLER_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT	= 0x194,
-        SAMPLER_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR	= 0x195,
-        SAMPLER_FILTER_MAXIMUM_ANISOTROPIC	= 0x1d5
-};
-
-
-struct SamplerDesc
-{
-    SamplerAddressMode _addressU;
-    SamplerAddressMode _addressV;
-    SamplerAddressMode _addressW;
-    R32 _borderColor[4];
-    ComparisonFunc _comparisonFunc;
-    SamplerFilter _filter;    
-    R32 _maxAnisotropy;
-    R32 _minLod;
-    R32 _maxLod;
-    R32 _mipLodBias;
 };
 
 
@@ -599,16 +620,6 @@ public:
 };
 
 
-class TargetView : public GPUObject
-{
-};
-
-
-typedef TargetView RenderTargetView;
-typedef TargetView DepthStencilView;
-typedef TargetView ShaderResourceView;
-typedef TargetView UnorderedAccessView;
-typedef TargetView VertexBufferView;
 typedef TargetView IndexBufferView;
 
 class RenderPass : public GPUObject

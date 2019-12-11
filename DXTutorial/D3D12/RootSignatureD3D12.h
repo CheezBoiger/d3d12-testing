@@ -48,10 +48,13 @@ public:
 
   void initialize(ShaderVisibilityFlags visibleFlags, 
                   PipelineLayout* pLayouts, 
-                  U32 numLayouts) override {
+                  U32 numLayouts,
+                    StaticSamplerDesc* pStaticSamplers = nullptr,
+                    U32 staticSamplerCount = 0) override {
     static D3D12_ROOT_PARAMETER kParameters[64];
     static D3D12_STATIC_SAMPLER_DESC kStaticSamplerDescs[32];
     U32 parameterCount = 0;
+    U32 staticSamplerC = 0;
 
     std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> kDescriptorRanges(numLayouts);
 
@@ -142,9 +145,30 @@ public:
       kParameters[parameterCount++] = rootParam;
     }
 
+    if (staticSamplerCount > 0) {
+        for (U32 i = 0; i < staticSamplerCount; ++i) {
+            kStaticSamplerDescs[i] = { };
+            kStaticSamplerDescs[i].AddressU = getNativeTextureAddress(pStaticSamplers[i]._addressU);   
+            kStaticSamplerDescs[i].AddressV = getNativeTextureAddress(pStaticSamplers[i]._addressV);
+            kStaticSamplerDescs[i].AddressW = getNativeTextureAddress(pStaticSamplers[i]._addressW);
+            kStaticSamplerDescs[i].BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+            kStaticSamplerDescs[i].ComparisonFunc = getComparisonFunc(pStaticSamplers[i]._comparisonFunc);
+            kStaticSamplerDescs[i].Filter = getNativeFilter(pStaticSamplers[i]._filter);
+            kStaticSamplerDescs[i].MaxAnisotropy = pStaticSamplers[i]._maxAnisotropy;
+            kStaticSamplerDescs[i].MaxLOD = pStaticSamplers[i]._maxLod;
+            kStaticSamplerDescs[i].MinLOD = pStaticSamplers[i]._minLod;
+            kStaticSamplerDescs[i].MipLODBias = pStaticSamplers[i]._mipLodBias;
+            kStaticSamplerDescs[i].RegisterSpace = pStaticSamplers[i]._registerSpace;
+            kStaticSamplerDescs[i].ShaderRegister = pStaticSamplers[i]._shaderRegister;
+            kStaticSamplerDescs[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+        }
+
+        staticSamplerC = staticSamplerCount;
+    }
+
       rootSigDesc.NumParameters = parameterCount;
       rootSigDesc.pParameters = kParameters;
-      rootSigDesc.NumStaticSamplers = 0;
+      rootSigDesc.NumStaticSamplers = staticSamplerC;
       rootSigDesc.pStaticSamplers = kStaticSamplerDescs;
       rootSigDesc.Flags = getNativeRootSignatureFlags(visibleFlags);
 

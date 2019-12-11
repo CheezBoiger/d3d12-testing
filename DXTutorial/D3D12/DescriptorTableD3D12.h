@@ -26,9 +26,18 @@ struct DescriptorTableD3D12 : public DescriptorTable {
         }      
     }
 
-  void finalize() override { 
-    createDescriptorHeapForTable();
-  }
+
+    void setShaderResourceViews(ShaderResourceView** buffers, U32 viewCount) override {
+        _shaderResourceViews.resize(viewCount);
+        for (U32 i = 0; i < viewCount; ++i) {
+            _shaderResourceViews[i] = buffers[i];
+        }
+    }
+
+
+    void finalize() override { 
+        createDescriptorHeapForTable();
+    }
 
 private:
   
@@ -62,8 +71,12 @@ private:
         }
 
         for (U32 i = 0; i < _shaderResourceViews.size(); ++i) {
-          D3D12_SHADER_RESOURCE_VIEW_DESC desc = { };
-          offset.ptr += incSize;
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = { };
+            ViewHandleD3D12* view = static_cast<ViewHandleD3D12*>(_shaderResourceViews[i]);
+            D3D12_CPU_DESCRIPTOR_HANDLE srcHandle = getBackendD3D12()->getViewHandle(view->getUUID(), 0);
+            UINT sz = 1;
+            getBackendD3D12()->getDevice()->CopyDescriptors(1, &offset, &sz, 1, &srcHandle, &sz, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            offset.ptr += incSize;
         }
     
         for (U32 i = 0; i < _unorderedAccessViews.size(); ++i) {
@@ -73,6 +86,7 @@ private:
 
         getBackendD3D12()->setDescriptorHeap(getUUID(), pHeap);
     }
+
 
     if (_samplers.empty()) {
         return;
@@ -100,9 +114,10 @@ private:
 public:
 
   std::vector<Resource*> _constantBuffers;
-  std::vector<Resource*> _shaderResourceViews;
+  std::vector<ShaderResourceView*> _shaderResourceViews;
   std::vector<Resource*> _unorderedAccessViews;
   std::vector<Sampler*> _samplers;
+    std::vector<SamplerDesc> _staticSamplers;
   
 };
 } // gfx

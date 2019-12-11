@@ -106,6 +106,8 @@ struct GBuffer
     gfx::RenderTargetView* pNormalRTV;
     gfx::RenderTargetView* pEmissiveRTV;
 
+    gfx::ShaderResourceView* pNormalSRV;
+
     gfx::RenderPass* pRenderPass;
 };
 
