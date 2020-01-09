@@ -230,6 +230,10 @@ public:
         return m_pSamplerDescriptorHeaps[key];    
     }
 
+    FrameResource* getCurrentFrameResource() {
+        return &m_frameResources[m_frameIndex];
+    }
+
 private:
 
     void queryForDevice(IDXGIFactory4* pFactory);

@@ -93,6 +93,12 @@ struct PerMaterialDescriptor
 };
 
 
+struct PerLightSpaceDescriptor
+{
+    Matrix44 _viewProj;
+};
+
+
 // Deferred rendering textures, to be resolved later on.
 struct GBuffer 
 {

@@ -5,6 +5,7 @@
 #include "GlobalDef.h"
 #include "VelocityRenderer.h"
 #include "GraphicsResources.h"
+#include "DebugGUI.h"
 
 #include <fstream>
 
@@ -214,6 +215,9 @@ void FrontEndRenderer::render()
 
     m_geometryPass.generateCommands(this, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
     submitVelocityCommands(m_pBackend, pGlobalsBuffer, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
+
+    m_pList->setMarker("Debug GUI");
+    populateCommandListGUI(m_pBackend, m_pList);
 
     m_pList->setMarker("Final Backbuffer Pass");
     m_pList->setRenderPass(m_pBackend->getBackbufferRenderPass());
