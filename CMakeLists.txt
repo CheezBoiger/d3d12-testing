@@ -1,0 +1,12 @@
+cmake_minimum_required ( VERSION 3.0 )
+project ( "Renegade" )
+
+set ( RENEGADE_AUTHOR "")
+set ( RENEGADE_VERSION_MAJOR 0)
+set ( RENEGADE_VERSION_PART 0)
+set ( RENEGADE_VERION_MINOR 0)
+set ( RENEGADE_VERSION_STRING "${RENEGADE_VERSION_MAJOR}_${RENEGADE_VERSION_MINOR}_${RENEGADE_VERSION_PART}")
+
+include ( DXTutorial/build.cmake )
+
+

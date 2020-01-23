@@ -83,20 +83,42 @@ float3 BRDF(float D, float3 F, float G, float NoL, float NoV)
 
 
 // Calculating the Direct Illumination of a directional light source.
-float3 directionLightRadiance(float3 V, float3 Albedo, float3 N, float roughness, float metallic, float3 F0, DirectionLight Light)
+float3 directionLightRadiance
+    (  
+        // View vector.
+        float3 V,
+        // Albedo value. 
+        float3 Albedo,  
+        // Normal vector.
+        float3 N, 
+        // roughness mask.
+        float roughness, 
+        // metallic mask.
+        float metallic, 
+        // Fresnel base.
+        float3 F0, 
+        // Light information for direction.
+        DirectionLight Light
+    )
 {
+    // Should no light exist, we mark as completely black.
     float3 Color = float3( 0, 0, 0 );
 
     // Reverse the light direction to get from fragment depth to light source vector.
     float3 L = normalize( -Light.Dir.xyz );
+    
     float3 Radiance = Light.Color.xyz;
 
     // Half vector.
     float3 H = normalize( L + V );
     
-    float NoL = clamp( dot(N, L), 0.001, 1.0 );
+    // Normal dot Light direction.
+    float NoL = clamp( dot( N, L ), 0.001, 1.0 );
+    // Normal dot View direction.
     float NoV = clamp( abs( dot( N, V ) ), 0.001, 1.0 );
+    // Normal dot half direction.
     float NoH = clamp( dot( N, H ), 0.001, 1.0 );
+    // View dot half direction.
     float VoH = clamp( dot( V, H ), 0.001, 1.0 );
 
     if (NoL > 0) {

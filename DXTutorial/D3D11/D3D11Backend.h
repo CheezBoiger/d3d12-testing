@@ -35,7 +35,9 @@ struct BufferD3D11 : public Resource
     BufferD3D11(ResourceDimension dimension,
                 ResourceUsage usage,
                 ResourceBindFlags flags) 
-    : Resource(dimension, usage, flags) { }
+    : Resource( dimension, usage, flags )
+    , _width( 0 )
+    , _flags( flags ) { }
     virtual void* map(U64 start, U64 sz) override;
     virtual void unmap(U64 start, U64 sz) override;
     U32 _width;
@@ -48,6 +50,9 @@ struct TextureD3D11 : public BufferD3D11
 {
   TextureD3D11(ResourceDimension dimension, ResourceUsage usage, ResourceBindFlags flags)
     : BufferD3D11(dimension, usage, flags)
+    , _format( DXGI_FORMAT_UNKNOWN )
+    , _height( 0 )
+    , _depth( 0 )
     { }
   DXGI_FORMAT _format;
   U32 _height;

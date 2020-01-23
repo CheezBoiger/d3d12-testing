@@ -6,6 +6,8 @@
 #include "Math/Vector4.h"
 #include "FrontEndRenderer.h"
 #include "Model/Model.h"
+#include "Time.h"
+#include "imgui.h"
 
 using namespace jcl;
 
@@ -34,6 +36,7 @@ jcl::FrontEndRenderer* pRenderer;
 
 void pollEvent()
 {
+    
   MSG msg;
   // Main message loop:
   while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -132,6 +135,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh._vertInst = 1;
 
     while (!bShouldClose) {
+        Time::update();
         pollEvent();
         pRenderer->pushMesh(&mesh);
         pRenderer->update(0.0f, globals);

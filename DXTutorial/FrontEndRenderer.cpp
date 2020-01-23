@@ -138,8 +138,15 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 
 void FrontEndRenderer::render()
 {
-  beginFrame();
-  if (m_pList) {
+    beginFrame();
+
+    if (!m_pList) {
+        // No list, end the frame.
+        endFrame();
+    }
+
+    // Begin rendering 
+
     gfx::Viewport viewport = { };
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -219,6 +226,7 @@ void FrontEndRenderer::render()
     m_pList->setMarker("Debug GUI");
     populateCommandListGUI(m_pBackend, m_pList);
 
+    // Render the final pass.
     m_pList->setMarker("Final Backbuffer Pass");
     m_pList->setRenderPass(m_pBackend->getBackbufferRenderPass());
     m_pList->setDescriptorTables(&m_pFinalDescriptorTable, 1);
@@ -228,8 +236,7 @@ void FrontEndRenderer::render()
     m_pList->drawInstanced(3, 1, 0, 0);
 
     m_pList->close();
-  }
-  m_pBackend->submit(m_pBackend->getSwapchainQueue(), &m_pList, 1);
+
   endFrame();
 }
 
@@ -241,6 +248,8 @@ void FrontEndRenderer::beginFrame()
 
 void FrontEndRenderer::endFrame()
 {
+    m_pBackend->submit(m_pBackend->getSwapchainQueue(), &m_pList, 1);
+
     m_pBackend->present();
     m_opaqueMeshes.clear();
     m_transparentMeshes.clear();
