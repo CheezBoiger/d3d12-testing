@@ -124,7 +124,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         Time::update();
         pollEvent();
         Time time;
-        R32 t = time.getTimeStamp();
+        R32 t = 0.f;time.getTimeStamp();
         globals._cameraPos = { sinf(t * 0.0000001f) * 5.0f, 0.0f, cosf(t * 0.0000001f) * 5.0f, 1.0f };
         Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
         Matrix44 V = m::Matrix44::lookAtRH(globals._cameraPos,
@@ -132,7 +132,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             Vector3(0.0f, 1.0f, 0.0f));
         globals._viewToClip = V * P;
 
-        descriptor._worldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
+        descriptor._worldToViewClip = Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
         descriptor._previousWorldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, -1.0, -1.0)) * V * P;
         descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
         descriptor._n = descriptor._world;

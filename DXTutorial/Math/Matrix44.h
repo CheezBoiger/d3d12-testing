@@ -234,7 +234,22 @@ struct Matrix44 {
         return m;
     }
     static Matrix44 scale(const Matrix44& mat, const Vector4& sc);
-    static Matrix44 rotate(const Matrix44& mat);
+    static Matrix44 rotate(const Matrix44& mat, R32 radians, const Vector3& ax) {
+        R32 oneMinusCosine = 1.0f - cosf(radians);
+        R32 cosine = cosf(radians);
+        R32 sine = sinf(radians);
+
+        Vector3 axis = ax.normalize();
+
+        Matrix44 rotator(
+            cosine + (axis._x * axis._x) * oneMinusCosine, oneMinusCosine * axis._y * axis._x + axis._z * sine, axis._z * axis._x * oneMinusCosine - axis._y * sine, 0,
+            axis._x * axis._y * oneMinusCosine - axis._z * sine, cosine + (axis._y * axis._y) * oneMinusCosine, axis._z * axis._y * oneMinusCosine + axis._x * sine, 0,
+            axis._x * axis._z * oneMinusCosine + axis._y * sine, axis._y * axis._z * oneMinusCosine - axis._x * sine, cosine + (axis._z * axis._z) * oneMinusCosine, 0,
+            0, 0, 0, 1
+        );
+
+        return rotator * mat;
+    }
 
     static Matrix44 lookAtRH(const Vector3& position, const Vector3& target, const Vector3& up) {
       Vector3 zaxis = (position - target).normalize();
