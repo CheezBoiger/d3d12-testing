@@ -6,6 +6,8 @@
 namespace m {
 
 
+struct Vector4;
+
 struct Vector3 {
   union { struct { R32 _x, _y, _z; };
           struct { R32 _r, _g, _b; }; };
@@ -74,6 +76,9 @@ struct Vector4 {
   Vector4(const Vector3& v, R32 w = 1.0f)
     : _x(v._x), _y(v._y), _z(v._z), _w(w) { }
 
-  R32& operator[](U32 i) { return (&_x)[ i ];}
+  R32& operator[](U32 i) { return (&_x)[ i ]; }
+
+
+  operator Vector3 () { return Vector3(_x, _y, _z); }
 };
 } // m

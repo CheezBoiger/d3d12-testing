@@ -165,7 +165,7 @@ void FrontEndRenderer::render()
     R32 v = sinf(t * 0.05f);
     R32 s = -sinf(t * 0.05f);
     ++t;
-    R32 rgba[] = {s, v, 0.f, 0.f};
+    R32 rgba[] = {0.f, 0.f, 0.f, 0.f};
     RECT rect = {};
     rect.bottom = 1080;
     rect.left = 0;
@@ -176,6 +176,7 @@ void FrontEndRenderer::render()
     m_pList->clearRenderTarget(m_pBackend->getSwapchainRenderTargetView(), rgba,
                                1, &rect);
     m_pList->clearRenderTarget(m_gbuffer.pAlbedoRTV, rgba, 1, &rect);
+    m_pList->clearRenderTarget(m_gbuffer.pNormalRTV, rgba, 1, &rect);
     m_pList->clearDepthStencil(m_pSceneDepthView, 
                                gfx::CLEAR_FLAG_DEPTH,
                                0.0f, 

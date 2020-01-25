@@ -95,12 +95,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     globals._targetSize[1] = 1080;
     globals._targetSize[2] = 0;
     globals._targetSize[3] = 0;
-    globals._cameraPos = { 3.0f, -5.0f, 3.0f, 1.0f };
-    Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
-    Matrix44 V = m::Matrix44::lookAtRH(Vector3(3.0f, -5.0f, 3.0f), 
-                                        Vector3(0.0f, 0.0f, 0.0f), 
-                                        Vector3(0.0f, 1.0f, 0.0f));
-    globals._viewToClip = V * P;
+
     VertexBuffer buffer = pRenderer->createVertexBuffer(triangle, sizeof(Vertex), sizeof(triangle));
     RenderUUID transformId = pRenderer->createTransformBuffer();
     RenderUUID materialId = pRenderer->createMaterialBuffer();
@@ -110,15 +105,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mat._color = Vector4(1.0f, 0.0f, 0.0f);
     mat._matrialFlags = 0;
     mat._albedoFactor = Vector4(1.0f, 1.0f, 1.0f);
- 
-    descriptor._worldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
-    descriptor._previousWorldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, -1.0, -1.0)) * V * P;
-    descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
-    descriptor._n = descriptor._world;
-    descriptor._n[3][0] = 0.0f;
-    descriptor._n[3][1] = 0.0f;
-    descriptor._n[3][2] = 0.0f;
-    descriptor._n = descriptor._n.inverse().transpose();
 
     GeometryMesh mesh = { };
     mesh._vertexBufferView = model.getVertexBufferView();
@@ -137,6 +123,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     while (!bShouldClose) {
         Time::update();
         pollEvent();
+        Time time;
+        R32 t = time.getTimeStamp();
+        globals._cameraPos = { sinf(t * 0.0000001f) * 5.0f, 0.0f, cosf(t * 0.0000001f) * 5.0f, 1.0f };
+        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+        Matrix44 V = m::Matrix44::lookAtRH(globals._cameraPos,
+            Vector3(0.0f, 0.0f, 0.0f),
+            Vector3(0.0f, 1.0f, 0.0f));
+        globals._viewToClip = V * P;
+
+        descriptor._worldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
+        descriptor._previousWorldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, -1.0, -1.0)) * V * P;
+        descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
+        descriptor._n = descriptor._world;
+        descriptor._n[3][0] = 0.0f;
+        descriptor._n[3][1] = 0.0f;
+        descriptor._n[3][2] = 0.0f;
+        descriptor._n = descriptor._n.inverse().transpose();
+
         pRenderer->pushMesh(&mesh);
         pRenderer->update(0.0f, globals);
         pRenderer->render();
