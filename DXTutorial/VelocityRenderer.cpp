@@ -146,7 +146,13 @@ void cleanUpVelocityRenderer(gfx::BackendRenderer* pRenderer)
 }
 
 
-void submitVelocityCommands(gfx::BackendRenderer* pRenderer, gfx::Resource* pGlobal, gfx::CommandList* pList, GeometryMesh** pMeshes, U32 meshCount)
+void submitVelocityCommands(gfx::BackendRenderer* pRenderer, 
+                            gfx::Resource* pGlobal, 
+                            gfx::CommandList* pList, 
+                            GeometryMesh** pMeshes, 
+                            U32 meshCount,
+                            GeometrySubMesh** pSubMeshes,
+                            U32 submeshCount)
 {
     pList->setMarker("Velocity");
 
@@ -167,6 +173,7 @@ void submitVelocityCommands(gfx::BackendRenderer* pRenderer, gfx::Resource* pGlo
     pList->setGraphicsRootConstantBufferView(GLOBAL_CONST_SLOT, pGlobal);
     pList->setGraphicsPipeline(pPipelineVelocity);
 
+    U32 submeshIdx = 0;
     for (U32 i = 0; i < meshCount; ++i) {
         GeometryMesh* pMesh = pMeshes[i];
         RenderUUID meshId = pMesh->_meshDescriptor;
@@ -177,14 +184,21 @@ void submitVelocityCommands(gfx::BackendRenderer* pRenderer, gfx::Resource* pGlo
         
         pList->setVertexBuffers(0, &vb, 1);
         pList->setGraphicsRootConstantBufferView(MESH_TRANSFORM_SLOT, pMeshDescriptor);
-        if (indId != 0) {
+
+        if (indId != 0)
             pList->setIndexBuffer(getIndexBufferView(indId));
-            pList->drawIndexedInstanced(pMesh->_indCount,
-                                        pMesh->_vertInst,
-                                        pMesh->_indOffset,
-                                        pMesh->_startVert, 0);
-        } else {
-            pList->drawInstanced(pMesh->_vertCount, pMesh->_vertInst, pMesh->_startVert, 0);
+
+        for (U32 j = 0; j < pMesh->_submeshCount; ++j, ++submeshIdx) {
+                if (indId != 0) {
+                    pList->drawIndexedInstanced(pSubMeshes[submeshIdx]->_indCount,
+                                                pSubMeshes[submeshIdx]->_vertInst,
+                                                pSubMeshes[submeshIdx]->_indOffset,
+                                                pSubMeshes[submeshIdx]->_startVert, 0);
+                } else {
+                    pList->drawInstanced(pSubMeshes[submeshIdx]->_vertCount, 
+                                            pSubMeshes[submeshIdx]->_vertInst, 
+                                            pSubMeshes[submeshIdx]->_startVert, 0);
+                }
         }
     }
 

@@ -12,5 +12,7 @@ void submitVelocityCommands(gfx::BackendRenderer* pRenderer,
                             gfx::Resource* pGlobal, 
                             gfx::CommandList* pList, 
                             GeometryMesh** pMeshes, 
-                            U32 meshCount);
+                            U32 meshCount,
+                            GeometrySubMesh** pSubMeshes,
+                            U32 submeshCount);
 } // jcl

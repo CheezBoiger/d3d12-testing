@@ -16,7 +16,12 @@ public:
     void initialize(gfx::BackendRenderer* pBackend);
     void cleanUp(gfx::BackendRenderer* pBackend);
     
-    void generateCommands(FrontEndRenderer* pRenderer, gfx::CommandList* pList, GeometryMesh** pMeshes, U32 meshCount);
+    void generateCommands(FrontEndRenderer* pRenderer, 
+                            gfx::CommandList* pList, 
+                            GeometryMesh** pMeshes, 
+                            U32 meshCount,
+                            GeometrySubMesh** pSubMeshes,
+                            U32 submeshCount);
 
     void setGBuffer(GBuffer* pass) { _pGBuffer = pass; }
 

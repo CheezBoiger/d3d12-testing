@@ -66,10 +66,10 @@ void GeometryPass::initialize
 
     pipeInfo._rasterizationState._antialiasedLinesEnable = false;
     pipeInfo._rasterizationState._conservativeRasterizationEnable = false;
-    pipeInfo._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
+    pipeInfo._rasterizationState._cullMode = gfx::CULL_MODE_FRONT;
     pipeInfo._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
     pipeInfo._rasterizationState._forcedSampleCount = 0;
-    pipeInfo._rasterizationState._frontCounterClockwise = false;
+    pipeInfo._rasterizationState._frontCounterClockwise = true;
     pipeInfo._rasterizationState._depthClipEnable = false;
     pipeInfo._rasterizationState._depthBias = 0.0f;
 
@@ -141,7 +141,11 @@ void GeometryPass::generateCommands
         // Meshes to render onto this gpass.
         GeometryMesh** pMeshes, 
         // Number of meshes in this mesh array.
-        U32 meshCount
+        U32 meshCount,
+        //
+        GeometrySubMesh** pSubMeshes,
+        //
+        U32 submeshCount
     )
 {
     if (!_pGBuffer) { 
@@ -158,29 +162,39 @@ void GeometryPass::generateCommands
     pList->setGraphicsPipeline(m_pPSO);
     pList->setGraphicsRootSignature(m_pRootSignature);
 
+    U64 submeshIdx = 0;
     for (U32 i = 0; i < meshCount; ++i) {
         RenderUUID meshUUID = pMeshes[i]->_meshDescriptor;
-        RenderUUID matUUID = pMeshes[i]->_materialDescriptor;
         RenderUUID vertUUID = pMeshes[i]->_vertexBufferView;
         RenderUUID indUUID = pMeshes[i]->_indexBufferView;
 
         gfx::Resource* pMeshDescriptor = getResource(meshUUID);
-        gfx::Resource* pMatDescriptor = getResource(matUUID);
 
         gfx::VertexBufferView* pView = getVertexBufferView(vertUUID);
 
         pList->setGraphicsRootConstantBufferView(GLOBAL_CONST_SLOT, pRenderer->getGlobalsBuffer());
         pList->setGraphicsRootConstantBufferView(MESH_TRANSFORM_SLOT, pMeshDescriptor);
-        pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
         pList->setGraphicsRootDescriptorTable(3, m_pSamplerTable);
 
         pList->setVertexBuffers(0, &pView, 1);
 
-        if (indUUID != 0) {
+        if (indUUID != 0) 
             pList->setIndexBuffer(getIndexBufferView(indUUID));
-            pList->drawIndexedInstanced(pMeshes[i]->_indCount, pMeshes[i]->_vertInst, pMeshes[i]->_indOffset, pMeshes[i]->_startVert, 0);
-        } else {
-            pList->drawInstanced(pMeshes[i]->_vertCount, pMeshes[i]->_vertInst, pMeshes[i]->_startVert, 0);
+
+        for (U64 j = 0; j < pMeshes[i]->_submeshCount; ++j, ++submeshIdx) {
+            RenderUUID matUUID = pSubMeshes[i]->_materialDescriptor;
+            gfx::Resource* pMatDescriptor = getResource(matUUID);
+            pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
+            if (indUUID != 0) {
+                pList->drawIndexedInstanced(pSubMeshes[submeshIdx]->_indCount, 
+                                            pSubMeshes[submeshIdx]->_vertInst, 
+                                            pSubMeshes[submeshIdx]->_indOffset, 
+                                            pSubMeshes[submeshIdx]->_startVert, 0);
+            } else {
+                pList->drawInstanced(pSubMeshes[submeshIdx]->_vertCount, 
+                                        pSubMeshes[submeshIdx]->_vertInst, 
+                                        pSubMeshes[submeshIdx]->_startVert, 0);
+            }
         }
     }
 }

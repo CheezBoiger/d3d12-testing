@@ -72,11 +72,16 @@ public:
     RenderUUID getVertexBufferView() const { return m_vertexBuffer.vertexBufferView; }
     RenderUUID getIndexBufferView() const { return m_indexBuffer.indexBufferView; }
     SubMesh* getSubMesh(size_t i) { return &m_submeshes[i]; }
+    U32 getTotalSubmeshes() const { return static_cast<U32>(m_submeshes.size()); }
+    U32 getTotalVertices() const { return m_totalVertices; }
+    U32 getTotalIndices() const { return m_totalIndices; }
 
 private:
     VertexBuffer m_vertexBuffer;
     IndexBuffer m_indexBuffer;
     
+    U32 m_totalVertices;
+    U32 m_totalIndices;
     std::vector<SubMesh> m_submeshes;
     std::vector<Material> m_materials;
     std::vector<RenderUUID> m_textures;

@@ -50,6 +50,7 @@ void initializeEngine(HWND window)
 {
   pRenderer = new jcl::FrontEndRenderer();
   pRenderer->init(window, jcl::FrontEndRenderer::RENDERER_RHI_D3D_12);
+  Time::initialize();
 }
 
 
@@ -111,37 +112,45 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh._indexBufferView = model.getIndexBufferView();
     mesh._meshTransform = &descriptor;
     mesh._meshDescriptor = transformId;
-    mesh._materialDescriptor = materialId;
-    mesh._matData = &mat;
-    mesh._startVert = model.getSubMesh(0)->m_vertOffset;
-    mesh._vertCount = model.getSubMesh(0)->m_vertCount;
-    mesh._indCount = model.getSubMesh(0)->m_indCount;
-    mesh._indOffset = model.getSubMesh(0)->m_indOffset;
-    
-    mesh._vertInst = 1;
+    mesh._submeshCount = 1;
 
+    GeometrySubMesh submesh = { };
+    submesh._materialDescriptor = materialId;
+    submesh._matData = &mat;
+    submesh._startVert = model.getSubMesh(0)->m_vertOffset;
+    submesh._vertCount = model.getSubMesh(0)->m_vertCount;
+    submesh._indCount = model.getSubMesh(0)->m_indCount;
+    submesh._indOffset = model.getSubMesh(0)->m_indOffset;
+    submesh._vertInst = 1;
+
+R32 g = 0.0f;
     while (!bShouldClose) {
         Time::update();
         pollEvent();
         Time time;
-        R32 t = 0.f;time.getTimeStamp();
-        globals._cameraPos = { sinf(t * 0.0000001f) * 5.0f, 0.0f, cosf(t * 0.0000001f) * 5.0f, 1.0f };
-        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(45.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
-        Matrix44 V = m::Matrix44::lookAtRH(globals._cameraPos,
-            Vector3(0.0f, 0.0f, 0.0f),
-            Vector3(0.0f, 1.0f, 0.0f));
+        R32 t = time.getTimeStamp();
+        
+        globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
+        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+        
+        Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(220.0f), Vector3(0.0f, 1.0f, 0.0f));
+        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(-g * 0.01f, 1.0f, 5.0f, 1.0f)) * r;
         globals._viewToClip = V * P;
-
-        descriptor._worldToViewClip = Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f)) * V * P;
-        descriptor._previousWorldToViewClip = Matrix44::translate(Matrix44(), Vector4(0.0f, -1.0, -1.0)) * V * P;
-        descriptor._world = Matrix44::translate(Matrix44(), Vector4(1.0f, 0.0f, 0.0));
+        g += 1.0f;
+        R32 ss = (sinf(t * 0.0000001f) * 0.5f + 0.5f) * 2.0f;
+        Matrix44 W = Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
+                     //Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
+        descriptor._previousWorldToViewClip = descriptor._worldToViewClip;
+        descriptor._worldToViewClip = W * globals._viewToClip;
+        descriptor._world = W;
         descriptor._n = descriptor._world;
         descriptor._n[3][0] = 0.0f;
         descriptor._n[3][1] = 0.0f;
         descriptor._n[3][2] = 0.0f;
         descriptor._n = descriptor._n.inverse().transpose();
 
-        pRenderer->pushMesh(&mesh);
+        GeometrySubMesh* submeshes[] = { &submesh };
+        pRenderer->pushMesh(&mesh, submeshes);
         pRenderer->update(0.0f, globals);
         pRenderer->render();
     }

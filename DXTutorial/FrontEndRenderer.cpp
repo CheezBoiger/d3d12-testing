@@ -195,24 +195,31 @@ void FrontEndRenderer::render()
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
 
-    for (U32 i = 0; i < m_opaqueMeshes.size(); ++i) {
-        RenderUUID meshId = m_opaqueMeshes[i]->_meshDescriptor;
-        RenderUUID vertId = m_opaqueMeshes[i]->_vertexBufferView;
-        RenderUUID indId = m_opaqueMeshes[i]->_indexBufferView;
+    U64 submeshIdx = 0;
+    for (U32 i = 0; i < m_opaqueBatches.size(); ++i) {
+        RenderUUID meshId = m_opaqueBatches[i]->_meshDescriptor;
+        RenderUUID vertId = m_opaqueBatches[i]->_vertexBufferView;
+        RenderUUID indId = m_opaqueBatches[i]->_indexBufferView;
         gfx::Resource* pMeshDescriptor = getResource(meshId);
         gfx::VertexBufferView* view = getVertexBufferView(vertId);
 
         m_pList->setVertexBuffers(0, &view, 1);
         m_pList->setGraphicsRootConstantBufferView(1, pMeshDescriptor);
 
-        if (indId != 0) {
+        if (indId != 0) 
             m_pList->setIndexBuffer(getIndexBufferView(indId));
-            m_pList->drawIndexedInstanced(  m_opaqueMeshes[i]->_indCount, 
-                                            m_opaqueMeshes[i]->_vertInst, 
-                                            m_opaqueMeshes[i]->_indOffset, 
-                                            m_opaqueMeshes[i]->_startVert, 0);
-        } else {
-            m_pList->drawInstanced(m_opaqueMeshes[i]->_vertCount, m_opaqueMeshes[i]->_vertInst, m_opaqueMeshes[i]->_startVert, 0);
+
+        for (U64 j = 0; j < m_opaqueBatches[i]->_submeshCount; ++j, ++submeshIdx) {
+            if (indId != 0) {
+                m_pList->drawIndexedInstanced(  m_opaqueSubmeshes[submeshIdx]->_indCount, 
+                                                m_opaqueSubmeshes[submeshIdx]->_vertInst, 
+                                                m_opaqueSubmeshes[submeshIdx]->_indOffset, 
+                                                m_opaqueSubmeshes[submeshIdx]->_startVert, 0);
+            } else {
+                m_pList->drawInstanced(m_opaqueSubmeshes[submeshIdx]->_vertCount, 
+                                        m_opaqueSubmeshes[submeshIdx]->_vertInst, 
+                                        m_opaqueSubmeshes[submeshIdx]->_startVert, 0);
+            }
         }
     }
 
@@ -221,8 +228,19 @@ void FrontEndRenderer::render()
 
     m_pList->setMarker("GBuffer Pass");
 
-    m_geometryPass.generateCommands(this, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
-    submitVelocityCommands(m_pBackend, pGlobalsBuffer, m_pList, m_opaqueMeshes.data(), m_opaqueMeshes.size());
+    m_geometryPass.generateCommands(this, 
+                                    m_pList, 
+                                    m_opaqueBatches.data(), 
+                                    m_opaqueBatches.size(),
+                                    m_opaqueSubmeshes.data(), 
+                                    m_opaqueSubmeshes.size());
+    submitVelocityCommands(m_pBackend, 
+                            pGlobalsBuffer, 
+                            m_pList, 
+                            m_opaqueBatches.data(), 
+                            m_opaqueBatches.size(),
+                            m_opaqueSubmeshes.data(),
+                            m_opaqueSubmeshes.size());
 
     m_pList->setMarker("Debug GUI");
     populateCommandListGUI(m_pBackend, m_pList);
@@ -252,8 +270,10 @@ void FrontEndRenderer::endFrame()
     m_pBackend->submit(m_pBackend->getSwapchainQueue(), &m_pList, 1);
 
     m_pBackend->present();
-    m_opaqueMeshes.clear();
-    m_transparentMeshes.clear();
+    m_opaqueBatches.clear();
+    m_transparentBatches.clear();
+    m_opaqueSubmeshes.clear();
+    m_transparentSubmeshes.clear();
 }
 
 
@@ -270,14 +290,18 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
     memcpy(pPtr, m_pGlobals, sizeof(Globals));
     pGlobalsBuffer->unmap(0, sizeof(Globals));
 
-    for (U64 i = 0; i < m_opaqueMeshes.size(); ++i) {
-        gfx::Resource* pDescriptor = getResource(m_opaqueMeshes[i]->_meshDescriptor);
-        gfx::Resource* pMatDescriptor = getResource(m_opaqueMeshes[i]->_materialDescriptor);
-        pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));
-        pMatPtr = pMatDescriptor->map(0, sizeof(PerMaterialDescriptor));
-        memcpy(pPtr, m_opaqueMeshes[i]->_meshTransform, sizeof(PerMeshDescriptor));
-        memcpy(pMatPtr, m_opaqueMeshes[i]->_matData, sizeof(PerMaterialDescriptor));
+    for (U64 i = 0; i < m_opaqueBatches.size(); ++i) {
+        gfx::Resource* pDescriptor = getResource(m_opaqueBatches[i]->_meshDescriptor);
+        pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));    
+        memcpy(pPtr, m_opaqueBatches[i]->_meshTransform, sizeof(PerMeshDescriptor));
         pDescriptor->unmap(0, sizeof(PerMeshDescriptor));
+    }
+
+    for (U64 i = 0; i < m_opaqueSubmeshes.size(); ++i) {
+        gfx::Resource* pMatDescriptor = getResource(m_opaqueSubmeshes[i]->_materialDescriptor);
+
+        pMatPtr = pMatDescriptor->map(0, sizeof(PerMaterialDescriptor));
+        memcpy(pMatPtr, m_opaqueSubmeshes[i]->_matData, sizeof(PerMaterialDescriptor));
         pMatDescriptor->unmap(0, sizeof(PerMaterialDescriptor));
         
     }
@@ -311,7 +335,7 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._depthStencilState._frontFace = info._depthStencilState._backFace;
 
   info._depthStencilState._depthEnable = true;
-  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_GREATER;
+  info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_GREATER_EQUAL;
   info._depthStencilState._depthWriteMask = gfx::DEPTH_WRITE_MASK_ALL;
 
   info._depthStencilState._stencilReadMask = 0x1;
@@ -319,13 +343,13 @@ void FrontEndRenderer::createGraphicsPipelines()
 
   info._rasterizationState._antialiasedLinesEnable = false;
   info._rasterizationState._conservativeRasterizationEnable = false;
-  info._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
+  info._rasterizationState._cullMode = gfx::CULL_MODE_FRONT;
   info._rasterizationState._depthBias = 0.0f;
   info._rasterizationState._depthBiasClamp = 0.0f;
   info._rasterizationState._depthClipEnable = true;
   info._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
   info._rasterizationState._forcedSampleCount = 0;
-  info._rasterizationState._frontCounterClockwise = false;
+  info._rasterizationState._frontCounterClockwise = true;
   info._rasterizationState._slopedScaledDepthBias = 0.0f;
  
   info._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;

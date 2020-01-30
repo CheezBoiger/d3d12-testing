@@ -46,7 +46,12 @@ public:
     
     void update(R32 dt, Globals& globals);
 
-    void pushMesh(GeometryMesh* pMesh) { m_opaqueMeshes.push_back(pMesh); }
+    void pushMesh(GeometryMesh* pMesh, GeometrySubMesh** submeshes) { 
+        m_opaqueBatches.push_back(pMesh); 
+        for (U32 i = 0; i < pMesh->_submeshCount; ++i) {
+            m_opaqueSubmeshes.push_back(submeshes[i]);
+        }
+    }
 
     gfx::DepthStencilView* getSceneDepthView() { return m_pSceneDepthView; }
 
@@ -127,10 +132,12 @@ private:
     gfx::DescriptorTable* m_pFinalDescriptorTable;
 
     // Define your transparent meshes, sort them from your opaques.
-    std::vector<GeometryMesh*> m_transparentMeshes;
+    std::vector<GeometryMesh*> m_transparentBatches;
+    std::vector<GeometrySubMesh*> m_transparentSubmeshes;
 
     // Define your opaque meshes, sort them from your transparents. 
-    std::vector<GeometryMesh*> m_opaqueMeshes;
+    std::vector<GeometryMesh*> m_opaqueBatches;
+    std::vector<GeometrySubMesh*> m_opaqueSubmeshes; 
 
     // RenderGroups define the pass set for this particular set of calls.
     // Should only be setting resize on amortized time.

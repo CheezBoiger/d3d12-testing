@@ -120,12 +120,17 @@ struct GBuffer
 struct GeometryMesh
  {
     RenderUUID _meshDescriptor;
-    RenderUUID _materialDescriptor;
     RenderUUID _vertexBufferView;
     RenderUUID _indexBufferView;
     PerMeshDescriptor* _meshTransform;
-    PerMaterialDescriptor* _matData;
+    U32 _submeshCount;
+};
 
+
+struct GeometrySubMesh
+{
+    RenderUUID _materialDescriptor;
+    PerMaterialDescriptor* _matData;
     U32 _vertCount;
     U32 _vertInst;
     U32 _startVert;

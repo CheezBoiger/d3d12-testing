@@ -96,13 +96,13 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
             for (U32 i = 0; i < positionAccessor.count; ++i) {
                 Vertex vert = { };
                 vert._position._x = positionAttribs[i * 3 + 0];
-                vert._position._y = positionAttribs[i * 3 + 1];
+                vert._position._y = -positionAttribs[i * 3 + 1];
                 vert._position._z = positionAttribs[i * 3 + 2];
                 vert._position._w = 1.0f;
         
                 vert._normal._x = normalAttribs[i * 3 + 0];
                 vert._normal._y = normalAttribs[i * 3 + 1];
-                vert._normal._z = normalAttribs[i * 3 + 2];
+                vert._normal._z = -normalAttribs[i * 3 + 2];
                 vert._normal._w = 1.0f;
 
                 if (tangentAttribs) {
@@ -112,9 +112,12 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
                 }
 
                 vert._tangent._w = 1.0f;
-
-                vert._texcoords._x = texCoordAttribs[i * 2 + 0];
-                vert._texcoords._y = texCoordAttribs[i * 2 + 1]; 
+                if (texCoordAttribs) {
+                    vert._texcoords._x = texCoordAttribs[i * 2 + 0];
+                    vert._texcoords._y = texCoordAttribs[i * 2 + 1]; 
+                } else {
+                    vert._texcoords._x = vert._texcoords._y = 0.0f;
+                }
                 vertices.push_back(vert);
             }
 
@@ -201,6 +204,12 @@ B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
     loadTextures(&model, textureResources, pRenderer);
     m_materials = loadMaterials(&model, textureResources);
     m_submeshes = loadMeshes(&model, pRenderer, &m_vertexBuffer, &m_indexBuffer, m_materials);
+
+    m_totalVertices = m_totalIndices = 0;
+    for (auto& submesh : m_submeshes) {
+        m_totalVertices += static_cast<U32>(submesh.m_vertCount);
+        m_totalIndices += static_cast<U32>(submesh.m_indCount);
+    }
     
     return false;
 }
