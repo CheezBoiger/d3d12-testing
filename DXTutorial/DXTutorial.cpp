@@ -7,6 +7,7 @@
 #include "FrontEndRenderer.h"
 #include "Model/Model.h"
 #include "Time.h"
+#include "KeyboardInput.h"
 #include "imgui.h"
 
 using namespace jcl;
@@ -138,8 +139,12 @@ R32 g = 0.0f;
         globals._viewToClip = V * P;
         g += 1.0f;
         R32 ss = (sinf(t * 0.0000001f) * 0.5f + 0.5f) * 2.0f;
-        Matrix44 W = Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
-                     //Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
+        Matrix44 R = Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
+        Matrix44 T = Matrix44();//Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
+        Matrix44 S = Matrix44();
+        Matrix44 W = S * R * T;
+        
+                     
         descriptor._previousWorldToViewClip = descriptor._worldToViewClip;
         descriptor._worldToViewClip = W * globals._viewToClip;
         descriptor._world = W;
@@ -257,6 +262,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         bShouldClose = true;
+        break;
+    case WM_KEYDOWN:
+        {
+            SHORT state = GetKeyState(wParam);
+            UINT key = LOWORD(wParam);
+            Keyboard::registerInput(key, INPUT_STATUS_DOWN);
+        } 
+        break;
+    case WM_KEYUP:
+        {
+                   
+        }
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
