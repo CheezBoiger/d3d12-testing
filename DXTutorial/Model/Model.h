@@ -77,6 +77,10 @@ public:
     U32 getTotalIndices() const { return m_totalIndices; }
 
 private:
+
+    void processGLTF(const std::string& path, FrontEndRenderer* pRenderer);
+    void processOBJ(const std::string& path, FrontEndRenderer* pRenderer);
+
     VertexBuffer m_vertexBuffer;
     IndexBuffer m_indexBuffer;
     

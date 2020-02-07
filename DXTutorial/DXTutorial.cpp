@@ -88,8 +88,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DXTUTORIAL));
 
     jcl::Model model;
-    model.initialize("DamagedHelmet/DamagedHelmet.gltf", pRenderer);
-    
+    jcl::Model model1;
+    jcl::Model model2;
+    model.initialize("SongWork/spartan.obj", pRenderer);
+    model1.initialize("SongWork/OldCar.obj", pRenderer);
+    model2.initialize("SongWork/RacingCar.obj", pRenderer);
 
     jcl::Globals globals;
     pRenderer->setGlobals(&globals);
@@ -100,20 +103,39 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     VertexBuffer buffer = pRenderer->createVertexBuffer(triangle, sizeof(Vertex), sizeof(triangle));
     RenderUUID transformId = pRenderer->createTransformBuffer();
+    RenderUUID transformId1 = pRenderer->createTransformBuffer();
+    RenderUUID transformId2 = pRenderer->createTransformBuffer();
     RenderUUID materialId = pRenderer->createMaterialBuffer();
     PerMeshDescriptor descriptor = { };
+    PerMeshDescriptor descriptor1 = { };
+    PerMeshDescriptor descriptor2 = { };
 
     PerMaterialDescriptor mat = { };
     mat._color = Vector4(1.0f, 0.0f, 0.0f);
     mat._matrialFlags = 0;
     mat._albedoFactor = Vector4(1.0f, 1.0f, 1.0f);
 
+    // Use same descriptor for both.
     GeometryMesh mesh = { };
     mesh._vertexBufferView = model.getVertexBufferView();
     mesh._indexBufferView = model.getIndexBufferView();
     mesh._meshTransform = &descriptor;
     mesh._meshDescriptor = transformId;
     mesh._submeshCount = 1;
+
+    GeometryMesh mesh1 = { };
+    mesh1._vertexBufferView = model1.getVertexBufferView();
+    mesh1._indexBufferView = model1.getIndexBufferView();
+    mesh1._meshTransform = &descriptor1;
+    mesh1._meshDescriptor = transformId1;
+    mesh1._submeshCount = 1;
+
+    GeometryMesh mesh2 = { };
+    mesh2._vertexBufferView = model2.getVertexBufferView();
+    mesh2._indexBufferView = model2.getIndexBufferView();
+    mesh2._meshTransform = &descriptor2;
+    mesh2._meshDescriptor = transformId2;
+    mesh2._submeshCount = 1;
 
     GeometrySubMesh submesh = { };
     submesh._materialDescriptor = materialId;
@@ -123,6 +145,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     submesh._indCount = model.getSubMesh(0)->m_indCount;
     submesh._indOffset = model.getSubMesh(0)->m_indOffset;
     submesh._vertInst = 1;
+
+    GeometrySubMesh submesh1 = { };
+    submesh1._materialDescriptor = materialId;
+    submesh1._matData = &mat;
+    submesh1._startVert = model1.getSubMesh(0)->m_vertOffset;
+    submesh1._vertCount = model1.getSubMesh(0)->m_vertCount;
+    submesh1._indCount = model1.getSubMesh(0)->m_indCount;
+    submesh1._indOffset = model1.getSubMesh(0)->m_indOffset;
+    submesh1._vertInst = 1;
+
+    GeometrySubMesh submesh2 = { };
+    submesh2._materialDescriptor = materialId;
+    submesh2._matData = &mat;
+    submesh2._startVert = model2.getSubMesh(0)->m_vertOffset;
+    submesh2._vertCount = model2.getSubMesh(0)->m_vertCount;
+    submesh2._indCount = model2.getSubMesh(0)->m_indCount;
+    submesh2._indOffset = model2.getSubMesh(0)->m_indOffset;
+    submesh2._vertInst = 1;
 
 R32 g = 0.0f;
     while (!bShouldClose) {
@@ -135,16 +175,17 @@ R32 g = 0.0f;
         Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
         
         Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(220.0f), Vector3(0.0f, 1.0f, 0.0f));
-        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(-g * 0.01f, 1.0f, 5.0f, 1.0f)) * r;
+        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(-g * 0.01f, 5.0f, 50.0f, 1.0f)) * r;
         globals._viewToClip = V * P;
         g += 1.0f;
         R32 ss = (sinf(t * 0.0000001f) * 0.5f + 0.5f) * 2.0f;
-        Matrix44 R = Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
+        Matrix44 R = Matrix44(); //Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
         Matrix44 T = Matrix44();//Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
         Matrix44 S = Matrix44();
         Matrix44 W = S * R * T;
-        
-                     
+        Matrix44 W1 = Matrix44::translate(Matrix44(), Vector4(-20.f, 0.0f, 0.0f));
+        Matrix44 W2 = Matrix44::translate(Matrix44(), Vector4(20.f, 0.0f, 0.0f));
+                             
         descriptor._previousWorldToViewClip = descriptor._worldToViewClip;
         descriptor._worldToViewClip = W * globals._viewToClip;
         descriptor._world = W;
@@ -154,8 +195,30 @@ R32 g = 0.0f;
         descriptor._n[3][2] = 0.0f;
         descriptor._n = descriptor._n.inverse().transpose();
 
+        descriptor1._previousWorldToViewClip = descriptor1._worldToViewClip;
+        descriptor1._worldToViewClip = W1 * globals._viewToClip;
+        descriptor1._world = W1;
+        descriptor1._n = descriptor1._world;
+        descriptor1._n[3][0] = 0.0f;
+        descriptor1._n[3][1] = 0.0f;
+        descriptor1._n[3][2] = 0.0f;
+        descriptor1._n = descriptor1._n.inverse().transpose();
+
+        descriptor2._previousWorldToViewClip = descriptor2._worldToViewClip;
+        descriptor2._worldToViewClip = W2 * globals._viewToClip;
+        descriptor2._world = W2;
+        descriptor2._n = descriptor2._world;
+        descriptor2._n[3][0] = 0.0f;
+        descriptor2._n[3][1] = 0.0f;
+        descriptor2._n[3][2] = 0.0f;
+        descriptor2._n = descriptor2._n.inverse().transpose();
+
         GeometrySubMesh* submeshes[] = { &submesh };
+        GeometrySubMesh* submeshes1[] = { &submesh1 };
+        GeometrySubMesh* submeshes2[] = { &submesh2 };
         pRenderer->pushMesh(&mesh, submeshes);
+        pRenderer->pushMesh(&mesh1, submeshes1);
+        pRenderer->pushMesh(&mesh2, submeshes2);
         pRenderer->update(0.0f, globals);
         pRenderer->render();
     }
@@ -272,7 +335,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_KEYUP:
         {
-                   
+            SHORT state = GetKeyState(wParam);
+            UINT key = LOWORD(wParam);
+            Keyboard::registerInput(key, INPUT_STATUS_UP);
         }
         break;
     default:

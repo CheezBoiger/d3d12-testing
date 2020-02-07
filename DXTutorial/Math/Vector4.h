@@ -54,6 +54,14 @@ struct Vector3 {
     return (_x * other._x + _y * other._y + _z * other._z);
   }
 
+  B32 operator==(const Vector3& other) const {
+    return (_x == other._x) && (_y == other._y) && (_z == other._z);
+  }
+
+  B32 operator!=(const Vector3& other) const {
+    return !(*this == other);
+  }
+
   R32& operator[](U32 i) { return (&_x)[ i ]; }
 
   R32 length() const {

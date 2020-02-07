@@ -191,7 +191,7 @@ void SubMesh::initialize(U64 vertOffset, U64 vertCount, U64 indOffset, U64 indCo
 }
 
 
-B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
+void Model::processGLTF(const std::string& path, FrontEndRenderer* pRenderer)
 {
     tinygltf::TinyGLTF loader;
     tinygltf::Model model;
@@ -210,7 +210,18 @@ B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
         m_totalVertices += static_cast<U32>(submesh.m_vertCount);
         m_totalIndices += static_cast<U32>(submesh.m_indCount);
     }
-    
+
+}
+
+
+B32 Model::initialize(const std::string& path, FrontEndRenderer* pRenderer)
+{
+    size_t extBegin = path.find_last_of('.');
+    std::string extStr = path.substr(extBegin, path.size() - extBegin);
+    if (extStr.compare(".gltf") == 0)
+        processGLTF(path, pRenderer);
+    if (extStr.compare(".obj") == 0)
+        processOBJ(path, pRenderer);
     return false;
 }
 

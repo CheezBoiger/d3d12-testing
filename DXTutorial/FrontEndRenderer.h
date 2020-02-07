@@ -57,7 +57,9 @@ public:
 
     gfx::ShaderResourceView* getSceneResourceView() { return m_pSceneDepthResourceView; }
 
-    gfx::DescriptorTable* getConstBufferDescriptorTable() { return m_pConstBufferTable; }
+    gfx::DescriptorTable* getConstBufferDescriptorTable() { return m_pConstBufferTable; } 
+    // Transform Buffer is the GPU buffer that is used to render the mesh. It is 
+    // written to by the given mesh descriptor.
     RenderUUID createTransformBuffer();
     RenderUUID createMaterialBuffer();
     IndexBuffer createIndexBufferView(void* raw, U64 szBytes);
