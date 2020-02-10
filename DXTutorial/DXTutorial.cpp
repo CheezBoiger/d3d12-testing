@@ -174,12 +174,12 @@ R32 g = 0.0f;
         globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
         Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
         
-        Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(220.0f), Vector3(0.0f, 1.0f, 0.0f));
-        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(-g * 0.01f, 5.0f, 50.0f, 1.0f)) * r;
+        Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(180.0f), Vector3(0.0f, 1.0f, 0.0f));
+        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(0 + g * 0.01f, 15.0f, 50.0f, 1.0f)) * r;
         globals._viewToClip = V * P;
         g += 1.0f;
         R32 ss = (sinf(t * 0.0000001f) * 0.5f + 0.5f) * 2.0f;
-        Matrix44 R = Matrix44(); //Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
+        Matrix44 R = Matrix44::rotate(Matrix44(), ToRads(t * 0.000001f), Vector4(0.0f, 1.0f, 0.0f));
         Matrix44 T = Matrix44();//Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
         Matrix44 S = Matrix44();
         Matrix44 W = S * R * T;
@@ -193,6 +193,7 @@ R32 g = 0.0f;
         descriptor._n[3][0] = 0.0f;
         descriptor._n[3][1] = 0.0f;
         descriptor._n[3][2] = 0.0f;
+        descriptor._n[3][3] = 1.0f;
         descriptor._n = descriptor._n.inverse().transpose();
 
         descriptor1._previousWorldToViewClip = descriptor1._worldToViewClip;

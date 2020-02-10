@@ -13,22 +13,22 @@ using namespace m;
 class Camera {
 public:
   
-  void initialize();
+    void initialize();
   
-  void update();
+    void update();
 
-
+ 
 
 private:
   
-  R32 m_fov;
-  R32 m_zNear;
-  R32 m_zFar;
-  R32 m_aspect;
+    R32 m_fov;
+     R32 m_zNear;
+    R32 m_zFar;
+    R32 m_aspect;
 
-  // Projection matrix.
-  Matrix44 m_viewToClip;
-  // View matrix.
-  Matrix44 m_worldToView;  
+    // Projection matrix.
+    Matrix44 m_viewToClip;
+    // View matrix.
+    Matrix44 m_worldToView;  
 };
 } // jcl

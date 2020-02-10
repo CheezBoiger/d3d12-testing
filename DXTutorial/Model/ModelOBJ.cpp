@@ -58,7 +58,7 @@ void Model::processOBJ(const std::string& path, FrontEndRenderer* pRenderer)
                 vert._position._y = -attrib.vertices[3 * idx.vertex_index + 1];
                 vert._position._z = attrib.vertices[3 * idx.vertex_index + 2];
                 vert._position._w = 1.0f;
-                vert._normal._x = attrib.normals[3 * idx.normal_index + 0];
+                vert._normal._x = -attrib.normals[3 * idx.normal_index + 0];
                 vert._normal._y = attrib.normals[3 * idx.normal_index + 1];
                 vert._normal._z = -attrib.normals[3 * idx.normal_index + 2];
                 vert._normal._w = 1.0f;

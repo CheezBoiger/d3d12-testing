@@ -102,7 +102,7 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
         
                 vert._normal._x = normalAttribs[i * 3 + 0];
                 vert._normal._y = normalAttribs[i * 3 + 1];
-                vert._normal._z = -normalAttribs[i * 3 + 2];
+                vert._normal._z = normalAttribs[i * 3 + 2];
                 vert._normal._w = 1.0f;
 
                 if (tangentAttribs) {
