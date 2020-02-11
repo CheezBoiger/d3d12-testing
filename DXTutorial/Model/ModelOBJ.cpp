@@ -55,12 +55,12 @@ void Model::processOBJ(const std::string& path, FrontEndRenderer* pRenderer)
                 ++indexCount;
                 Vertex vert;
                 vert._position._x = attrib.vertices[3 * idx.vertex_index + 0];
-                vert._position._y = -attrib.vertices[3 * idx.vertex_index + 1];
+                vert._position._y = attrib.vertices[3 * idx.vertex_index + 1];
                 vert._position._z = attrib.vertices[3 * idx.vertex_index + 2];
                 vert._position._w = 1.0f;
-                vert._normal._x = -attrib.normals[3 * idx.normal_index + 0];
+                vert._normal._x = attrib.normals[3 * idx.normal_index + 0];
                 vert._normal._y = attrib.normals[3 * idx.normal_index + 1];
-                vert._normal._z = -attrib.normals[3 * idx.normal_index + 2];
+                vert._normal._z = attrib.normals[3 * idx.normal_index + 2];
                 vert._normal._w = 1.0f;
                 vert._texcoords._x = attrib.texcoords[2 * idx.texcoord_index + 0];
                 vert._texcoords._y = attrib.texcoords[2 * idx.texcoord_index + 1];

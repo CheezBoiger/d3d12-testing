@@ -3,6 +3,7 @@
 
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
+#include <windowsx.h>
 #include <dxgi.h>
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>

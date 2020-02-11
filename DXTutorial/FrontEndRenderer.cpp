@@ -53,22 +53,22 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 
   pGlobalsBuffer = nullptr;
   m_gbuffer.pAlbedoTexture = nullptr;
-  m_pBackend->createBuffer(&pGlobalsBuffer, 
-                           gfx::RESOURCE_USAGE_CPU_TO_GPU,
-                           gfx::RESOURCE_BIND_CONSTANT_BUFFER,
-                           sizeof(Globals),
-                           0, TEXT("Globals"));
+    m_pBackend->createBuffer(&pGlobalsBuffer, 
+                            gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                            gfx::RESOURCE_BIND_CONSTANT_BUFFER,
+                            sizeof(Globals),
+                            0, TEXT("Globals"));
 
-  m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
-                           gfx::RESOURCE_DIMENSION_2D,
-                           gfx::RESOURCE_USAGE_DEFAULT,
-                           gfx::RESOURCE_BIND_RENDER_TARGET,
-                           DXGI_FORMAT_R8G8B8A8_UNORM,
-                           1920,
-                           1080, 
-                           1,
-                           0,
-                           TEXT("GBufferAlbedo"));
+    m_pBackend->createTexture(&m_gbuffer.pAlbedoTexture,
+                                gfx::RESOURCE_DIMENSION_2D,
+                                gfx::RESOURCE_USAGE_DEFAULT,
+                                gfx::RESOURCE_BIND_RENDER_TARGET,
+                                DXGI_FORMAT_R8G8B8A8_UNORM,
+                                1920,
+                                1080, 
+                                1,
+                                0,
+                                TEXT("GBufferAlbedo"));
     m_pBackend->createTexture(&m_gbuffer.pNormalTexture,
                                 gfx::RESOURCE_DIMENSION_2D,
                                 gfx::RESOURCE_USAGE_DEFAULT,
@@ -77,6 +77,22 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                 1920,
                                 1080,
                                 1, 0, TEXT("GBufferNormal"));
+    m_pBackend->createTexture(&m_gbuffer.pMaterialTexture,
+                                gfx::RESOURCE_DIMENSION_2D,
+                                gfx::RESOURCE_USAGE_DEFAULT,
+                                gfx::RESOURCE_BIND_RENDER_TARGET | gfx::RESOURCE_BIND_SHADER_RESOURCE,
+                                DXGI_FORMAT_R8G8B8A8_UNORM,
+                                1920,
+                                1080,
+                                1, 0, TEXT("GBufferMaterial"));
+    m_pBackend->createTexture(&m_gbuffer.pEmissiveTexture,
+                                gfx::RESOURCE_DIMENSION_2D,
+                                gfx::RESOURCE_USAGE_DEFAULT,
+                                gfx::RESOURCE_BIND_RENDER_TARGET | gfx::RESOURCE_BIND_SHADER_RESOURCE,
+                                DXGI_FORMAT_R8G8B8A8_UNORM,
+                                1920,
+                                1080,
+                                1, 0, TEXT("GBufferEmissive"));
     m_pBackend->createShaderResourceView(&m_gbuffer.pNormalSRV,
                                             m_gbuffer.pNormalTexture,
                                             0, 1);
@@ -84,7 +100,10 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                      m_gbuffer.pAlbedoTexture);
     m_pBackend->createRenderTargetView(&m_gbuffer.pNormalRTV,
                                         m_gbuffer.pNormalTexture);
-
+    m_pBackend->createRenderTargetView(&m_gbuffer.pMaterialRTV,
+                                        m_gbuffer.pMaterialTexture);
+    m_pBackend->createRenderTargetView(&m_gbuffer.pEmissiveRTV,
+                                        m_gbuffer.pEmissiveTexture);
   m_pBackend->createDescriptorTable(&m_pConstBufferTable);
 
   m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
@@ -126,8 +145,8 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     createComputePipelines();
     // Set the scene depth view to be used as read only in gbuffer pass.
     m_pBackend->createRenderPass(&m_gbuffer.pRenderPass, 4, true);
-    gfx::RenderTargetView* rtvs[] = { m_gbuffer.pAlbedoRTV, m_gbuffer.pNormalRTV };
-    m_gbuffer.pRenderPass->setRenderTargets(rtvs, 2);
+    gfx::RenderTargetView* rtvs[] = { m_gbuffer.pAlbedoRTV, m_gbuffer.pNormalRTV, m_gbuffer.pMaterialRTV, m_gbuffer.pEmissiveRTV };
+    m_gbuffer.pRenderPass->setRenderTargets(rtvs, 4);
     m_gbuffer.pRenderPass->setDepthStencil(m_pSceneDepthView);
     m_geometryPass.setGBuffer(&m_gbuffer);
     m_geometryPass.initialize(m_pBackend);
@@ -343,7 +362,7 @@ void FrontEndRenderer::createGraphicsPipelines()
 
   info._rasterizationState._antialiasedLinesEnable = false;
   info._rasterizationState._conservativeRasterizationEnable = false;
-  info._rasterizationState._cullMode = gfx::CULL_MODE_FRONT;
+  info._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
   info._rasterizationState._depthBias = 0.0f;
   info._rasterizationState._depthBiasClamp = 0.0f;
   info._rasterizationState._depthClipEnable = true;

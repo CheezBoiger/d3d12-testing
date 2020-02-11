@@ -22,9 +22,12 @@ public:
 private:
   
     R32 m_fov;
-     R32 m_zNear;
+    R32 m_zNear;
     R32 m_zFar;
     R32 m_aspect;
+    R32 m_roll;
+    R32 m_pitch;
+    R32 m_yaw;
 
     // Projection matrix.
     Matrix44 m_viewToClip;

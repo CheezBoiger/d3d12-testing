@@ -96,7 +96,7 @@ void loadNode(tinygltf::Model* pModel, tinygltf::Node& node, std::vector<Vertex>
             for (U32 i = 0; i < positionAccessor.count; ++i) {
                 Vertex vert = { };
                 vert._position._x = positionAttribs[i * 3 + 0];
-                vert._position._y = -positionAttribs[i * 3 + 1];
+                vert._position._y = positionAttribs[i * 3 + 1];
                 vert._position._z = positionAttribs[i * 3 + 2];
                 vert._position._w = 1.0f;
         

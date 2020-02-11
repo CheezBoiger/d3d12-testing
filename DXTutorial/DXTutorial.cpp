@@ -1,6 +1,7 @@
 // DXTutorial.cpp : Defines the entry point for the application.
 //
 
+#include "WinConfigs.h"
 #include "framework.h"
 #include "DXTutorial.h"
 #include "Math/Vector4.h"
@@ -9,13 +10,22 @@
 #include "Time.h"
 #include "KeyboardInput.h"
 #include "imgui.h"
+#include "Mouse.h"
 
 using namespace jcl;
 
-Vertex triangle[3] = {
-  { {  1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { { -1.0f,  0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+Vertex plane[6] = {
+  { { -1.0f,  1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { -1.0f,  -1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+
+  { {  1.0f,  -1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { {  1.0f,  1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+  { { -1.0f, -1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } }
+};
+
+U32 indices[6] = {
+    0, 1 , 2, 3, 4, 5
 };
 
 #define MAX_LOADSTRING 100
@@ -101,7 +111,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     globals._targetSize[2] = 0;
     globals._targetSize[3] = 0;
 
-    VertexBuffer buffer = pRenderer->createVertexBuffer(triangle, sizeof(Vertex), sizeof(triangle));
+    VertexBuffer planeVertexBuffer = pRenderer->createVertexBuffer(plane,  sizeof(Vertex), sizeof(plane));
+    IndexBuffer planeIndexBuffer = pRenderer->createIndexBufferView(indices, sizeof(U32) * 6);
     RenderUUID transformId = pRenderer->createTransformBuffer();
     RenderUUID transformId1 = pRenderer->createTransformBuffer();
     RenderUUID transformId2 = pRenderer->createTransformBuffer();
@@ -124,8 +135,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh._submeshCount = 1;
 
     GeometryMesh mesh1 = { };
-    mesh1._vertexBufferView = model1.getVertexBufferView();
-    mesh1._indexBufferView = model1.getIndexBufferView();
+    mesh1._vertexBufferView = planeVertexBuffer.vertexBufferView;//model1.getVertexBufferView();
+    mesh1._indexBufferView = planeIndexBuffer.indexBufferView;//model1.getIndexBufferView();
     mesh1._meshTransform = &descriptor1;
     mesh1._meshDescriptor = transformId1;
     mesh1._submeshCount = 1;
@@ -149,10 +160,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     GeometrySubMesh submesh1 = { };
     submesh1._materialDescriptor = materialId;
     submesh1._matData = &mat;
-    submesh1._startVert = model1.getSubMesh(0)->m_vertOffset;
-    submesh1._vertCount = model1.getSubMesh(0)->m_vertCount;
-    submesh1._indCount = model1.getSubMesh(0)->m_indCount;
-    submesh1._indOffset = model1.getSubMesh(0)->m_indOffset;
+    submesh1._startVert = 0;//model1.getSubMesh(0)->m_vertOffset;
+    submesh1._vertCount = 6;//model1.getSubMesh(0)->m_vertCount;
+    submesh1._indCount = 6;//model1.getSubMesh(0)->m_indCount;
+    submesh1._indOffset = 0;//model1.getSubMesh(0)->m_indOffset;
     submesh1._vertInst = 1;
 
     GeometrySubMesh submesh2 = { };
@@ -165,6 +176,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     submesh2._vertInst = 1;
 
 R32 g = 0.0f;
+R32 MoveX = 0.0f;
+R32 MoveZ = 0.0f;
+R32 damp = 0.0f;
     while (!bShouldClose) {
         Time::update();
         pollEvent();
@@ -173,9 +187,23 @@ R32 g = 0.0f;
         
         globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
         Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
-        
-        Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(180.0f), Vector3(0.0f, 1.0f, 0.0f));
-        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(0 + g * 0.01f, 15.0f, 50.0f, 1.0f)) * r;
+        if (Keyboard::isKeyDown(KEY_CODE_A)) {
+            MoveX += time.dt() * 15.0f;
+        }
+        if (Keyboard::isKeyDown(KEY_CODE_D)) {
+            MoveX -= time.dt() * 15.0f;
+        }
+        if (Keyboard::isKeyDown(KEY_CODE_W)) {
+            MoveZ += time.dt() * 15.0f;
+        }
+        if (Keyboard::isKeyDown(KEY_CODE_S)) {
+            MoveZ -= time.dt() * 15.0f;
+        }
+        if (Keyboard::isKeyDown(KEY_CODE_ESCAPE)) {
+            bShouldClose = true;
+        }
+        Matrix44 r = Matrix44::rotate(Matrix44(), ToRads(45.0f), Vector3(1.0f, 0.0f, 0.0f));
+        Matrix44 V = Matrix44::translate(Matrix44(), Vector4(MoveX, -20.0f, MoveZ, 1.0f)) * r;
         globals._viewToClip = V * P;
         g += 1.0f;
         R32 ss = (sinf(t * 0.0000001f) * 0.5f + 0.5f) * 2.0f;
@@ -183,7 +211,9 @@ R32 g = 0.0f;
         Matrix44 T = Matrix44();//Matrix44::translate(Matrix44::rotate(Matrix44(), ToRads(90.0f), Vector3(1.0f, 0.0f, 0.0f)), Vector4(0.0f, 0.0f, 0.0f));
         Matrix44 S = Matrix44();
         Matrix44 W = S * R * T;
-        Matrix44 W1 = Matrix44::translate(Matrix44(), Vector4(-20.f, 0.0f, 0.0f));
+        Matrix44 W1 = Matrix44::scale(Matrix44(), Vector4(50.f, 50.f, 50.f, 1.f)) * 
+                        Matrix44::rotate(Matrix44(), ToRads(-90.0f), Vector3(1.f, 0.0f, 0.0f)) * 
+                        Matrix44::translate(Matrix44(), Vector4(0.f, -15.0f, 0.0f));
         Matrix44 W2 = Matrix44::translate(Matrix44(), Vector4(20.f, 0.0f, 0.0f));
                              
         descriptor._previousWorldToViewClip = descriptor._worldToViewClip;
@@ -284,6 +314,16 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+
+void adjustClientViewRect(HWND handle)
+{
+    RECT rect;
+    GetClientRect(handle, &rect);
+    ClientToScreen(handle, (POINT*)&rect.left);
+    ClientToScreen(handle, (POINT*)&rect.right);
+    ClipCursor(&rect);
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -296,6 +336,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+static BYTE lpb[1 << 23];
     switch (message)
     {
     case WM_COMMAND:
@@ -331,14 +372,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             SHORT state = GetKeyState(wParam);
             UINT key = LOWORD(wParam);
-            Keyboard::registerInput(key, INPUT_STATUS_DOWN);
+            Keyboard::registerInput((KeyCode)key, INPUT_STATUS_DOWN);
         } 
         break;
+    case WM_MOUSEMOVE:
+        {
+            adjustClientViewRect(hWnd);
+            const int x = GET_X_LPARAM(lParam);
+            const int y = GET_Y_LPARAM(lParam);
+            
+        } break;
+    case WM_INPUT: 
+        {
+            I32 dx, dy;
+            UINT dwSize;
+            adjustClientViewRect(hWnd);
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, 
+                                &dwSize, sizeof(RAWINPUTHEADER)) == ((UINT)-1)) {
+                RAWINPUT* raw = (RAWINPUT*)lpb;
+                if (raw->header.dwSize == RIM_TYPEMOUSE) {
+                    if (raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
+                        dx = raw->data.mouse.lLastX;
+                        dy = raw->data.mouse.lLastY;
+                    } else {
+                        dx = raw->data.mouse.lLastX;
+                        dx = raw->data.mouse.lLastY;
+                    }
+                }
+            }
+
+            Mouse::inputMousePos((I32)Mouse::kXPos + dx, (I32)Mouse::kYPos + dy);
+            Mouse::kLastXPos += (R32)dx;
+            Mouse::kLastYPos += (R32)dy;
+        } break;
     case WM_KEYUP:
         {
             SHORT state = GetKeyState(wParam);
             UINT key = LOWORD(wParam);
-            Keyboard::registerInput(key, INPUT_STATUS_UP);
+            Keyboard::registerInput((KeyCode)key, INPUT_STATUS_UP);
         }
         break;
     default:

@@ -60,7 +60,7 @@ void initializePipeline(gfx::BackendRenderer* pRenderer)
     velocityPipelineInfo._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
     velocityPipelineInfo._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
     velocityPipelineInfo._rasterizationState._forcedSampleCount = 0;
-    velocityPipelineInfo._rasterizationState._frontCounterClockwise = false;
+    velocityPipelineInfo._rasterizationState._frontCounterClockwise = true;
     velocityPipelineInfo._rasterizationState._depthClipEnable = false;
     velocityPipelineInfo._rasterizationState._depthBias = 0.0f;
 
@@ -158,7 +158,7 @@ void submitVelocityCommands(gfx::BackendRenderer* pRenderer,
 
     pList->setRenderPass(pVelocityRenderPass);
     R32 rgba[] = { 0, 0, 0, 0 };
-    RECT rect = { };
+    RECT rect = { 0, 0, 1920, 1080 };
     gfx::Viewport viewport = { };
     viewport.h = 1080.0f;
     viewport.w = 1920.0f;

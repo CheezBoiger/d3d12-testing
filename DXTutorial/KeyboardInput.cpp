@@ -7,17 +7,17 @@ namespace jcl {
 
 UINT kKeyboardMap[128];
 
-void Keyboard::registerInput(UINT vk, InputStatus event)
+void Keyboard::registerInput(KeyCode vk, InputStatus event)
 {
     kKeyboardMap[vk] = event;
 }
 
-bool Keyboard::isKeyDown(UINT vk)
+bool Keyboard::isKeyDown(KeyCode vk)
 {
     return kKeyboardMap[vk] == INPUT_STATUS_DOWN;
 }
 
-bool Keyboard::isKeyUp(UINT vk)
+bool Keyboard::isKeyUp(KeyCode vk)
 {
     return kKeyboardMap[vk] == INPUT_STATUS_UP;
 }

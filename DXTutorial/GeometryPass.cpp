@@ -66,7 +66,7 @@ void GeometryPass::initialize
 
     pipeInfo._rasterizationState._antialiasedLinesEnable = false;
     pipeInfo._rasterizationState._conservativeRasterizationEnable = false;
-    pipeInfo._rasterizationState._cullMode = gfx::CULL_MODE_FRONT;
+    pipeInfo._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
     pipeInfo._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
     pipeInfo._rasterizationState._forcedSampleCount = 0;
     pipeInfo._rasterizationState._frontCounterClockwise = true;
