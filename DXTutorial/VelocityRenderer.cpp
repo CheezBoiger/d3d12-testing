@@ -127,7 +127,7 @@ void initializeRenderTarget(gfx::BackendRenderer* pRenderer)
                             DXGI_FORMAT_R32G32_FLOAT, 
                             1920, 1080, 1,
                             0, TEXT("VelocityTexture"));
-    pRenderer->createRenderTargetView(&pVelocityRenderTargetView, pVelocityTexture);
+    pRenderer->createRenderTargetView(&pVelocityRenderTargetView, pVelocityTexture, DXGI_FORMAT_R32G32_FLOAT);
 }
 
 

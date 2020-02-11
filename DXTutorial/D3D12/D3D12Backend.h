@@ -125,7 +125,7 @@ public:
                        U32 structureByteStride,
                        const TCHAR* debugName = nullptr) override;
     void destroyResource(Resource* resource) override;
-    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer) override;
+    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer, DXGI_FORMAT format) override;
     void createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer) override;
     void createShaderResourceView(ShaderResourceView** srv, 
                                   Resource* buffer, 
@@ -143,7 +143,7 @@ public:
     void createRootSignature(RootSignature** pRootSignature) override;
     void destroyRootSignature(RootSignature* pRootSig) override { }
 
-    void createDepthStencilView(DepthStencilView** dsv, Resource* buffer) override;
+    void createDepthStencilView(DepthStencilView** dsv, Resource* buffer, DXGI_FORMAT format) override;
     void destroyCommandList(CommandList* pList) override;
     void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
                                        const RayTracingPipelineInfo* pInfo) override;

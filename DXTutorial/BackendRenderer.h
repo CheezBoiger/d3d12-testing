@@ -738,13 +738,13 @@ public:
                                U32 structureByteStride = 0,
                                const TCHAR* debugName = nullptr) { }
     virtual void createQueue(CommandQueue** ppQueue, CommandQueueType type) { }
-    virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture) { }
+    virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture, DXGI_FORMAT format) { }
     virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture) { }
     virtual void createShaderResourceView(ShaderResourceView** srv, 
                                           Resource* resource, 
                                           U32 firstElement, 
                                           U32 numElements) { }
-    virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture) { }
+    virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture, DXGI_FORMAT format) { }
     virtual void createGraphicsPipelineState(GraphicsPipeline** pipline,
                                              const GraphicsPipelineInfo* pInfo) { }
     virtual void createComputePipelineState(ComputePipeline** pipeline,

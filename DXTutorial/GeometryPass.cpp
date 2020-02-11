@@ -33,7 +33,7 @@ void GeometryPass::initialize
 
     gfx::GraphicsPipelineInfo pipeInfo = { };
     pipeInfo._pRootSignature = m_pRootSignature;
-    pipeInfo._dsvFormat = DXGI_FORMAT_D32_FLOAT;
+    pipeInfo._dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     pipeInfo._sampleMask = 0xffffffff;
     pipeInfo._numRenderTargets = 5;
 

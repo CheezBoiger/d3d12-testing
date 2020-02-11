@@ -772,7 +772,7 @@ void D3D12Backend::destroyRenderPass(RenderPass* pass)
 }
 
 
-void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer)
+void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer, DXGI_FORMAT format)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
   ID3D12DescriptorHeap* rtvHeap = getDescriptorHeap(DESCRIPTOR_HEAP_RENDER_TARGET_VIEWS);
@@ -791,7 +791,7 @@ void D3D12Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
   for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
     ID3D12Resource* pResource = getResource(buffer->getUUID(), i);
     D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
-    rtvDesc.Format = resourceDesc.Format;
+    rtvDesc.Format = format;
     m_pDevice->CreateRenderTargetView(pResource, &rtvDesc, cpuHandle);
     m_viewHandles[pView->getUUID()][i] = cpuHandle;
     cpuHandle.ptr += incSz;
@@ -844,7 +844,7 @@ void D3D12Backend::createShaderResourceView(ShaderResourceView** srv,
 }
 
 
-void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Resource* buffer)
+void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Resource* buffer, DXGI_FORMAT format)
 {
   ViewHandleD3D12* pView = new ViewHandleD3D12();
   *dsv = pView;
@@ -863,7 +863,7 @@ void D3D12Backend::createDepthStencilView(DepthStencilView** dsv, Resource* buff
   for (size_t i = 0; i < m_resources[buffer->getUUID()].size(); ++i) {
     ID3D12Resource* pResource = getResource(buffer->getUUID(), i);
     D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
-    dsvDesc.Format = resourceDesc.Format;
+    dsvDesc.Format = format;
     m_pDevice->CreateDepthStencilView(pResource, &dsvDesc, cpuHandle);
     m_viewHandles[pView->getUUID()][i] = cpuHandle;
     cpuHandle.ptr += incSz;

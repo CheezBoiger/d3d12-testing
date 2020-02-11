@@ -428,7 +428,7 @@ void D3D11Backend::present()
   m_pSwapChain->Present(1, 0);
 }
 
-void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer)
+void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buffer, DXGI_FORMAT format)
 {
     ID3D11RenderTargetView* pNativeView = nullptr;
     TargetView* pView = new TargetView();
@@ -440,7 +440,7 @@ void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
       case RESOURCE_DIMENSION_2D:
         TextureD3D11* pTex = static_cast<TextureD3D11*>(buffer);
         rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        rtvDesc.Format =  pTex->_format;
+        rtvDesc.Format =  format;
         rtvDesc.Texture2D.MipSlice = 0;
         break;
     }
@@ -453,7 +453,7 @@ void D3D11Backend::createRenderTargetView(RenderTargetView** rtv, Resource* buff
 }
 
 
-void D3D11Backend::createDepthStencilView(DepthStencilView** pDsv, Resource* buffer)
+void D3D11Backend::createDepthStencilView(DepthStencilView** pDsv, Resource* buffer, DXGI_FORMAT format)
 {
   ID3D11DepthStencilView* pDepthStencil = nullptr;
   TargetView* pView = new TargetView();
@@ -463,7 +463,7 @@ void D3D11Backend::createDepthStencilView(DepthStencilView** pDsv, Resource* buf
   switch (buffer->_dimension) {
     case RESOURCE_DIMENSION_2D: 
       TextureD3D11* pTex = static_cast<TextureD3D11*>(buffer);
-      desc.Format = pTex->_format;
+      desc.Format = format;
       desc.Texture2D.MipSlice = 0;
       desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
       break;

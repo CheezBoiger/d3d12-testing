@@ -97,13 +97,13 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                             m_gbuffer.pNormalTexture,
                                             0, 1);
   m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
-                                     m_gbuffer.pAlbedoTexture);
+                                     m_gbuffer.pAlbedoTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
     m_pBackend->createRenderTargetView(&m_gbuffer.pNormalRTV,
-                                        m_gbuffer.pNormalTexture);
+                                        m_gbuffer.pNormalTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
     m_pBackend->createRenderTargetView(&m_gbuffer.pMaterialRTV,
-                                        m_gbuffer.pMaterialTexture);
+                                        m_gbuffer.pMaterialTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
     m_pBackend->createRenderTargetView(&m_gbuffer.pEmissiveRTV,
-                                        m_gbuffer.pEmissiveTexture);
+                                        m_gbuffer.pEmissiveTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
   m_pBackend->createDescriptorTable(&m_pConstBufferTable);
 
   m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
@@ -131,11 +131,11 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                             gfx::RESOURCE_DIMENSION_2D,
                             gfx::RESOURCE_USAGE_DEFAULT,
                             gfx::RESOURCE_BIND_DEPTH_STENCIL,
-                            DXGI_FORMAT_D32_FLOAT,
+                            DXGI_FORMAT_R24G8_TYPELESS,
                             1920,
                             1080, 1, 0, TEXT("SceneDepth"));
   m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
-                                     m_pSceneDepth);
+                                     m_pSceneDepth, DXGI_FORMAT_D24_UNORM_S8_UINT);
 
   m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
   m_pPreZPass->setDepthStencil(m_pSceneDepthView);
@@ -372,7 +372,7 @@ void FrontEndRenderer::createGraphicsPipelines()
   info._rasterizationState._slopedScaledDepthBias = 0.0f;
  
   info._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
-  info._dsvFormat = DXGI_FORMAT_D32_FLOAT;
+  info._dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
   info._pRootSignature = m_pRootSignature;
 
   info._blendState._renderTargets[0]._blendEnable = false;
