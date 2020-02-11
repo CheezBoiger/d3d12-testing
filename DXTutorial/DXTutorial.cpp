@@ -100,6 +100,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     jcl::Model model;
     jcl::Model model1;
     jcl::Model model2;
+    jcl::Model model3;    
+    model3.initialize("Sponza/Sponza.gltf", pRenderer);
     model.initialize("SongWork/spartan.obj", pRenderer);
     model1.initialize("SongWork/OldCar.obj", pRenderer);
     model2.initialize("SongWork/RacingCar.obj", pRenderer);
@@ -116,10 +118,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     RenderUUID transformId = pRenderer->createTransformBuffer();
     RenderUUID transformId1 = pRenderer->createTransformBuffer();
     RenderUUID transformId2 = pRenderer->createTransformBuffer();
+    RenderUUID transformId3 = pRenderer->createTransformBuffer();
     RenderUUID materialId = pRenderer->createMaterialBuffer();
     PerMeshDescriptor descriptor = { };
     PerMeshDescriptor descriptor1 = { };
     PerMeshDescriptor descriptor2 = { };
+    PerMeshDescriptor descriptor3 = { };
 
     PerMaterialDescriptor mat = { };
     mat._color = Vector4(1.0f, 0.0f, 0.0f);
@@ -130,23 +134,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     GeometryMesh mesh = { };
     mesh._vertexBufferView = model.getVertexBufferView();
     mesh._indexBufferView = model.getIndexBufferView();
-    mesh._meshTransform = &descriptor;
-    mesh._meshDescriptor = transformId;
+    mesh._meshDescriptor = &descriptor;
+    mesh._meshTransform = transformId;
     mesh._submeshCount = 1;
 
     GeometryMesh mesh1 = { };
     mesh1._vertexBufferView = planeVertexBuffer.vertexBufferView;//model1.getVertexBufferView();
     mesh1._indexBufferView = planeIndexBuffer.indexBufferView;//model1.getIndexBufferView();
-    mesh1._meshTransform = &descriptor1;
-    mesh1._meshDescriptor = transformId1;
+    mesh1._meshDescriptor = &descriptor1;
+    mesh1._meshTransform = transformId1;
     mesh1._submeshCount = 1;
 
     GeometryMesh mesh2 = { };
     mesh2._vertexBufferView = model2.getVertexBufferView();
     mesh2._indexBufferView = model2.getIndexBufferView();
-    mesh2._meshTransform = &descriptor2;
-    mesh2._meshDescriptor = transformId2;
+    mesh2._meshDescriptor = &descriptor2;
+    mesh2._meshTransform = transformId2;
     mesh2._submeshCount = 1;
+
+    GeometryMesh mesh3 = { };
+    mesh3._vertexBufferView = model3.getVertexBufferView();
+    mesh3._indexBufferView = model3.getIndexBufferView();
+    mesh3._meshTransform = transformId3;
+    mesh3._meshDescriptor = &descriptor3;
+    mesh3._submeshCount = model3.getTotalSubmeshes();
 
     GeometrySubMesh submesh = { };
     submesh._materialDescriptor = materialId;
@@ -175,6 +186,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     submesh2._indOffset = model2.getSubMesh(0)->m_indOffset;
     submesh2._vertInst = 1;
 
+    std::vector<GeometrySubMesh> submeshes(model3.getTotalSubmeshes());
+    std::vector<GeometrySubMesh*> pSubMeeshes(model3.getTotalSubmeshes());
+        
+    for (U32 i = 0; i < submeshes.size(); ++i) {
+        GeometrySubMesh& submeesh = submeshes[i];
+        submeesh._materialDescriptor = materialId;
+        submeesh._matData = &mat;
+        submeesh._startVert = model3.getSubMesh(i)->m_vertOffset;
+        submeesh._vertCount = model3.getSubMesh(i)->m_vertCount;
+        submeesh._indCount = model3.getSubMesh(i)->m_indCount;
+        submeesh._indOffset = model3.getSubMesh(i)->m_indOffset;
+        submeesh._vertInst = 1;
+    }
+
+    for (U32 i = 0; i < pSubMeeshes.size(); ++i) {
+        pSubMeeshes[i] = &submeshes[i];
+    }
+
 R32 g = 0.0f;
 R32 MoveX = 0.0f;
 R32 MoveZ = 0.0f;
@@ -186,7 +215,7 @@ R32 damp = 0.0f;
         R32 t = time.getTimeStamp();
         
         globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
-        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f);
+        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.0001f, 1000.0f);
         if (Keyboard::isKeyDown(KEY_CODE_A)) {
             MoveX += time.dt() * 15.0f;
         }
@@ -215,6 +244,7 @@ R32 damp = 0.0f;
                         Matrix44::rotate(Matrix44(), ToRads(-90.0f), Vector3(1.f, 0.0f, 0.0f)) * 
                         Matrix44::translate(Matrix44(), Vector4(0.f, -15.0f, 0.0f));
         Matrix44 W2 = Matrix44::translate(Matrix44(), Vector4(20.f, 0.0f, 0.0f));
+        Matrix44 W3 = Matrix44::scale(Matrix44(), Vector4(0.3f, 0.3f, 0.3f, 1.0f)) * Matrix44::translate(Matrix44(), Vector4(0.0f, -10.0f, 0.0f));
                              
         descriptor._previousWorldToViewClip = descriptor._worldToViewClip;
         descriptor._worldToViewClip = W * globals._viewToClip;
@@ -244,12 +274,23 @@ R32 damp = 0.0f;
         descriptor2._n[3][2] = 0.0f;
         descriptor2._n = descriptor2._n.inverse().transpose();
 
+        descriptor3._previousWorldToViewClip = descriptor3._worldToViewClip;
+        descriptor3._worldToViewClip = W3 * globals._viewToClip;
+        descriptor3._world = W3;
+        descriptor3._n = descriptor3._world;
+        descriptor3._n[3][0] = 0.0f;
+        descriptor3._n[3][1] = 0.0f;
+        descriptor3._n[3][2] = 0.0f;
+        descriptor3._n = descriptor3._n.inverse().transpose();
+
         GeometrySubMesh* submeshes[] = { &submesh };
         GeometrySubMesh* submeshes1[] = { &submesh1 };
         GeometrySubMesh* submeshes2[] = { &submesh2 };
+
         pRenderer->pushMesh(&mesh, submeshes);
         pRenderer->pushMesh(&mesh1, submeshes1);
         pRenderer->pushMesh(&mesh2, submeshes2);
+        pRenderer->pushMesh(&mesh3, pSubMeeshes.data());
         pRenderer->update(0.0f, globals);
         pRenderer->render();
     }

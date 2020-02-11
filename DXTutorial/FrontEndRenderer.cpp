@@ -216,7 +216,7 @@ void FrontEndRenderer::render()
 
     U64 submeshIdx = 0;
     for (U32 i = 0; i < m_opaqueBatches.size(); ++i) {
-        RenderUUID meshId = m_opaqueBatches[i]->_meshDescriptor;
+        RenderUUID meshId = m_opaqueBatches[i]->_meshTransform;
         RenderUUID vertId = m_opaqueBatches[i]->_vertexBufferView;
         RenderUUID indId = m_opaqueBatches[i]->_indexBufferView;
         gfx::Resource* pMeshDescriptor = getResource(meshId);
@@ -310,9 +310,9 @@ void FrontEndRenderer::update(R32 dt, Globals& globals)
     pGlobalsBuffer->unmap(0, sizeof(Globals));
 
     for (U64 i = 0; i < m_opaqueBatches.size(); ++i) {
-        gfx::Resource* pDescriptor = getResource(m_opaqueBatches[i]->_meshDescriptor);
+        gfx::Resource* pDescriptor = getResource(m_opaqueBatches[i]->_meshTransform);
         pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));    
-        memcpy(pPtr, m_opaqueBatches[i]->_meshTransform, sizeof(PerMeshDescriptor));
+        memcpy(pPtr, m_opaqueBatches[i]->_meshDescriptor, sizeof(PerMeshDescriptor));
         pDescriptor->unmap(0, sizeof(PerMeshDescriptor));
     }
 

@@ -600,7 +600,6 @@ void D3D12Backend::createBuffer(Resource** buffer,
 {
     D3D12_CLEAR_VALUE clearValue;
     clearValue.Format = DXGI_FORMAT_UNKNOWN;
-
     ID3D12Resource* pResource = nullptr;
     D3D12_RESOURCE_DESC desc = { };
     desc.Alignment = 0;
@@ -614,7 +613,6 @@ void D3D12Backend::createBuffer(Resource** buffer,
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
     desc.Flags = getNativeAllowFlags(binds);
-  
     D3D12MA::Allocation* alloc;
     D3D12MA::ALLOCATION_DESC allocDesc = { };
     allocDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
@@ -624,9 +622,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
       allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
     else if (usage == RESOURCE_USAGE_DEFAULT)
       allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-
     D3D12_RESOURCE_STATES state = getNativeBindFlags(binds, allocDesc.HeapType);
-
     D3D12_CLEAR_VALUE* pClearValue = &clearValue;
     if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
       pClearValue = NULL;
@@ -634,7 +630,6 @@ void D3D12Backend::createBuffer(Resource** buffer,
       D3D12_RESOURCE_ALLOCATION_INFO rAllocInfo = m_pDevice->GetResourceAllocationInfo(0, 1, &desc);
       (void)rAllocInfo;
     }
-    
     HRESULT result = pAllocator->CreateResource(&allocDesc, 
                                                  &desc, 
                                                  state, 
@@ -642,14 +637,12 @@ void D3D12Backend::createBuffer(Resource** buffer,
                                                  &alloc, 
                                                  __uuidof(ID3D12Resource), 
                                                  (void**)&pResource); 
-    desc.Width = KB_1 * 128ull;
+    //desc.Width = KB_1 * 128ull;
     //pCustomMemoryAllocator->allocate(m_pDevice, allocDesc.HeapType, state, pClearValue, desc);
     DX12ASSERT(result);
-
     if (debugName) {
       pResource->SetName(debugName);
     }
-
     BufferD3D12* pNativeBuffer = new BufferD3D12(this,
                                                  RESOURCE_DIMENSION_BUFFER,
                                                  usage,
@@ -657,9 +650,7 @@ void D3D12Backend::createBuffer(Resource** buffer,
                                                  structureByteStride);
     pNativeBuffer->pAllocation = alloc;
     pNativeBuffer->_currentResourceState = state;
-
     *buffer = pNativeBuffer; 
-
     m_resources[(*buffer)->getUUID()].push_back(pResource);
 }
 

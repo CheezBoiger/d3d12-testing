@@ -176,7 +176,7 @@ void submitVelocityCommands(gfx::BackendRenderer* pRenderer,
     U32 submeshIdx = 0;
     for (U32 i = 0; i < meshCount; ++i) {
         GeometryMesh* pMesh = pMeshes[i];
-        RenderUUID meshId = pMesh->_meshDescriptor;
+        RenderUUID meshId = pMesh->_meshTransform;
         RenderUUID vertId = pMesh->_vertexBufferView;
         RenderUUID indId = pMesh->_indexBufferView;
         gfx::Resource* pMeshDescriptor = getResource(meshId);

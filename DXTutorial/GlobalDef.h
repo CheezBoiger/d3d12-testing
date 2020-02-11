@@ -117,16 +117,19 @@ struct GBuffer
     gfx::RenderPass* pRenderPass;
 };
 
+// Geometry Mesh describes the whole mesh, and the submeshes it is 
+// composed of.
 struct GeometryMesh
  {
-    RenderUUID _meshDescriptor;
+    RenderUUID _meshTransform;
     RenderUUID _vertexBufferView;
     RenderUUID _indexBufferView;
-    PerMeshDescriptor* _meshTransform;
+    PerMeshDescriptor* _meshDescriptor;
     U32 _submeshCount;
 };
 
-
+// Geometry Submesh describes only the partial vertices that make up a 
+// given primitive of the mesh. A group of submeshes can compose a mesh.
 struct GeometrySubMesh
 {
     RenderUUID _materialDescriptor;

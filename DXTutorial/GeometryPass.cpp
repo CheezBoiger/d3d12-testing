@@ -164,7 +164,7 @@ void GeometryPass::generateCommands
 
     U64 submeshIdx = 0;
     for (U32 i = 0; i < meshCount; ++i) {
-        RenderUUID meshUUID = pMeshes[i]->_meshDescriptor;
+        RenderUUID meshUUID = pMeshes[i]->_meshTransform;
         RenderUUID vertUUID = pMeshes[i]->_vertexBufferView;
         RenderUUID indUUID = pMeshes[i]->_indexBufferView;
 
