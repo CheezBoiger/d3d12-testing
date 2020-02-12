@@ -13,10 +13,9 @@ cbuffer Global : register ( b0 )
     GlobalConstants GConstants;
 };
 
-cbuffer Lights : register ( b1 )
-{
-    LightBuffer LightData;
-};
+StructuredBuffer<DirectionLight> DirectionLights : register (t4);
+StructuredBuffer<PointLight> PointLights : register (t5);
+StructuredBuffer<SpotLight> SpotLights : register (t6);
 
 [numthreads(16, 16, 1)]
 void main(  uint3 DTid : SV_DispatchThreadID,

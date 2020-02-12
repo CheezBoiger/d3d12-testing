@@ -1,7 +1,7 @@
 #ifndef LIGHTING_EQUATIONS_H
 #define LIGHTING_EQUATIONS_H
 
-#define JCL_PI 3.14;
+#define JCL_PI 3.14159;
 
 struct DirectionLight
 {
@@ -26,15 +26,6 @@ struct SpotLight
     float3 Dir;
     float Length;
 };
-
-
-struct LightBuffer
-{
-    DirectionLight DirectionLights[1];
-    PointLight PointLights[16];
-    SpotLight SpotLights[16];
-};
-
 
 float GGX(float NoH, float roughness)
 {

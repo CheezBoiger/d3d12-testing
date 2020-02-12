@@ -35,7 +35,7 @@ void initializePipeline(gfx::BackendRenderer* pRenderer)
     velocityPipelineInfo._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
     velocityPipelineInfo._dsvFormat = DXGI_FORMAT_D32_FLOAT;
     velocityPipelineInfo._numRenderTargets = 1;
-    velocityPipelineInfo._rtvFormats[0] = DXGI_FORMAT_R32G32_FLOAT;
+    velocityPipelineInfo._rtvFormats[0] = DXGI_FORMAT_R16G16_FLOAT;
 
     velocityPipelineInfo._sampleMask = 0xffffffff;
     
@@ -124,10 +124,10 @@ void initializeRenderTarget(gfx::BackendRenderer* pRenderer)
                             gfx::RESOURCE_DIMENSION_2D, 
                             gfx::RESOURCE_USAGE_DEFAULT, 
                             gfx::RESOURCE_BIND_RENDER_TARGET, 
-                            DXGI_FORMAT_R32G32_FLOAT, 
+                            DXGI_FORMAT_R16G16_TYPELESS, 
                             1920, 1080, 1,
                             0, TEXT("VelocityTexture"));
-    pRenderer->createRenderTargetView(&pVelocityRenderTargetView, pVelocityTexture, DXGI_FORMAT_R32G32_FLOAT);
+    pRenderer->createRenderTargetView(&pVelocityRenderTargetView, pVelocityTexture, DXGI_FORMAT_R16G16_FLOAT);
 }
 
 
