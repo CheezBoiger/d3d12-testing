@@ -215,7 +215,7 @@ R32 damp = 0.0f;
         R32 t = time.getTimeStamp();
         
         globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
-        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.0001f, 1000.0f);
+        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.0005f, 1000.0f);
         if (Keyboard::isKeyDown(KEY_CODE_A)) {
             MoveX += time.dt() * 15.0f;
         }

@@ -456,7 +456,7 @@ void D3D12Backend::queryForDevice(IDXGIFactory4* pFactory)
     }
 
     result = D3D12CreateDevice(pDesiredAdapter, 
-                               D3D_FEATURE_LEVEL_12_1, 
+                               D3D_FEATURE_LEVEL_12_0, 
                                __uuidof(ID3D12Device), 
                                 (void**)& m_pDevice);
     DX12ASSERT(result);
