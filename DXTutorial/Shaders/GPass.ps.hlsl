@@ -39,7 +39,11 @@ PSOutputGBuffer main ( PSInputGeometry Input )
         NormalColor = NormalMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
     }
 
-    float4 RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
+    float4 RoughMetalColor = float4( Material.RoughnessMetallicFactor.xy, 0, 0 );
+
+    if ( Material.MaterialFlags.x & ( MATERIAL_USE_METALLIC | MATERIAL_USE_ROUGHNESS ) ) {
+        RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
+    }
     float4 EmissionColor = EmissionMap.Sample( SurfaceSampler, Input.TexCoords.xy );
 
     // Set to [0.0 - 1.0] normal.

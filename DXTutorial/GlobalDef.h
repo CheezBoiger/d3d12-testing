@@ -5,6 +5,8 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix44.h"
 
+#include "Shaders/CommonShaderParams.h"
+
 #include <vector>
 
 #define GLOBAL_CONST_SLOT 0
@@ -80,7 +82,6 @@ struct PerMeshDescriptor
     Matrix44 _n;
 };
 
-
 struct PerMaterialDescriptor
 {
     Vector4 _color;
@@ -95,7 +96,7 @@ struct PerMaterialDescriptor
 
 struct PerLightSpaceDescriptor
 {
-    Matrix44 _viewProj;
+    Matrix44 _viewToClip;
 };
 
 

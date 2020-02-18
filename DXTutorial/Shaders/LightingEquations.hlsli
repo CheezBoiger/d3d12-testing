@@ -74,7 +74,7 @@ float3 BRDF(float D, float3 F, float G, float NoL, float NoV)
 
 
 // Calculating the Direct Illumination of a directional light source.
-float3 directionLightRadiance
+float3 DirectionLightRadiance
     (  
         // View vector.
         float3 V,
@@ -83,9 +83,9 @@ float3 directionLightRadiance
         // Normal vector.
         float3 N, 
         // roughness mask.
-        float roughness, 
+        float Roughness, 
         // metallic mask.
-        float metallic, 
+        float Metallic, 
         // Fresnel base.
         float3 F0, 
         // Light information for direction.
@@ -112,9 +112,39 @@ float3 directionLightRadiance
     // View dot half direction.
     float VoH = clamp( dot( V, H ), 0.001, 1.0 );
 
-    if (NoL > 0) {
-        
+    // Determine if facing the light source.
+    if (NoL > 0) 
+    {
+        // Roughness distribution.
+        float D = GGX( NoH, Roughness );
+        // Overshadow from microfacet distribution. 
+        float G = SchlickSmithGGX( NoL, NoV, Roughness );
+        // Fresnel value, based on material specularity
+        float3 F = FresnelSchlick( VoH, F0 );
+        // Specular value.
+        float3 Ks = F;
+        // Diffuse value.
+        float3 Kd = float3( 1.0, 1.0, 1.0 ) - Ks;
+        // Apply the metal mask.
+        Kd *= 1.0 - Metallic;
+        // Final calculation of the light source illuminating the material.
+        Color += ( LambertDiffuse( Kd, Albedo ) + BRDF(D, F, G, NoL, NoV) * Radiance * NoL);
     }
+
     return Color;
+}
+
+// Calculate direct illumination from point light source.
+float3 PointLightRadiance()
+{
+    float3 radiance = float3(0.0, 0.0, 0.0);
+    return radiance;
+}
+
+// Calculate direction illumination from spot light source.
+float3 SpotLightRadiance()
+{
+    float3 radiance = float3(0.0, 0.0, 0.0);
+    return radiance;
 }
 #endif

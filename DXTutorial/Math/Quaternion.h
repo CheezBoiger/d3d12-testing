@@ -61,4 +61,7 @@ struct Quaternion {
 
     R32 _x, _y, _z, _w;
 };
+
+
+Quaternion slerp(Quaternion a, Quaternion b, R32 dt);
 } // m

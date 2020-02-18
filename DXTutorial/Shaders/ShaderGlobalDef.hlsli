@@ -3,8 +3,8 @@
 #ifndef SHADER_GLOBAL_DEF_H
 #define SHADER_GLOBAL_DEF_H
 
-#define MATERIAL_USE_ALBEDO_MAP (1 << 0)
-#define MATERIAL_USE_NORMAL_MAP (1 << 1)
+#include "CommonShaderParams.h"
+
 
 // Global constants buffer.
 struct GlobalConstants 
@@ -12,7 +12,7 @@ struct GlobalConstants
     float4 CameraPos;
     float4x4 ViewToWorld;
     float4x4 WorldToView;
-    float4x4 Proj;
+    float4x4 Clip;
     float4x4 ViewToClip;
     float4x4 ClipToView;
     uint4 TargetSize;
