@@ -13,7 +13,7 @@ StructuredBuffer<SpotLight> SpotLights : register ( t6 );
 
 // We use depth to determine position in screenspace, which in turn,
 // convert back to world space with the inverse View and Projection matrices.
-Texture2D<float> Depth : register ( t4 );
+Texture2D<float> Depth : register ( t7 );
 
 RWTexture2D<float4> OutResult : register ( u0 );
 
@@ -43,7 +43,7 @@ void main
     F0 = lerp(F0, Albedo, Metallic);
 
     // World position without perspective division.
-    float4 WorldPosNoPersp = mul(UV, Global.ClipToView);
+    float4 WorldPosNoPersp = mul(ClipPos, Global.ClipToView);
     // World position with perspective division.
     float3 WorldPos = WorldPosNoPersp / WorldPosNoPersp.w;
 
