@@ -130,9 +130,29 @@ struct PSInputUVOnly
 };
 
 
-float3 calculateBitangent(float3 N, float3 T)
+float3 CalculateBinormal(float3 N, float3 T)
 {
     return normalize(cross(N, T));
 }
 
+
+// If using a more traditional pipeline, it would be best to calculate it's metallic mask.
+float SolveForMetallic(float3 Diffuse, float Specular, float OneMinusSpecularStrength)
+{
+    const float3 DielectricSpec = float3(DIELECTRIC_SPECULAR_VALUE, DIELECTRIC_SPECULAR_VALUE, DIELECTRIC_SPECULAR_VALUE);
+    if (Specular < DielectricSpec.r)
+        return 0;
+
+    float A = DielectricSpec.r;
+    float B = Diffuse * OneMinusSpecularStrength / (1 - DielectricSpec.r) + Specular - 2 * DielectricSpec.r;
+    float C = DielectricSpec.r - Specular;
+    float D = max(B * B - 4 * A * C, 0);
+    return clamp((-B + sqrt(D)) / (2 * A), 0, 1);
+}
+
+// Calculating roughness from a Specular/Gloss pipeline, we simply need the inverse of the glossiness map.
+float SolveForRoughness(float glossiness)
+{
+    return 1 - glossiness;
+}
 #endif // SHADER_GLOBAL_DEF_H

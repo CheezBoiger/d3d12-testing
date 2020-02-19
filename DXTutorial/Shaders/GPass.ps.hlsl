@@ -31,7 +31,7 @@ PSOutputGBuffer main ( PSInputGeometry Input )
     float3 AlbedoColor = Material.Color;
     float3 NormalColor = Normal;
 
-    if ( Material.MaterialFlags.x & MATERIAL_USE_ALBEDO_MAP) { 
+    if ( Material.MaterialFlags.x & MATERIAL_USE_ALBEDO_MAP ) { 
         AlbedoColor = AlbedoMap.Sample( SurfaceSampler, Input.TexCoords.xy ).rgb;
     }
 
@@ -44,6 +44,7 @@ PSOutputGBuffer main ( PSInputGeometry Input )
     if ( Material.MaterialFlags.x & ( MATERIAL_USE_METALLIC | MATERIAL_USE_ROUGHNESS ) ) {
         RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
     }
+
     float4 EmissionColor = EmissionMap.Sample( SurfaceSampler, Input.TexCoords.xy );
 
     // Set to [0.0 - 1.0] normal.
