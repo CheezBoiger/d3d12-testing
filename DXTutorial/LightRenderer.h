@@ -7,7 +7,7 @@
 using namespace m;
 
 namespace jcl {
-
+namespace Lights {
 
 struct Light
 {
@@ -58,7 +58,7 @@ private:
 void initializeLights();
 
 // Render Deferred commands for lights.
-void recordDeferredLightsCommands
+void generateDeferredLightsCommands
     (
         // The command list to record.
         gfx::CommandList* pList, 
@@ -66,5 +66,5 @@ void recordDeferredLightsCommands
         LightSystem* pLightSystem
     );
 
-
+} // Lights
 } // jcl

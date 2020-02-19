@@ -45,6 +45,16 @@ PSOutputGBuffer main ( PSInputGeometry Input )
         RoughMetalColor = RoughnessMetallicMap.Sample( SurfaceSampler, Input.TexCoords.xy );
     }
 
+    if ( Material.MaterialFlags.x & MATERIAL_USE_SPECULAR_GLOSSINESS ) {
+        // Roughness defined as glossiness. We need to invert.
+        // Metallic defined as specular. We need to convert.
+        // We need to convert these values to PBR.
+        // Albedo may be used as diffuse.
+        float3 Kd = AlbedoColor;
+        RoughMetalColor.x = SolveForRoughness(RoughMetalColor.x);
+        RoughMetalColor.y = SolveForMetallic(Kd, RoughMetalColor.y, 8.0);
+    }
+
     float4 EmissionColor = EmissionMap.Sample( SurfaceSampler, Input.TexCoords.xy );
 
     // Set to [0.0 - 1.0] normal.

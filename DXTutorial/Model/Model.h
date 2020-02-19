@@ -16,14 +16,18 @@ class Material
 public:
     Material() { }
 
-    void enableBumpmapping(B32 enable) { m_useBumpmapping = enable; }
-
     void setMetalFactor(R32 f) { m_metalFactor = f; }
     void setRoughFactor(R32 f) { m_roughFactor = f; }
+
     void setAlbedoId(RenderUUID albedo) { m_albedoId = albedo; }
     void setRoughMetalId(RenderUUID roughMetal) { m_roughMetalId = roughMetal; }
     void setNormalId(RenderUUID normal) { m_normalId = normal; }
     void setEmissiveId(RenderUUID emissive) { m_emissionId = emissive; }
+
+    RenderUUID getAlbedoSRV() const { return m_albedoSRV; }
+    RenderUUID getNormalSRV() const { return m_normalSRV; }
+    RenderUUID getRoughMetalSRV() const { return m_roughMetalSRV; }
+    RenderUUID getEmissiveSRV() const { return m_emissionSRV; }
 
     RenderUUID getAlbedoId() const { return m_albedoId; }
     RenderUUID getRoughMetalId() const { return m_roughMetalId; }
@@ -32,17 +36,18 @@ public:
 
     R32 getMetalFactor() const { return m_metalFactor; }
     R32 getRoughFactor() const { return m_roughFactor; }
-    B32 isUsingBumpmapping() const { return m_useBumpmapping; }
-
-    gfx::DescriptorTable* getDescriptorTable() { }
 
 private:
     RenderUUID m_albedoId;
     RenderUUID m_roughMetalId;
     RenderUUID m_normalId;
     RenderUUID m_emissionId;
-    gfx::DescriptorTable* m_pDescriptorTable;
-    B32 m_useBumpmapping;
+
+    RenderUUID m_albedoSRV;
+    RenderUUID m_roughMetalSRV;
+    RenderUUID m_normalSRV;
+    RenderUUID m_emissionSRV;
+
     R32 m_metalFactor;
     R32 m_roughFactor;
 };

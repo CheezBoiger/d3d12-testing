@@ -24,12 +24,11 @@ struct DescriptorTableD3D11 : public DescriptorTable
   }
   
   void setSamplers(Sampler** samplers, U32 samplerCount) override {}
-  void finalize() override { isFinalized = true; }
+  void initialize(DescriptorTableType type, U32 totalCount) override { }
   virtual void update() {}
 
   std::vector<Resource*> _constantBuffers;
   std::vector<Resource*> _shaderResourceViews;
   std::vector<Resource*> _unorderedAccessViews;
-  B32 isFinalized;
 };
 } // gfx

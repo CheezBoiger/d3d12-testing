@@ -114,8 +114,8 @@ public:
                                        Resource* buffer,
                                        DXGI_FORMAT format,
                                        U32 szBytes) override;
-    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer, DXGI_FORMAT format) override;
-    void createDepthStencilView(DepthStencilView** ppDsv, Resource* buffer, DXGI_FORMAT format) override;
+    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer, const RenderTargetViewDesc& desc) override;
+    void createDepthStencilView(DepthStencilView** ppDsv, Resource* buffer, const DepthStencilViewDesc& desc) override;
     void destroyResource(Resource* buffer) override { }
     void createDescriptorTable(DescriptorTable** table) override;
 

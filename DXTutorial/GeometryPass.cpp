@@ -119,7 +119,8 @@ void GeometryPass::initialize
 
     pBackend->createDescriptorTable(&m_pSamplerTable);
     m_pSamplerTable->setSamplers(&m_pSampler, 1);
-    m_pSamplerTable->finalize();
+    m_pSamplerTable->initialize(gfx::DescriptorTable::DESCRIPTOR_TABLE_SAMPLER, 1);
+    m_pSamplerTable->update();
 }
 
 
@@ -155,7 +156,8 @@ void GeometryPass::generateCommands
     
     pList->setRenderPass(_pGBuffer->pRenderPass);
 
-    gfx::DescriptorTable* ppTables[] = { pRenderer->getConstBufferDescriptorTable(), m_pSamplerTable };
+    gfx::DescriptorTable* ppTables[] = { pRenderer->getResourceDescriptorTable(), 
+                                         m_pSamplerTable};
     // Set the graphics pipeline, assuming we aren't doing any animation skinning, or dynamic mesh rendering,
     // we can just have one pipeline state that is handling static meshes.
     pList->setDescriptorTables(ppTables, 2);
@@ -185,6 +187,7 @@ void GeometryPass::generateCommands
             RenderUUID matUUID = pSubMeshes[i]->_materialDescriptor;
             gfx::Resource* pMatDescriptor = getResource(matUUID);
             pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
+            
             if (indUUID != 0) {
                 pList->drawIndexedInstanced(pSubMeshes[submeshIdx]->_indCount, 
                                             pSubMeshes[submeshIdx]->_vertInst, 

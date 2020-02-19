@@ -4,6 +4,8 @@
 #include "D3D11/D3D11Backend.h"
 #include "GlobalDef.h"
 #include "VelocityRenderer.h"
+#include "ShadowRenderer.h"
+#include "LightRenderer.h"
 #include "GraphicsResources.h"
 #include "DebugGUI.h"
 
@@ -93,21 +95,34 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                 1920,
                                 1080,
                                 1, 0, TEXT("GBufferEmissive"));
+    gfx::ShaderResourceViewDesc srvDesc = { };
+    srvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    srvDesc._texture2D._mipLevels = 1;
+    srvDesc._texture2D._mostDetailedMip = 0;
+    srvDesc._texture2D._planeSlice = 0;
+    srvDesc._texture2D._resourceMinLODClamp = 0.f;
     m_pBackend->createShaderResourceView(&m_gbuffer.pNormalSRV,
                                             m_gbuffer.pNormalTexture,
-                                            0, 1);
-  m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
-                                     m_gbuffer.pAlbedoTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
+                                            srvDesc);
+    gfx::RenderTargetViewDesc rtvDesc = { };
+    rtvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    rtvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    rtvDesc._texture2D._mipSlice = 0;
+    rtvDesc._texture2D._planeSlice = 0;
+    m_pBackend->createRenderTargetView(&m_gbuffer.pAlbedoRTV,
+                                     m_gbuffer.pAlbedoTexture, rtvDesc);
     m_pBackend->createRenderTargetView(&m_gbuffer.pNormalRTV,
-                                        m_gbuffer.pNormalTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
+                                        m_gbuffer.pNormalTexture, rtvDesc);
     m_pBackend->createRenderTargetView(&m_gbuffer.pMaterialRTV,
-                                        m_gbuffer.pMaterialTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
+                                        m_gbuffer.pMaterialTexture, rtvDesc);
     m_pBackend->createRenderTargetView(&m_gbuffer.pEmissiveRTV,
-                                        m_gbuffer.pEmissiveTexture, DXGI_FORMAT_R8G8B8A8_UNORM);
-  m_pBackend->createDescriptorTable(&m_pConstBufferTable);
+                                        m_gbuffer.pEmissiveTexture, rtvDesc);
+    m_pBackend->createDescriptorTable(&m_pResourceDescriptorTable);
 
-  m_pConstBufferTable->setConstantBuffers(&pGlobalsBuffer, 1);
-  m_pConstBufferTable->finalize();
+  m_pResourceDescriptorTable->setConstantBuffers(&pGlobalsBuffer, 1);
+  m_pResourceDescriptorTable->initialize(gfx::DescriptorTable::DESCRIPTOR_TABLE_SRV_UAV_CBV, 6000);
+  m_pResourceDescriptorTable->update();
 
   m_pRootSignature = nullptr;
   m_pBackend->createRootSignature(&m_pRootSignature);
@@ -134,11 +149,15 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                             DXGI_FORMAT_R24G8_TYPELESS,
                             1920,
                             1080, 1, 0, TEXT("SceneDepth"));
-  m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
-                                     m_pSceneDepth, DXGI_FORMAT_D24_UNORM_S8_UINT);
+    gfx::DepthStencilViewDesc dsvDesc = { };
+    dsvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    dsvDesc._format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    dsvDesc._texture2D._mipSlice = 0;
+    m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
+                                       m_pSceneDepth, dsvDesc);
 
-  m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
-  m_pPreZPass->setDepthStencil(m_pSceneDepthView);
+    m_pBackend->createRenderPass(&m_pPreZPass, 0, true);
+    m_pPreZPass->setDepthStencil(m_pSceneDepthView);
 
     createFinalRootSignature();
     createGraphicsPipelines();
@@ -152,6 +171,8 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_geometryPass.initialize(m_pBackend);
 
     initializeVelocityRenderer(m_pBackend, m_pSceneDepthView);
+    Shadows::initializeShadowRenderer(m_pBackend);
+    
 }
 
 
@@ -207,9 +228,9 @@ void FrontEndRenderer::render()
     m_pList->setMarker("PreZPass");
     m_pList->setViewports(&viewport, 1);
     m_pList->setScissors(&scissor, 1);
-    m_pList->setDescriptorTables(&m_pConstBufferTable, 1);
+    m_pList->setDescriptorTables(&m_pResourceDescriptorTable, 1);
     m_pList->setGraphicsRootSignature(m_pRootSignature);
-    m_pList->setGraphicsRootDescriptorTable(GLOBAL_CONST_SLOT, m_pConstBufferTable);
+    m_pList->setGraphicsRootDescriptorTable(GLOBAL_CONST_SLOT, m_pResourceDescriptorTable);
 
     m_pList->setRenderPass(m_pPreZPass);
     m_pList->setGraphicsPipeline(m_pPreZPipeline);
@@ -244,9 +265,15 @@ void FrontEndRenderer::render()
 
     //m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
     //m_pList->drawInstanced(3, 1, 0, 0);
-
+    m_pList->setMarker("ShadowMaps");
+    Shadows::generateShadowCommands(this, 
+                                    m_pList, 
+                                    m_opaqueBatches.data(), 
+                                    m_opaqueBatches.size(), 
+                                    m_opaqueSubmeshes.data(), 
+                                    m_opaqueSubmeshes.size());
+    Shadows::generateShadowResolveCommand(m_pList);
     m_pList->setMarker("GBuffer Pass");
-
     m_geometryPass.generateCommands(this, 
                                     m_pList, 
                                     m_opaqueBatches.data(), 
@@ -260,10 +287,10 @@ void FrontEndRenderer::render()
                             m_opaqueBatches.size(),
                             m_opaqueSubmeshes.data(),
                             m_opaqueSubmeshes.size());
-
+    m_pList->setMarker("Lights Deferred");
+    Lights::generateDeferredLightsCommands(m_pList, nullptr);
     m_pList->setMarker("Debug GUI");
     populateCommandListGUI(m_pBackend, m_pList);
-
     // Render the final pass.
     m_pList->setMarker("Final Backbuffer Pass");
     m_pList->setRenderPass(m_pBackend->getBackbufferRenderPass());
@@ -441,7 +468,11 @@ RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx
                                 depth, 
                                 strideBytes, 
                                 debugName); 
-    return cacheResource(pResource);
+    RenderUUID uuid = cacheResource(pResource);
+    gfx::ShaderResourceView* view = nullptr;
+    gfx::ShaderResourceViewDesc srvDesc = { };
+    m_pBackend->createShaderResourceView(&view, pResource, srvDesc);
+    return uuid;
 }
 
 
@@ -657,7 +688,14 @@ RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData,
     }
 
     gfx::ShaderResourceView* pView = nullptr;
-    m_pBackend->createShaderResourceView(&pView, pResource, 0, width * height);
+    gfx::ShaderResourceViewDesc srvDesc = { };
+    srvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    srvDesc._format = format;
+    srvDesc._texture2D._mipLevels = 1;
+    srvDesc._texture2D._mostDetailedMip = 0;
+    srvDesc._texture2D._planeSlice = 0;
+    srvDesc._texture2D._resourceMinLODClamp = 0.f;
+    m_pBackend->createShaderResourceView(&pView, pResource, srvDesc);
     RenderUUID id = cacheResource(pResource);
     return id;
 }
@@ -687,7 +725,8 @@ void FrontEndRenderer::createFinalRootSignature()
 
     m_pBackend->createDescriptorTable(&m_pFinalDescriptorTable);
     m_pFinalDescriptorTable->setShaderResourceViews(&m_gbuffer.pNormalSRV, 1);
-    m_pFinalDescriptorTable->finalize();
+    m_pFinalDescriptorTable->initialize(gfx::DescriptorTable::DESCRIPTOR_TABLE_SRV_UAV_CBV, 1);
+    m_pFinalDescriptorTable->update();
 }
 
 

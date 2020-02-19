@@ -332,6 +332,18 @@ public:
                                                                                         pResource->GetGPUVirtualAddress());
     }
 
+    void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) override {
+        ID3D12Resource* pResource = getBackendD3D12()->getResource(pShaderResourceView->getUUID());
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootShaderResourceView(rootParameterIndex,
+                                                                                          pResource->GetGPUVirtualAddress());
+    }
+
+    void setComputeRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) override {
+        ID3D12Resource* pResource = getBackendD3D12()->getResource(pShaderResourceView->getUUID());
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetComputeRootShaderResourceView(rootParameterIndex,
+                                                                                         pResource->GetGPUVirtualAddress());
+    }
+
 protected:
    std::vector<ID3D12GraphicsCommandList*> m_pCmdList;
     std::vector<ID3D12CommandAllocator*> m_pAllocatorRef;

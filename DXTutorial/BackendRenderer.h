@@ -56,12 +56,14 @@ enum ResourceUsage
 enum ResourceDimension
 {
     RESOURCE_DIMENSION_BUFFER,
+    RESOURCE_DIMENSION_1D,
     RESOURCE_DIMENSION_2D,
     RESOURCE_DIMENSION_3D,
+    RESOURCE_DIMENSION_1D_ARRAY,
     RESOURCE_DIMENSION_2D_ARRAY,
-    RESOURCE_DIMENSION_3D_ARRAY,
     RESOURCE_DIMENSION_TEXTURE_CUBE,
-    RESOURCE_DIMENSION_TEXTURE_CUBE_ARRAY
+    RESOURCE_DIMENSION_TEXTURE_CUBE_ARRAY,
+    RESOURCE_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE
 };
 
 
@@ -108,6 +110,261 @@ public:
     , _bindFlags(flags) { }
   virtual void* map(U64 start, U64 sz) { return nullptr; }
   virtual void unmap(U64 start, U64 sz) { }
+};
+
+
+enum BufferSrvFlags
+{
+    BUFFER_SRV_FLAGS_NONE,
+    BUFFER_SRV_FLAGS_RAW = 0x1
+};
+
+
+struct BufferSRV
+{
+    U64 _firstElement;
+    U32 _numElements;
+    U32 _structureByteStride;
+    BufferSrvFlags _flags;
+};
+
+struct Texture1DSRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    R32 _resourceMinLODClamp;
+};
+
+struct Texture1DArraySRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+    R32 _resourceMinLODClamp;
+};
+
+struct Texture2DSRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    U32 _planeSlice;
+    R32 _resourceMinLODClamp;
+};
+
+struct Texture2DArraySRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+    U32 _planeSlice;
+    R32 _resourceMinLodClamp;
+};
+
+struct Texture3DSRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    R32 _resourceMinLODClamp;
+};
+
+struct TextureCubeSRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    R32 _resourceMinLODClamp;
+};
+
+struct TextureCubeArraySRV
+{
+    U32 _mostDetailedMip;
+    U32 _mipLevels;
+    U32 _first2DArrayFace;
+    U32 _numCubes;
+    R32 _resourceMinLODClamp;
+};
+
+struct RayTracingAccelerationStructureSRV
+{
+    Resource* _location;
+};
+
+struct ShaderResourceViewDesc
+{
+    ResourceDimension _dimension;
+    DXGI_FORMAT _format;
+    union {
+        BufferSRV _buffer;
+        Texture1DSRV _texture1D;
+        Texture1DArraySRV _texture1DArray;
+        Texture2DSRV _texture2D;
+        Texture2DArraySRV _texture2DArray;
+        Texture3DSRV _texture3D;
+        TextureCubeSRV _textureCube;
+        TextureCubeArraySRV _textureCubeArray;
+        RayTracingAccelerationStructureSRV _rayTracingAccelerationStructure;
+    };
+};
+
+struct BufferRTV
+{
+    U64 _firstElement;
+    U32 _numElements;
+};
+
+struct Texture1DRTV
+{
+    U32 _mipSlice;
+};
+
+struct Texture1DArrayRTV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+};
+
+struct Texture2DRTV
+{
+    U32 _mipSlice;
+    U32 _planeSlice;
+};
+
+struct Texture2DArrayRTV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+    U32 _planeSlice;
+};
+
+struct Texture3DRTV
+{
+    U32 _mipSlice;
+    U32 _firstWSlice;
+    U32 _wSize;
+};
+
+struct RenderTargetViewDesc
+{
+    ResourceDimension _dimension;
+    DXGI_FORMAT _format;
+    union {
+        BufferRTV _buffer;
+        Texture1DRTV _texture1D;
+        Texture1DArrayRTV _texture1DArray;
+        Texture2DRTV _texture2D;
+        Texture2DArrayRTV _texture2DArray;
+        Texture3DRTV _texture3D;
+    };
+};
+
+enum DepthStencilFlags
+{
+    DEPTH_STENCIL_FLAG_NONE,
+    DEPTH_STENCIL_FLAG_ONLY_DEPTH = 0x1,
+    DEPTH_STENCIL_FLAG_ONLY_STENCIL = 0x2
+};
+
+struct Texture1DDSV
+{
+    U32 _mipSlice;
+};
+
+struct Texture1DArrayDSV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+};
+
+struct Texture2DDSV
+{
+    U32 _mipSlice;
+};
+
+struct Texture2DArrayDSV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+};
+
+struct DepthStencilViewDesc
+{
+    DXGI_FORMAT _format;
+    ResourceDimension _dimension;
+    U32 _flags;
+    union {
+        Texture1DDSV _texture1D;
+        Texture1DArrayDSV _texture1DArray;
+        Texture2DDSV _texture2D;
+        Texture2DArrayDSV _texture2DArray;
+    };
+};
+
+
+enum BufferUAVFlag
+{
+    BUFFER_UAV_FLAG_NONE,
+    BUFFER_UAV_FLAG_RAW = 0x1
+};
+
+struct BufferUAV
+{
+    U64 _firstElement;
+    U32 _numElements;
+    U32 _structureByteStride;
+    U64 _counterOffsetInBytes;
+    U32 _flags;
+};
+
+struct Texture1DUAV
+{
+    U32 _mipSlice;
+};
+
+struct Texture1DArrayUAV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+};
+
+struct Texture2DUAV
+{
+    U32 _mipSlice;
+    U32 _planeSlice;
+};
+
+struct Texture2DArrayUAV
+{
+    U32 _mipSlice;
+    U32 _firstArraySlice;
+    U32 _arraySize;
+    U32 _planeSlice;
+};
+
+struct Texture3DUAV
+{
+    U32 _mipSlice;
+    U32 _firstWSlice;
+    U32 _wSize;
+};
+
+struct UnorderedAccessViewDesc
+{
+    ResourceDimension _dimension;
+    DXGI_FORMAT _format;
+    union {
+        BufferUAV _buffer;
+        Texture1DUAV _texture1D;
+        Texture1DArrayUAV _texture1DArray;
+        Texture2DUAV _texture2D;
+        Texture2DArrayUAV _texture2DArray;
+        Texture3DUAV _texture3D; 
+    };
 };
 
 
@@ -308,12 +565,13 @@ struct StaticSamplerDesc : public SamplerDesc
 class DescriptorTable : public GPUObject
 {
 public:
+    enum DescriptorTableType { DESCRIPTOR_TABLE_SRV_UAV_CBV, DESCRIPTOR_TABLE_SAMPLER };
     virtual ~DescriptorTable() { }
     virtual void setShaderResourceViews(ShaderResourceView** resources, U32 bufferCount) { }
     virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
     virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
     virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
-    virtual void finalize() { }
+    virtual void initialize(DescriptorTableType type, U32 totalCount) { }
     virtual void update() { }
 };
 
@@ -669,7 +927,7 @@ public:
     virtual void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
     virtual void setComputeRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) { }
     virtual void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
-    virtual void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource pShaderResourceView) { }
+    virtual void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }
@@ -738,13 +996,12 @@ public:
                                U32 structureByteStride = 0,
                                const TCHAR* debugName = nullptr) { }
     virtual void createQueue(CommandQueue** ppQueue, CommandQueueType type) { }
-    virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture, DXGI_FORMAT format) { }
-    virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture) { }
+    virtual void createRenderTargetView(RenderTargetView** rtv, Resource* texture, const RenderTargetViewDesc& desc) { }
+    virtual void createUnorderedAccessView(UnorderedAccessView** uav, Resource* texture, const UnorderedAccessViewDesc& desc) { }
     virtual void createShaderResourceView(ShaderResourceView** srv, 
                                           Resource* resource, 
-                                          U32 firstElement, 
-                                          U32 numElements) { }
-    virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture, DXGI_FORMAT format) { }
+                                          const ShaderResourceViewDesc& desc) { }
+    virtual void createDepthStencilView(DepthStencilView** dsv, Resource* texture, const DepthStencilViewDesc& desc) { }
     virtual void createGraphicsPipelineState(GraphicsPipeline** pipline,
                                              const GraphicsPipelineInfo* pInfo) { }
     virtual void createComputePipelineState(ComputePipeline** pipeline,

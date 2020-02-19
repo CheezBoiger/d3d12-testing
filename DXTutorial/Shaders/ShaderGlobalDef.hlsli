@@ -139,7 +139,9 @@ float3 CalculateBinormal(float3 N, float3 T)
 // If using a more traditional pipeline, it would be best to calculate it's metallic mask.
 float SolveForMetallic(float3 Diffuse, float Specular, float OneMinusSpecularStrength)
 {
-    const float3 DielectricSpec = float3(DIELECTRIC_SPECULAR_VALUE, DIELECTRIC_SPECULAR_VALUE, DIELECTRIC_SPECULAR_VALUE);
+    const float3 DielectricSpec = float3(   DIELECTRIC_SPECULAR_VALUE, 
+                                            DIELECTRIC_SPECULAR_VALUE, 
+                                            DIELECTRIC_SPECULAR_VALUE);
     if (Specular < DielectricSpec.r)
         return 0;
 

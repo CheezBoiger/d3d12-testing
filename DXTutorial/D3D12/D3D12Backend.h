@@ -125,12 +125,11 @@ public:
                        U32 structureByteStride,
                        const TCHAR* debugName = nullptr) override;
     void destroyResource(Resource* resource) override;
-    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer, DXGI_FORMAT format) override;
-    void createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer) override;
+    void createRenderTargetView(RenderTargetView** rtv, Resource* buffer, const RenderTargetViewDesc& desc) override;
+    void createUnorderedAccessView(UnorderedAccessView** uav, Resource* buffer, const UnorderedAccessViewDesc& desc) override;
     void createShaderResourceView(ShaderResourceView** srv, 
-                                  Resource* buffer, 
-                                  U32 firstElement, 
-                                  U32 numElements) override;
+                                  Resource* buffer,
+                                  const ShaderResourceViewDesc& desc) override;
 
     void createVertexBufferView(VertexBufferView** view,
                                         Resource* buffer, 
@@ -143,7 +142,7 @@ public:
     void createRootSignature(RootSignature** pRootSignature) override;
     void destroyRootSignature(RootSignature* pRootSig) override { }
 
-    void createDepthStencilView(DepthStencilView** dsv, Resource* buffer, DXGI_FORMAT format) override;
+    void createDepthStencilView(DepthStencilView** dsv, Resource* buffer, const DepthStencilViewDesc& desc) override;
     void destroyCommandList(CommandList* pList) override;
     void createRayTracingPipelineState(RayTracingPipeline** ppPipeline, 
                                        const RayTracingPipelineInfo* pInfo) override;
