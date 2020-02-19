@@ -50,6 +50,8 @@ private:
 
     R32 m_metalFactor;
     R32 m_roughFactor;
+    Vector3 m_albedo;
+    Vector3 m_roughMetallicValue;
 };
 
 

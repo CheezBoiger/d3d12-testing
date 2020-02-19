@@ -120,6 +120,14 @@ struct GBuffer
     gfx::RenderPass* pRenderPass;
 };
 
+struct GeometryMaterialMap
+{
+    RenderUUID _albedoMap;
+    RenderUUID _normalMap;
+    RenderUUID _roughnessMetallicMap;
+    RenderUUID _emissiveMap;
+};
+
 // Geometry Mesh describes the whole mesh, and the submeshes it is 
 // composed of.
 struct GeometryMesh
@@ -129,6 +137,8 @@ struct GeometryMesh
     RenderUUID _indexBufferView;
     PerMeshDescriptor* _meshDescriptor;
     U32 _submeshCount;
+    GeometryMaterialMap* _materialMaps;
+    U32 _materialMapCount;
 };
 
 // Geometry Submesh describes only the partial vertices that make up a 
@@ -137,6 +147,7 @@ struct GeometrySubMesh
 {
     RenderUUID _materialDescriptor;
     PerMaterialDescriptor* _matData;
+    U32 _materialMapIdx;
     U32 _vertCount;
     U32 _vertInst;
     U32 _startVert;

@@ -473,6 +473,18 @@ RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx
     RenderUUID uuid = cacheResource(pResource);
     gfx::ShaderResourceView* view = nullptr;
     gfx::ShaderResourceViewDesc srvDesc = { };
+    srvDesc._format = format;
+    srvDesc._dimension = dimension;
+    switch ( srvDesc._dimension ) {
+        case gfx::RESOURCE_DIMENSION_2D:
+            {
+                srvDesc._texture2D._mipLevels = 1;
+                srvDesc._texture2D._mostDetailedMip = 0;
+                srvDesc._texture2D._planeSlice = 0;
+                srvDesc._texture2D._resourceMinLODClamp = 0.0f;
+            } break;
+        default: break;
+    }
     m_pBackend->createShaderResourceView(&view, pResource, srvDesc);
     return uuid;
 }

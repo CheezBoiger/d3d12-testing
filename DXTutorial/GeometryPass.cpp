@@ -184,10 +184,10 @@ void GeometryPass::generateCommands
             pList->setIndexBuffer(getIndexBufferView(indUUID));
 
         for (U64 j = 0; j < pMeshes[i]->_submeshCount; ++j, ++submeshIdx) {
-            RenderUUID matUUID = pSubMeshes[i]->_materialDescriptor;
+            RenderUUID matUUID = pSubMeshes[submeshIdx]->_materialDescriptor;
             gfx::Resource* pMatDescriptor = getResource(matUUID);
             pList->setGraphicsRootConstantBufferView(MATERIAL_DEF_SLOT, pMatDescriptor);
-            
+            if (pSubMeshes[submeshIdx]->_matData->_matrialFlags & MATERIAL_USE_ALBEDO_MAP) { }
             if (indUUID != 0) {
                 pList->drawIndexedInstanced(pSubMeshes[submeshIdx]->_indCount, 
                                             pSubMeshes[submeshIdx]->_vertInst, 
