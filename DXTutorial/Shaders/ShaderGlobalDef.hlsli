@@ -19,7 +19,7 @@ struct GlobalConstants
     int AllowBumpMapping;
     float Near;
     float Far;
-    int SunLightShadowIndex; // Index of directional light that uses the sunlight shadow resolve.
+    int SunLightShadowIndex; // Index of directional light that uses the sunlight shadow resolve. -1 if not corresponding to one.
 };
 
 

@@ -64,6 +64,8 @@ void main
     {
         DirectionLight light = DirectionLights[i];
         float3 Radiance = DirectionLightRadiance(V, Albedo, Normal, Roughness, Metallic, F0, light);
+        // Look for the direction light that contains the sunlight shadow.
+        if (Global.SunLightShadowIndex == i) Radiance *= 0;
         PixelColor += Radiance; 
     }
 
