@@ -57,7 +57,8 @@ void main
     for ( uint i = 0; i < DirectionLightCount; ++i ) 
     {
         DirectionLight light = DirectionLights[i];
-        PixelColor += DirectionLightRadiance(V, Albedo, Normal, Roughness, Metallic, F0, light);
+        float3 Radiance = DirectionLightRadiance(V, Albedo, Normal, Roughness, Metallic, F0, light);
+        PixelColor += Radiance; 
     }
 
     // Output the final color to the result.
