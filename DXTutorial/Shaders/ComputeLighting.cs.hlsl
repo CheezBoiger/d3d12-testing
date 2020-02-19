@@ -15,6 +15,12 @@ StructuredBuffer<SpotLight> SpotLights : register ( t6 );
 // convert back to world space with the inverse View and Projection matrices.
 Texture2D<float> Depth : register ( t7 );
 
+// Shadow Maps to be indexed depending on the light.
+Texture2D<float> SunlightShadowResolve : register ( t8 );
+TextureCubeArray<float> PointLightShadowAtlas : register ( t9 );
+Texture2DArray<float> SpotLightShadowAtlas : register ( t10 );
+Texture2DArray<float> DirectionLightShadowAtlas : register ( t11 );
+
 RWTexture2D<float4> OutResult : register ( u0 );
 
 cbuffer GlobalConstant : register ( b0 )

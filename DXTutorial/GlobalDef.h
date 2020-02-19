@@ -65,8 +65,8 @@ struct Globals
     R32 _near;
     // Far Z Plane.
     R32 _far;
-    // PAdding.
-    R32 _pad0;
+    // Sunlight shadow index that corresponds to the direction light array.
+    I32 _sunlightShadowIndex;
 };
 
 

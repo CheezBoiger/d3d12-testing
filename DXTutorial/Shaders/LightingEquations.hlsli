@@ -8,6 +8,7 @@ struct DirectionLight
     float4 WorldPos;
     float4 Dir;
     float4 Color;
+    int ShadowIndex; // -1 if no shadow.
 };
 
 
@@ -16,6 +17,7 @@ struct PointLight
     float4 WorldPos;
     float3 Color;
     float Radius;
+    float ShadowIndex;
 };
 
 
@@ -25,6 +27,7 @@ struct SpotLight
     float4 Color;
     float3 Dir;
     float Length;
+    float ShadowIndex;
 };
 
 float GGX(float NoH, float roughness)
