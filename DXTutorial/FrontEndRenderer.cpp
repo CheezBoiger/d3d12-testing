@@ -217,6 +217,8 @@ void FrontEndRenderer::render()
                                1, &rect);
     m_pList->clearRenderTarget(m_gbuffer.pAlbedoRTV, rgba, 1, &rect);
     m_pList->clearRenderTarget(m_gbuffer.pNormalRTV, rgba, 1, &rect);
+    m_pList->clearRenderTarget(m_gbuffer.pMaterialRTV, rgba, 1, &rect);
+    m_pList->clearRenderTarget(m_gbuffer.pEmissiveRTV, rgba, 1, &rect);
     m_pList->clearDepthStencil(m_pSceneDepthView, 
                                gfx::CLEAR_FLAG_DEPTH,
                                0.0f, 

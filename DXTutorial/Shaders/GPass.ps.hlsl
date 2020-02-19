@@ -28,7 +28,7 @@ PSOutputGBuffer main ( PSInputGeometry Input )
     float3 BiTangent = Input.BiTangent.xyz;
     float3 Normal = Input.Normal.xyz;
 
-    float3 AlbedoColor = Material.Color;
+    float3 AlbedoColor = Material.Albedo;
     float3 NormalColor = Normal;
 
     if ( Material.MaterialFlags.x & MATERIAL_USE_ALBEDO_MAP ) { 

@@ -84,7 +84,7 @@ struct PerMeshDescriptor
 
 struct PerMaterialDescriptor
 {
-    Vector4 _color;
+    Vector4 _albedo;
     // Spec/Gloss factor if material flags is set to use.
     Vector4 _roughnessMetallicFactor;
     Vector4 _emissionFactor;

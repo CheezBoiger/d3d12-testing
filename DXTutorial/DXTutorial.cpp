@@ -126,7 +126,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //PerMeshDescriptor descriptor3 = { };
 
     PerMaterialDescriptor mat = { };
-    mat._color = Vector4(1.0f, 0.0f, 0.0f);
+    mat._albedo = Vector4(1.0f, 0.0f, 0.0f);
+    mat._roughnessMetallicFactor = Vector4(1.0f, 1.0f);
     mat._matrialFlags = 0;
     mat._albedoFactor = Vector4(1.0f, 1.0f, 1.0f);
 

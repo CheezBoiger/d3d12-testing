@@ -51,7 +51,7 @@ struct MeshTransforms
 struct MeshMaterials 
 {
     // Roughness = x, Metallic = y;
-    float4 Color;
+    float4 Albedo;
     float4 RoughnessMetallicFactor;
     float4 EmissionFactor;
     float4 AlbedoFactor;
