@@ -118,12 +118,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     RenderUUID transformId = pRenderer->createTransformBuffer();
     RenderUUID transformId1 = pRenderer->createTransformBuffer();
     RenderUUID transformId2 = pRenderer->createTransformBuffer();
-    //RenderUUID transformId3 = pRenderer->createTransformBuffer();
+    RenderUUID transformId3 = pRenderer->createTransformBuffer();
     RenderUUID materialId = pRenderer->createMaterialBuffer();
     PerMeshDescriptor descriptor = { };
     PerMeshDescriptor descriptor1 = { };
     PerMeshDescriptor descriptor2 = { };
-    //PerMeshDescriptor descriptor3 = { };
+    PerMeshDescriptor descriptor3 = { };
 
     PerMaterialDescriptor mat = { };
     mat._albedo = Vector4(1.0f, 0.0f, 0.0f);
@@ -152,14 +152,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh2._meshDescriptor = &descriptor2;
     mesh2._meshTransform = transformId2;
     mesh2._submeshCount = 1;
-
-    //GeometryMesh mesh3 = { };
-    //mesh3._vertexBufferView = model3.getVertexBufferView();
-    //mesh3._indexBufferView = model3.getIndexBufferView();
-    //mesh3._meshTransform = transformId3;
-    //mesh3._meshDescriptor = &descriptor3;
-    //mesh3._submeshCount = model3.getTotalSubmeshes();
-
+/*
+    GeometryMesh mesh3 = { };
+    mesh3._vertexBufferView = model3.getVertexBufferView();
+    mesh3._indexBufferView = model3.getIndexBufferView();
+    mesh3._meshTransform = transformId3;
+    mesh3._meshDescriptor = &descriptor3;
+    mesh3._submeshCount = model3.getTotalSubmeshes();
+*/
     GeometrySubMesh submesh = { };
     submesh._materialDescriptor = materialId;
     submesh._matData = &mat;
@@ -216,7 +216,7 @@ R32 damp = 0.0f;
         R32 t = time.getTimeStamp();
         
         globals._cameraPos = { 0.0f, /*sinf(t * 0.0000001f) */ 10.0f, 55.0f, 1.0f };
-        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.0005f, 1000.0f);
+        Matrix44 P = m::Matrix44::perspectiveRH(ToRads(60.0f), 1920.0f / 1080.0f, 0.005f, 1000.0f);
         if (Keyboard::isKeyDown(KEY_CODE_A)) {
             MoveX += time.dt() * 15.0f;
         }
@@ -274,7 +274,7 @@ R32 damp = 0.0f;
         descriptor2._n[3][1] = 0.0f;
         descriptor2._n[3][2] = 0.0f;
         descriptor2._n = descriptor2._n.inverse().transpose();
-/*
+
         descriptor3._previousWorldToViewClip = descriptor3._worldToViewClip;
         descriptor3._worldToViewClip = W3 * globals._viewToClip;
         descriptor3._world = W3;
@@ -283,7 +283,7 @@ R32 damp = 0.0f;
         descriptor3._n[3][1] = 0.0f;
         descriptor3._n[3][2] = 0.0f;
         descriptor3._n = descriptor3._n.inverse().transpose();
-*/
+
         GeometrySubMesh* submeshes[] = { &submesh };
         GeometrySubMesh* submeshes1[] = { &submesh1 };
         GeometrySubMesh* submeshes2[] = { &submesh2 };

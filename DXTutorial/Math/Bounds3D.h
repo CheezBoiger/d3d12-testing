@@ -19,5 +19,9 @@ struct Bounds3D
         Vector3 extentHalf = getExtent() * 0.5f;
         return _min + extentHalf;
     }
+
+    B32 intersects(const Bounds3D& other) const {
+        return false;
+    }
 };
 }
