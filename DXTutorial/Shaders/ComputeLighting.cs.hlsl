@@ -10,16 +10,17 @@ Texture2D<float4> EmissiveTarget : register ( t3 );
 StructuredBuffer<DirectionLight> DirectionLights : register ( t4 );
 StructuredBuffer<PointLight> PointLights : register ( t5 );
 StructuredBuffer<SpotLight> SpotLights : register ( t6 );
+StructuredBuffer<LightTransformation> LightTransforms : register ( t7 );
 
 // We use depth to determine position in screenspace, which in turn,
 // convert back to world space with the inverse View and Projection matrices.
-Texture2D<float> Depth : register ( t7 );
+Texture2D<float> Depth : register ( t8 );
 
 // Shadow Maps to be indexed depending on the light.
-Texture2D<float> SunlightShadowResolve : register ( t8 );
-TextureCubeArray<float> PointLightShadowAtlas : register ( t9 );
-Texture2DArray<float> SpotLightShadowAtlas : register ( t10 );
-Texture2DArray<float> DirectionLightShadowAtlas : register ( t11 );
+Texture2D<float> SunlightShadowResolve : register ( t9 );
+TextureCubeArray<float> PointLightShadowAtlas : register ( t10 );
+Texture2DArray<float> SpotLightShadowAtlas : register ( t11 );
+Texture2DArray<float> DirectionLightShadowAtlas : register ( t12 );
 
 RWTexture2D<float4> OutResult : register ( u0 );
 
@@ -62,10 +63,14 @@ void main
 
     for ( uint i = 0; i < DirectionLightCount; ++i ) 
     {
-        DirectionLight light = DirectionLights[i];
-        float3 Radiance = DirectionLightRadiance(V, Albedo, Normal, Roughness, Metallic, F0, light);
+        DirectionLight Light = DirectionLights[i]; 
+        float3 Radiance = DirectionLightRadiance(V, Albedo, Normal, Roughness, Metallic, F0, Light);
         // Look for the direction light that contains the sunlight shadow.
-        if (Global.SunLightShadowIndex == i) Radiance *= 0;
+        if (Global.SunLightShadowIndex == i) {
+            LightTransformation LightTransform = LightTransforms[Light.LightTransformIndex];
+            float2 ShadowCoord = CalculateShadowCoord(WorldPos, LightTransform.ViewToClip);
+            Radiance *= DirectionLightShadowAtlas.Load(int4(ShadowCoord, i, 0)).r;
+        }
         PixelColor += Radiance; 
     }
 

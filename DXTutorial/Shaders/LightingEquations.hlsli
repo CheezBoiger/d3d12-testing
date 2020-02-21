@@ -9,6 +9,8 @@ struct DirectionLight
     float4 Dir;
     float4 Color;
     int ShadowIndex; // -1 if no shadow.
+    int LightTransformIndex;
+    int2 Pad0;
 };
 
 
@@ -18,6 +20,8 @@ struct PointLight
     float3 Color;
     float Radius;
     float ShadowIndex;
+    int LightTransformIndex;
+    int2 Pad0;
 };
 
 
@@ -28,6 +32,15 @@ struct SpotLight
     float3 Dir;
     float Length;
     float ShadowIndex;
+    int LightTransformIndex;
+    int2 Pad0;
+};
+
+
+struct LightTransformation
+{
+    float4x4 ViewToClip;
+    float4x4 ClipToView;
 };
 
 float GGX(float NoH, float roughness)
@@ -149,5 +162,12 @@ float3 SpotLightRadiance()
 {
     float3 radiance = float3(0.0, 0.0, 0.0);
     return radiance;
+}
+
+
+// Calculate the shadow coordinate to be used for sampling a shadow map.
+float2 CalculateShadowCoord(float3 WorldPosition, float4x4 LightViewToClip)
+{
+    return float2(0, 0);
 }
 #endif
