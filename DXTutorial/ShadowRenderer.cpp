@@ -177,7 +177,7 @@ void LightShadow::update(Lights::Light* light)
             {
                 Lights::DirectionLight* dirLight = static_cast<Lights::DirectionLight*>(light);
                 
-                mProjection = Matrix44::orthographicRH(512.f, 512.f, 0.1, 100.0f);
+                mProjection;// = Matrix44::orthographicRH(512.f, 512.f, 0.1, 100.0f);
                 
                 mView = Matrix44::lookAtRH(dirLight->_position, 
                                            dirLight->_direction + dirLight->_position, 

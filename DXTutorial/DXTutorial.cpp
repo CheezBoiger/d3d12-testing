@@ -100,14 +100,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     jcl::Model model;
     jcl::Model model1;
     jcl::Model model2;
-    //jcl::Model model3;    
-    //model3.initialize("Sponza/Sponza.gltf", pRenderer);
+    jcl::Model model3;    
+    model3.initialize("sponza/Sponza.gltf", pRenderer);
     model.initialize("SongWork/spartan.obj", pRenderer);
     model1.initialize("SongWork/OldCar.obj", pRenderer);
     model2.initialize("SongWork/RacingCar.obj", pRenderer);
 
-    jcl::Globals globals;
+    jcl::Globals globals = { };
     pRenderer->setGlobals(&globals);
+    globals._allowBumpMapping = false;
     globals._targetSize[0] = 1920;
     globals._targetSize[1] = 1080;
     globals._targetSize[2] = 0;
@@ -152,14 +153,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh2._meshDescriptor = &descriptor2;
     mesh2._meshTransform = transformId2;
     mesh2._submeshCount = 1;
-/*
+
     GeometryMesh mesh3 = { };
     mesh3._vertexBufferView = model3.getVertexBufferView();
     mesh3._indexBufferView = model3.getIndexBufferView();
     mesh3._meshTransform = transformId3;
     mesh3._meshDescriptor = &descriptor3;
     mesh3._submeshCount = model3.getTotalSubmeshes();
-*/
+
     GeometrySubMesh submesh = { };
     submesh._materialDescriptor = materialId;
     submesh._matData = &mat;
@@ -186,7 +187,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     submesh2._indCount = model2.getSubMesh(0)->m_indCount;
     submesh2._indOffset = model2.getSubMesh(0)->m_indOffset;
     submesh2._vertInst = 1;
-/*
+
     std::vector<GeometrySubMesh> submeshes(model3.getTotalSubmeshes());
     std::vector<GeometrySubMesh*> pSubMeeshes(model3.getTotalSubmeshes());
         
@@ -204,7 +205,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     for (U32 i = 0; i < pSubMeeshes.size(); ++i) {
         pSubMeeshes[i] = &submeshes[i];
     }
-*/
+
 R32 g = 0.0f;
 R32 MoveX = 0.0f;
 R32 MoveZ = 0.0f;
@@ -291,7 +292,7 @@ R32 damp = 0.0f;
         pRenderer->pushMesh(&mesh, submeshes);
         pRenderer->pushMesh(&mesh1, submeshes1);
         pRenderer->pushMesh(&mesh2, submeshes2);
-        //pRenderer->pushMesh(&mesh3, pSubMeeshes.data());
+        pRenderer->pushMesh(&mesh3, pSubMeeshes.data());
         pRenderer->update(0.0f, globals);
         pRenderer->render();
     }
