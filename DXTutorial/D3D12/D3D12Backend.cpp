@@ -1405,7 +1405,6 @@ void D3D12Backend::createComputePipelineState(ComputePipeline** ppPipeline,
   DX12ASSERT(m_pDevice->CreateComputePipelineState(&compDesc, 
                                                    __uuidof(ID3D12PipelineState), 
                                                    (void**)&pPipelineState));
-
   m_pPipelineStates[(*ppPipeline)->getUUID()] = pPipelineState;
 }
 

@@ -2,6 +2,11 @@
 #include "ShaderGlobalDef.hlsli"
 #include "LightingEquations.hlsli"
 
+cbuffer GlobalConstant : register ( b0 )
+{
+    GlobalConstants Global;
+};
+
 Texture2D<float4> AlbedoTarget : register ( t0 );
 Texture2D<float4> NormalTarget : register ( t1 );
 Texture2D<float4> RoughnessMetallicTarget : register ( t2 );
@@ -23,11 +28,6 @@ Texture2DArray<float> SpotLightShadowAtlas : register ( t11 );
 Texture2DArray<float> DirectionLightShadowAtlas : register ( t12 );
 
 RWTexture2D<float4> OutResult : register ( u0 );
-
-cbuffer GlobalConstant : register ( b0 )
-{
-    GlobalConstants Global;
-};
 
 [numthreads(16, 16, 1)]
 void main

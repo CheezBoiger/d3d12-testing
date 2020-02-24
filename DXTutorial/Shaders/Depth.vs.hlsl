@@ -2,7 +2,15 @@
 #include "CommonShaderParams.h"
 #include "ShaderGlobalDef.hlsli"
 
-float4 main( float4 pos : POSITION ) : SV_POSITION
+cbuffer MeshTransform : register ( b0 )
 {
-	return pos;
+	MeshTransforms Mesh;
+};
+
+PSInputAlpha main( VSInputGeometry Input )
+{
+	PSInputAlpha Output;
+	Output.Position = float4( mul( Input.Position, Mesh.WorldToViewClip ) );
+	Output.TexCoord = Input.TexCoord;
+	return Output;
 }

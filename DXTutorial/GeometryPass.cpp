@@ -44,7 +44,7 @@ void GeometryPass::initialize
     pipeInfo._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_EQUAL;
     pipeInfo._depthStencilState._depthWriteMask  = gfx::DEPTH_WRITE_MASK_ZERO;
     
-    pipeInfo._pixelShader._pByteCode = new I8[1024* 1024 * 5];
+    pipeInfo._pixelShader._pByteCode = new I8[1024 * 1024 * 5];
     pipeInfo._vertexShader._pByteCode = new I8[1024 * 1024 * 5];
     retrieveShader("GeometryTransform.vs.cso", &pipeInfo._vertexShader._pByteCode, pipeInfo._vertexShader._szBytes);
     retrieveShader("GPass.ps.cso", &pipeInfo._pixelShader._pByteCode, pipeInfo._pixelShader._szBytes);
@@ -71,7 +71,7 @@ void GeometryPass::initialize
     pipeInfo._rasterizationState._forcedSampleCount = 0;
     pipeInfo._rasterizationState._frontCounterClockwise = true;
     pipeInfo._rasterizationState._depthClipEnable = false;
-    pipeInfo._rasterizationState._depthBias = 0.0f;
+    pipeInfo._rasterizationState._depthBias = 0;
 
     pipeInfo._blendState._renderTargets[0]._renderTargetWriteMask = 0xf;
     pipeInfo._blendState._renderTargets[1]._renderTargetWriteMask = 0xf;

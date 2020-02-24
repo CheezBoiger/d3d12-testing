@@ -27,6 +27,14 @@ struct DescriptorTableD3D12 : public DescriptorTable {
     }
 
 
+    void setUnorderedAccessViews(UnorderedAccessView** uavs, U32 uavCount) override { 
+        _unorderedAccessViews.resize(uavCount);
+        for (U32 i = 0; i < uavCount; ++i) {
+            _unorderedAccessViews[i] = uavs[i];
+        }
+    }
+
+
     void setShaderResourceViews(ShaderResourceView** buffers, U32 viewCount) override {
         _shaderResourceViews.resize(viewCount);
         for (U32 i = 0; i < viewCount; ++i) {
@@ -39,8 +47,8 @@ struct DescriptorTableD3D12 : public DescriptorTable {
         createDescriptorHeapForTable(type, totalCount);
     }
 
-    void update() override {
-        updateDescriptorHeapTable();
+    void update(DescriptorTableFlags flags) override {
+        updateDescriptorHeapTable(flags);
     }
 
 private:
@@ -82,8 +90,12 @@ private:
         }
     }
   
-  void updateDescriptorHeapTable() {
+  void updateDescriptorHeapTable(DescriptorTableFlags flags) {
     if (!_constantBuffers.empty() || !_shaderResourceViews.empty() || !_unorderedAccessViews.empty()) {
+        ID3D12DescriptorHeap* pHeap = getBackendD3D12()->getDescriptorHeap(getUUID());
+        if (flags & DESCRIPTOR_TABLE_FLAG_RESET) {
+            m_descriptorOffset = pHeap->GetCPUDescriptorHandleForHeapStart();
+        }
         U32 incSize = 
           getBackendD3D12()->getDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         for (U32 i = 0; i < _constantBuffers.size(); ++i) {
@@ -94,7 +106,7 @@ private:
             constDesc.SizeInBytes = (pResource->GetDesc().Width + 255) & ~255;
             getBackendD3D12()->getDevice()->CreateConstantBufferView(&constDesc, m_descriptorOffset);
             m_descriptorOffset.ptr += incSize;
-        }
+        } 
 
         for (U32 i = 0; i < _shaderResourceViews.size(); ++i) {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = { };
@@ -129,7 +141,7 @@ public:
 
     std::vector<Resource*> _constantBuffers;
     std::vector<ShaderResourceView*> _shaderResourceViews;
-    std::vector<Resource*> _unorderedAccessViews;
+    std::vector<UnorderedAccessView*> _unorderedAccessViews;
     std::vector<Sampler*> _samplers;
     std::vector<SamplerDesc> _staticSamplers;
   

@@ -5,7 +5,6 @@
 #include "BackendRenderer.h"
 #include "Math/Bounds3D.h"
 #include "GraphicsResources.h"
-#include "FrontEndRenderer.h"
 #include "GlobalDef.h"
 #include "Math/Plane.h"
 
@@ -81,8 +80,6 @@ void unregisterShadow(LightShadow* shadow);
 
 void generateShadowCommands
     (
-        // Front End renderer.
-        FrontEndRenderer* pRenderer,
         // list to record our commands to. 
         gfx::CommandList* pList,
         // Meshes to render onto this gpass.

@@ -561,6 +561,13 @@ struct StaticSamplerDesc : public SamplerDesc
     U32 _shaderRegister;
 };
 
+enum DescriptorTableFlag
+{
+    DESCRIPTOR_TABLE_FLAG_APPEND = 0,
+    DESCRIPTOR_TABLE_FLAG_RESET = (1<<0)
+};
+
+typedef U32 DescriptorTableFlags;
 
 class DescriptorTable : public GPUObject
 {
@@ -568,11 +575,11 @@ public:
     enum DescriptorTableType { DESCRIPTOR_TABLE_SRV_UAV_CBV, DESCRIPTOR_TABLE_SAMPLER };
     virtual ~DescriptorTable() { }
     virtual void setShaderResourceViews(ShaderResourceView** resources, U32 bufferCount) { }
-    virtual void setUnorderedAccessViews(Resource** resources, U32 bufferCount) { }
+    virtual void setUnorderedAccessViews(UnorderedAccessView** uavs, U32 uavCount) { }
     virtual void setConstantBuffers(Resource** buffer, U32 bufferCount) { }
     virtual void setSamplers(Sampler** samplers, U32 samplerCount) { }
     virtual void initialize(DescriptorTableType type, U32 totalCount) { }
-    virtual void update() { }
+    virtual void update(DescriptorTableFlags flags = DESCRIPTOR_TABLE_FLAG_APPEND) { }
 };
 
 

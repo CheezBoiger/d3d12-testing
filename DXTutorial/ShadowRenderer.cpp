@@ -15,6 +15,8 @@ gfx::RenderTargetView* sunlightShadowMapRTV;
 gfx::RenderTargetView* pointLightShadowMapAtlasRTV;
 gfx::RenderTargetView* spotLightShadowMapAtlasRTV;
 
+gfx::RootSignature* shadowRootSignature;
+
 gfx::ShaderResourceView* sunlightShadowMapSRV;
 gfx::ShaderResourceView* pointLightShadowMapAtlasSRV;
 gfx::ShaderResourceView* spotLightShadowMapAtlasSRV;
@@ -33,10 +35,85 @@ std::vector<gfx::RenderPass*> pointLightRenderPasses;
 std::vector<gfx::RenderPass*> directionLightRenderPasses;
 std::vector<gfx::RenderPass*> spotLightRenderPasses;
 
+void createShadowRootSignature(gfx::BackendRenderer* pRenderer)
+{
+    pRenderer->createRootSignature(&shadowRootSignature);
+    gfx::PipelineLayout layouts[3];
+    layouts[0] = { };
+    layouts[0]._type = gfx::PIPELINE_LAYOUT_TYPE_CBV;
+    layouts[0]._numConstantBuffers = 1;
+
+    layouts[1] = { };
+    layouts[1]._type = gfx::PIPELINE_LAYOUT_TYPE_DESCRIPTOR_TABLE;
+    layouts[1]._numShaderResourceViews = 1;
+
+    layouts[2] = { };
+    layouts[2]._type = gfx::PIPELINE_LAYOUT_TYPE_SAMPLERS;
+    layouts[2]._numSamplers = 1;
+    
+    shadowRootSignature->initialize(gfx::SHADER_VISIBILITY_VERTEX | gfx::SHADER_VISIBILITY_PIXEL,
+                                    layouts, 3);
+}
+
+void createShadowMapPipeline(gfx::BackendRenderer* pRenderer)
+{
+    std::vector<gfx::InputElementInfo> elements(4);
+    std::vector<const CHAR*> semantics = { "POSITION", "NORMAL", "TANGENT", "TEXCOORD" };
+    U32 offset = 0;
+    for (size_t i = 0; i < elements.size(); ++i) {
+        elements[i]._alignedByteOffset = offset;
+        elements[i]._classification = gfx::INPUT_CLASSIFICATION_PER_VERTEX;
+        elements[i]._format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        elements[i]._instanceDataStepRate = 0;
+        elements[i]._semanticIndex = 0;
+        elements[i]._semanticName = semantics[i];
+        offset += sizeof(Vector4);
+    }
+
+    gfx::GraphicsPipelineInfo info = { };
+    info._blendState._alphaToCoverageEnable = false;
+    info._blendState._independentBlendEnable = false;
+    info._blendState._renderTargets[0] = { };
+    info._numRenderTargets = 0;
+    info._depthStencilState._backFace._stencilDepthFailOp = gfx::STENCIL_OP_ZERO;
+    info._depthStencilState._depthFunc = gfx::COMPARISON_FUNC_LESS;
+    info._depthStencilState._depthWriteMask = gfx::DEPTH_WRITE_MASK_ALL;
+    info._depthStencilState._frontFace = { };
+    info._depthStencilState._stencilReadMask = gfx::STENCIL_OP_ZERO;
+    info._depthStencilState._stencilWriteMask = gfx::STENCIL_OP_ZERO;
+    // 16 bit unorm for shadow maps, as they don't need to be insanely precise,
+    // But applications will want better precision depending on the situation.
+    info._dsvFormat = DXGI_FORMAT_D16_UNORM;
+    info._ibCutValue = gfx::IB_CUT_VALUE_CUT_0xFFFF;
+    info._inputLayout._elementCount = elements.size();
+    info._inputLayout._pInputElements = elements.data();
+    info._sampleMask = 0xffffffff;
+    info._topology = gfx::PRIMITIVE_TOPOLOGY_TRIANGLES;
+    info._rasterizationState._antialiasedLinesEnable = false;
+    info._rasterizationState._conservativeRasterizationEnable = false;
+    info._rasterizationState._cullMode = gfx::CULL_MODE_BACK;
+    info._rasterizationState._fillMode = gfx::FILL_MODE_SOLID;
+    info._rasterizationState._frontCounterClockwise = true;
+    info._rasterizationState._depthBiasClamp = 0.f;
+    info._rasterizationState._depthBias = 0;
+    info._rasterizationState._depthClipEnable = true;
+    info._rasterizationState._slopedScaledDepthBias = 0.f;
+    info._rasterizationState._forcedSampleCount = 0;
+    info._pRootSignature = shadowRootSignature;
+
+    info._pixelShader._pByteCode = new U8[1024 * 1024 * 5];
+    info._vertexShader._pByteCode = new U8[1024 * 1024 * 5];
+    retrieveShader("Depth.ps.cso", &info._pixelShader._pByteCode, info._pixelShader._szBytes);
+    retrieveShader("Depth.vs.cso", &info._vertexShader._pByteCode, info._vertexShader._szBytes);
+
+    pRenderer->createGraphicsPipelineState(&shadowRenderPipeline, &info);
+
+    delete[] info._pixelShader._pByteCode;
+    delete[] info._vertexShader._pByteCode;
+}
+
 void generateShadowCommands
     (
-        // Front End renderer.
-        FrontEndRenderer* pRenderer,
         // list to record our commands to. 
         gfx::CommandList* pList,
         // Meshes to render onto this gpass.
@@ -118,6 +195,8 @@ void initializeShadowRenderer(gfx::BackendRenderer* pRenderer)
                              gfx::RESOURCE_BIND_RENDER_TARGET | gfx::RESOURCE_BIND_SHADER_RESOURCE,
                              DXGI_FORMAT_R16_TYPELESS,
                              512u, 512u, 32u, 0u, TEXT("SpotLightShadowAtlas"));
+    createShadowRootSignature(pRenderer);
+    createShadowMapPipeline(pRenderer);
 }
 
 

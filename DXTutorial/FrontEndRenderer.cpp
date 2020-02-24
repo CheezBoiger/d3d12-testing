@@ -105,6 +105,15 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     m_pBackend->createShaderResourceView(&m_gbuffer.pNormalSRV,
                                             m_gbuffer.pNormalTexture,
                                             srvDesc);
+    m_pBackend->createShaderResourceView(&m_gbuffer.pAlbedoSRV,
+                                         m_gbuffer.pAlbedoTexture,
+                                         srvDesc);
+    m_pBackend->createShaderResourceView(&m_gbuffer.pMaterialSRV,
+                                         m_gbuffer.pMaterialTexture,
+                                         srvDesc);
+    m_pBackend->createShaderResourceView(&m_gbuffer.pEmissiveSRV,
+                                         m_gbuffer.pEmissiveTexture,
+                                         srvDesc);
     gfx::RenderTargetViewDesc rtvDesc = { };
     rtvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
     rtvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -172,7 +181,9 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
 
     initializeVelocityRenderer(m_pBackend, m_pSceneDepthView);
     Shadows::initializeShadowRenderer(m_pBackend);
-    
+    Lights::initializeLights(m_pBackend);
+    m_lightSystem.initialize(m_pBackend, 4, 32, 32);
+    Lights::updateLightRenderer(pGlobalsBuffer, &m_gbuffer, &m_lightSystem);
 }
 
 
@@ -268,8 +279,7 @@ void FrontEndRenderer::render()
     //m_pList->setGraphicsRootConstantBufferView(1, pOtherMeshBuffer);
     //m_pList->drawInstanced(3, 1, 0, 0);
     m_pList->setMarker("ShadowMaps");
-    Shadows::generateShadowCommands(this, 
-                                    m_pList, 
+    Shadows::generateShadowCommands(m_pList, 
                                     m_opaqueBatches.data(), 
                                     m_opaqueBatches.size(), 
                                     m_opaqueSubmeshes.data(), 
@@ -290,7 +300,7 @@ void FrontEndRenderer::render()
                             m_opaqueSubmeshes.data(),
                             m_opaqueSubmeshes.size());
     m_pList->setMarker("Lights Deferred");
-    Lights::generateDeferredLightsCommands(m_pList, nullptr);
+    Lights::generateDeferredLightsCommands(m_pList, getGlobalsBuffer());
     m_pList->setMarker("Debug GUI");
     populateCommandListGUI(m_pBackend, m_pList);
     // Render the final pass.

@@ -4,6 +4,7 @@
 #include <vector>
 #include "GlobalDef.h"
 #include "VelocityRenderer.h"
+#include "LightRenderer.h"
 #include "GeometryPass.h"
 
 #include <unordered_map>
@@ -113,6 +114,7 @@ private:
     gfx::RenderPass* m_pPreZPass;
 
     GeometryPass m_geometryPass;
+    Lights::LightSystem m_lightSystem;
 
     // To be run after PreZPass.
     gfx::ComputePipeline* m_clusterAssignmentPipeline;

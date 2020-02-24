@@ -124,6 +124,13 @@ public:
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetPipelineState(pso);
     }
 
+
+    virtual void setComputePipeline(ComputePipeline* pPipeline) override {
+        if (!pPipeline) return;
+        ID3D12PipelineState* pso = getBackendD3D12()->getPipelineState(pPipeline->getUUID());
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetPipelineState(pso); 
+    }
+
     virtual void setRenderPass(RenderPass* pass) override { 
       if (!pass) { 
         m_pCmdList[getBackendD3D12()->getFrameIndex()]->OMSetRenderTargets(
@@ -326,9 +333,23 @@ public:
                                                                                        pHeap->GetGPUDescriptorHandleForHeapStart());
     }
 
+
+    virtual void setComputeRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) override { 
+        if (!pTable) return;
+        ID3D12DescriptorHeap* pHeap = getBackendD3D12()->getDescriptorHeap(pTable->getUUID());
+        m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetComputeRootDescriptorTable(rootParameterIndex,
+                                                                                      pHeap->GetGPUDescriptorHandleForHeapStart());
+    }
+
     void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) override {
       ID3D12Resource* pResource = getBackendD3D12()->getResource(pConstantBuffer->getUUID());
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootConstantBufferView(rootParameterIndex, 
+                                                                                        pResource->GetGPUVirtualAddress());
+    }
+
+    void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) override {
+      ID3D12Resource* pResource = getBackendD3D12()->getResource(pConstantBuffer->getUUID());
+      m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetComputeRootConstantBufferView(rootParameterIndex, 
                                                                                         pResource->GetGPUVirtualAddress());
     }
 

@@ -14,7 +14,7 @@ struct DescriptorTableD3D11 : public DescriptorTable
 {
 
   void setShaderResourceViews(ShaderResourceView** resources, U32 bufferCount) override {}
-  void setUnorderedAccessViews(Resource** resources, U32 bufferCount) override {}
+  void setUnorderedAccessViews(UnorderedAccessView** uavs, U32 uavCount) override {}
   
   void setConstantBuffers(Resource** buffer, U32 bufferCount) override {
     _constantBuffers.resize(bufferCount);
@@ -25,7 +25,7 @@ struct DescriptorTableD3D11 : public DescriptorTable
   
   void setSamplers(Sampler** samplers, U32 samplerCount) override {}
   void initialize(DescriptorTableType type, U32 totalCount) override { }
-  virtual void update() {}
+  virtual void update(DescriptorTableFlags flags) {}
 
   std::vector<Resource*> _constantBuffers;
   std::vector<Resource*> _shaderResourceViews;
