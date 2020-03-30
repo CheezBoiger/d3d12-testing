@@ -107,5 +107,6 @@ void Model::processOBJ(const std::string& path, FrontEndRenderer* pRenderer)
     m_indexBuffer = pRenderer->createIndexBufferView(indices.data(), indices.size() * sizeof(U32));
     m_totalIndices = indices.size();
     m_totalVertices = vertices.size();
+    m_bounds = bounds;
 }
 } // jcl

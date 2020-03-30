@@ -141,6 +141,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     mesh._meshDescriptor = &descriptor;
     mesh._meshTransform = transformId;
     mesh._submeshCount = 1;
+    mesh._bounds = model.getBounds();
 
     GeometryMesh mesh1 = { };
     mesh1._vertexBufferView = planeVertexBuffer.vertexBufferView;//model1.getVertexBufferView();

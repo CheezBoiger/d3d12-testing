@@ -8,12 +8,19 @@ using namespace m;
 namespace jcl {
 namespace Lights {
 
+struct LightTransform
+{
+    Matrix44 _viewToClip;
+    Matrix44 _clipToView;
+};
+
 struct Light
 {
     Vector3 _position;
     Vector4 _radiance;
     // Shadow info, otherwise this is left null.
     Shadows::LightShadow* _shadow;
+    U32 _transform;
 };
 
 
@@ -46,16 +53,14 @@ public:
                     U32 pointLightCount, 
                     U32 spotLightCount);
 
-    DirectionLight* getDirectionLight(U32 idx);
-    PointLight* getPointLight(U32 idx);
-    SpotLight* getSpotLight(U32 idx);
+    DirectionLight* getDirectionLight(U32 idx) { return &m_directionLights[idx]; }
+    PointLight* getPointLight(U32 idx) { return &m_pointLights[idx]; }
+    SpotLight* getSpotLight(U32 idx) { return &m_spotLights[idx]; }
+    
+    LightTransform* getTransform(U32 idxFromLight) { return &m_lightTransformations[idxFromLight]; }
+    void update();
 
 private:
-    struct LightTransform
-    {
-        Matrix44 _viewToClip;
-        Matrix44 _clipToView;
-    };
     std::vector<DirectionLight> m_directionLights;
     std::vector<PointLight> m_pointLights;
     std::vector<SpotLight> m_spotLights;
@@ -64,10 +69,16 @@ private:
     gfx::Resource* m_pDirectionLightResource;
     gfx::Resource* m_pPointLightResource;
     gfx::Resource* m_pSpotLightResource;
+    gfx::Resource* m_lightTransformsResource;
     gfx::ShaderResourceView* m_pDirectionLightsSRV;
     gfx::ShaderResourceView* m_pSpotLightsSRV;
     gfx::ShaderResourceView* m_pPointLighstSRV;
+    gfx::ShaderResourceView* m_pLightTransformSRV;
 
+    void mapLightSystem(void** dirPtr, void** pointPtr, void** spotPtr, void** transformPtr);
+    void unmapLightSystem();
+
+    friend gfx::Resource* getLightTransforms(LightSystem*);
     friend gfx::ShaderResourceView* getPointLightsSRV(LightSystem*);
     friend gfx::ShaderResourceView* getSpotLightsSRV(LightSystem*);
     friend gfx::ShaderResourceView* getDirectionLightsSRV(LightSystem*);

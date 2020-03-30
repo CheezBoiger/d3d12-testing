@@ -341,16 +341,16 @@ public:
                                                                                       pHeap->GetGPUDescriptorHandleForHeapStart());
     }
 
-    void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) override {
+    void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer, U64 offset) override {
       ID3D12Resource* pResource = getBackendD3D12()->getResource(pConstantBuffer->getUUID());
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetGraphicsRootConstantBufferView(rootParameterIndex, 
-                                                                                        pResource->GetGPUVirtualAddress());
+                                                                                        pResource->GetGPUVirtualAddress() + offset);
     }
 
-    void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) override {
+    void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer, U64 offset) override {
       ID3D12Resource* pResource = getBackendD3D12()->getResource(pConstantBuffer->getUUID());
       m_pCmdList[getBackendD3D12()->getFrameIndex()]->SetComputeRootConstantBufferView(rootParameterIndex, 
-                                                                                        pResource->GetGPUVirtualAddress());
+                                                                                        pResource->GetGPUVirtualAddress() + offset);
     }
 
     void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) override {

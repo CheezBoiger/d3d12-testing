@@ -83,6 +83,8 @@ public:
     U32 getTotalVertices() const { return m_totalVertices; }
     U32 getTotalIndices() const { return m_totalIndices; }
 
+    Bounds3D getBounds() const { return m_bounds; }
+
 private:
 
     void processGLTF(const std::string& path, FrontEndRenderer* pRenderer);
@@ -93,6 +95,8 @@ private:
     
     U32 m_totalVertices;
     U32 m_totalIndices;
+    Bounds3D m_bounds;
+
     std::vector<SubMesh> m_submeshes;
     std::vector<Material> m_materials;
     std::vector<RenderUUID> m_textures;

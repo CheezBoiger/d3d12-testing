@@ -183,7 +183,13 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
     Shadows::initializeShadowRenderer(m_pBackend);
     Lights::initializeLights(m_pBackend);
     m_lightSystem.initialize(m_pBackend, 4, 32, 32);
+
+    dirShadow.initialize(Shadows::LightShadow::SHADOW_TYPE_DIRECTIONAL, Shadows::SHADOW_RESOLUTION_4096_4096);
+    Shadows::registerShadow(m_pBackend, &dirShadow);
     Lights::updateLightRenderer(pGlobalsBuffer, &m_gbuffer, &m_lightSystem);
+    m_lightSystem.getDirectionLight(0)->_direction = Vector3(1.0f, 1.0f, 0.0f);
+    m_lightSystem.getDirectionLight(0)->_position = Vector3(0.0f, 2.0f, 0.0f);
+    m_lightSystem.getDirectionLight(0)->_radiance = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 
@@ -283,7 +289,11 @@ void FrontEndRenderer::render()
                                     m_opaqueBatches.data(), 
                                     m_opaqueBatches.size(), 
                                     m_opaqueSubmeshes.data(), 
-                                    m_opaqueSubmeshes.size());
+                                    m_opaqueSubmeshes.size(),
+                                    getGlobalsBuffer(),
+                                    &m_lightSystem);
+    m_pList->setViewports(&viewport, 1);
+    m_pList->setScissors(&scissor, 1);
     Shadows::generateShadowResolveCommand(m_pList);
     m_pList->setMarker("GBuffer Pass");
     m_geometryPass.generateCommands(this, 
@@ -343,26 +353,37 @@ void FrontEndRenderer::cleanUp()
 
 void FrontEndRenderer::update(R32 dt, Globals& globals)
 {
+    gfx::ResourceMappingRange range = { };
     void* pMatPtr = nullptr;
-    void* pPtr = pGlobalsBuffer->map(0, sizeof(Globals));
+    range._start = 0;
+    range._sz = sizeof(Globals);
+    void* pPtr = pGlobalsBuffer->map(&range);
     memcpy(pPtr, m_pGlobals, sizeof(Globals));
-    pGlobalsBuffer->unmap(0, sizeof(Globals));
+    pGlobalsBuffer->unmap(&range);
 
     for (U64 i = 0; i < m_opaqueBatches.size(); ++i) {
         gfx::Resource* pDescriptor = getResource(m_opaqueBatches[i]->_meshTransform);
-        pPtr = pDescriptor->map(0, sizeof(PerMeshDescriptor));    
+        range._sz = sizeof(PerMeshDescriptor);
+        pPtr = pDescriptor->map(&range);    
         memcpy(pPtr, m_opaqueBatches[i]->_meshDescriptor, sizeof(PerMeshDescriptor));
-        pDescriptor->unmap(0, sizeof(PerMeshDescriptor));
+        range._sz = sizeof(PerMeshDescriptor);
+        pDescriptor->unmap(&range);
     }
 
     for (U64 i = 0; i < m_opaqueSubmeshes.size(); ++i) {
         gfx::Resource* pMatDescriptor = getResource(m_opaqueSubmeshes[i]->_materialDescriptor);
-
-        pMatPtr = pMatDescriptor->map(0, sizeof(PerMaterialDescriptor));
+        range._sz = sizeof(PerMaterialDescriptor);
+        pMatPtr = pMatDescriptor->map(&range);
         memcpy(pMatPtr, m_opaqueSubmeshes[i]->_matData, sizeof(PerMaterialDescriptor));
-        pMatDescriptor->unmap(0, sizeof(PerMaterialDescriptor));
-        
+        pMatDescriptor->unmap(&range);   
     }
+
+    Lights::DirectionLight* light = m_lightSystem.getDirectionLight(0);
+    Lights::LightTransform* transform = m_lightSystem.getTransform(light->_transform);
+    dirShadow.update(m_lightSystem.getDirectionLight(0), transform);
+    // Update lights.
+    m_lightSystem.update();
+
 }
 
 
@@ -534,10 +555,12 @@ VertexBuffer FrontEndRenderer::createVertexBuffer(void* meshRaw, U64 vertexSzByt
                              meshSzBytes,
                              vertexSzBytes,
                              TEXT("staging"));
-
-    void* ptr = pStaging->map(0, meshSzBytes);
+    gfx::ResourceMappingRange range = { };
+    range._start = 0;
+    range._sz = meshSzBytes;
+    void* ptr = pStaging->map(&range);
     memcpy(ptr, meshRaw, meshSzBytes);
-    pStaging->unmap(0, meshSzBytes);
+    pStaging->unmap(&range);
 
     m_pBackend->createFence(&pFence);
     m_pBackend->createCommandList(&pList);
@@ -639,10 +662,12 @@ IndexBuffer FrontEndRenderer::createIndexBufferView(void* raw, U64 szBytes)
                                     szBytes,
                                     sizeof(U32),
                                     TEXT("staging"));
-
-        void* ptr = pStaging->map(0, szBytes);
+        gfx::ResourceMappingRange range = { };
+        range._start = 0;
+        range._sz = szBytes;
+        void* ptr = pStaging->map(&range);
         memcpy(ptr, raw, szBytes);
-        pStaging->unmap(0, szBytes);
+        pStaging->unmap(&range);
 
         m_pBackend->createFence(&pFence);
         m_pBackend->createCommandList(&pList);
@@ -690,10 +715,12 @@ RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData,
             szBytes,
             0,
             TEXT("staging"));
-
-        void* ptr = pStaging->map(0, szBytes);
+        gfx::ResourceMappingRange range = { };
+        range._start = 0;
+        range._sz = szBytes;
+        void* ptr = pStaging->map(&range);
         memcpy(ptr, pData, szBytes);
-        pStaging->unmap(0, szBytes);
+        pStaging->unmap(&range);
 
         m_pBackend->createFence(&pFence);
         m_pBackend->createCommandList(&pList);

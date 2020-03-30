@@ -4,6 +4,7 @@
 
 #include "Math/Vector4.h"
 #include "Math/Matrix44.h"
+#include "Math/Bounds3D.h"
 
 #include "Shaders/CommonShaderParams.h"
 
@@ -140,8 +141,9 @@ struct GeometryMesh
     RenderUUID _indexBufferView;
     PerMeshDescriptor* _meshDescriptor;
     U32 _submeshCount;
-    GeometryMaterialMap* _materialMaps;
     U32 _materialMapCount;
+    GeometryMaterialMap* _materialMaps;
+    Bounds3D _bounds;
 };
 
 // Geometry Submesh describes only the partial vertices that make up a 

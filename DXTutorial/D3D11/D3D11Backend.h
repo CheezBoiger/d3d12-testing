@@ -38,8 +38,8 @@ struct BufferD3D11 : public Resource
     : Resource( dimension, usage, flags )
     , _width( 0 )
     , _flags( flags ) { }
-    virtual void* map(U64 start, U64 sz) override;
-    virtual void unmap(U64 start, U64 sz) override;
+    virtual void* map(const ResourceMappingRange* pRange) override;
+    virtual void unmap(const ResourceMappingRange* pRange) override;
     U32 _width;
     ResourceBindFlags _flags;
     D3D11Backend* _pBackend;

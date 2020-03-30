@@ -419,8 +419,8 @@ D3D12_RENDER_TARGET_VIEW_DESC processRenderTargetViewDesc(const RenderTargetView
 D3D12_DSV_FLAGS processDepthStencilFlags(U32 flags)
 {
     D3D12_DSV_FLAGS nativeFlags = D3D12_DSV_FLAG_NONE;
-    if (flags & DEPTH_STENCIL_FLAG_ONLY_DEPTH) nativeFlags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
-    if (flags & DEPTH_STENCIL_FLAG_ONLY_STENCIL) nativeFlags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+    if (flags & DEPTH_STENCIL_FLAG_READ_ONLY_DEPTH) nativeFlags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+    if (flags & DEPTH_STENCIL_FLAG_READ_ONLY_STENCIL) nativeFlags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
     return nativeFlags;
 }
 
@@ -610,26 +610,37 @@ D3D12_UNORDERED_ACCESS_VIEW_DESC processUnorderedAccessViewDesc(const UnorderedA
 }
 
 
-void* BufferD3D12::map(U64 start, U64 sz)
+void* BufferD3D12::map(const ResourceMappingRange* pRange)
 {
-  void* pData =  nullptr;
-  D3D12_RANGE range = { };
-  range.Begin = start;
-  range.End = start + sz;
-  ID3D12Resource* pResource = pBackend->getResource(getUUID());
-  HRESULT result = pResource->Map(0, &range, &pData); 
-  DX12ASSERT(result);
+    void* pData =  nullptr;   
+    ID3D12Resource* pResource = pBackend->getResource(getUUID());
+
+    if (pRange) {
+        D3D12_RANGE range = { };
+        range.Begin = pRange->_start;
+        range.End = pRange->_start + pRange->_sz;
+        HRESULT result = pResource->Map(0, &range, &pData); 
+        DX12ASSERT(result);
+    } else {
+        HRESULT result = pResource->Map(0, nullptr, &pData);
+        DX12ASSERT(result);
+    }
   return pData;
 }
 
 
-void BufferD3D12::unmap(U64 start, U64 sz)
+void BufferD3D12::unmap(const ResourceMappingRange* pRange)
 {
-  D3D12_RANGE range;
-  range.Begin = start;
-  range.End = start + sz;
-  ID3D12Resource* pResource = pBackend->getResource(getUUID());
-  pResource->Unmap(0, &range);
+    ID3D12Resource* pResource = pBackend->getResource(getUUID());
+
+    if (pRange) {
+        D3D12_RANGE range;
+        range.Begin = pRange->_start;
+        range.End = pRange->_start + pRange->_sz;
+        pResource->Unmap(0, &range);
+    } else {
+        pResource->Unmap(0, nullptr);
+    }
 }
 
 

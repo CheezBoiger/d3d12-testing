@@ -66,6 +66,9 @@ bool traceScreenSpaceRay
 }
 
 [numthreads(16, 16, 1)]
-void main( uint3 DTid : SV_DispatchThreadID )
+void main( uint3 DTid : SV_DispatchThreadID,
+           uint3 GTid : SV_GroupThreadID,
+           uint3 Gid: SV_GroupID,
+           uint  GI : SV_GroupIndex )
 {
 }

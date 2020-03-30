@@ -12,6 +12,8 @@ namespace jcl {
 
 namespace Lights {
 struct Light;
+struct LightTransform;
+struct LightSystem;
 }
 
 namespace Shadows {
@@ -40,21 +42,31 @@ public:
         SHADOW_TYPE_SPOT
     };
 
-    void initialize(ShadowType type, ShadowResolution resolution);
+    // Initialize this shadow in order to use it!
+    void initialize(ShadowType type, ShadowResolution resolution) {
+        m_type = type;
+        m_shadowResolution = resolution;
+    }
+
     // Update with the given light info.
-    void update(Lights::Light* pLight);
+    void update(Lights::Light* pLight, Lights::LightTransform* pTransform);
 
     ShadowType getShadowType() const { return m_type; }
     // 6 Planes corresponding to each side of the view frustum.
     const Plane* getViewFrustumPlanes() const { return m_planes; }
     U32 getShadowIndex() const { return m_shadowIdx; }
+    U32 getLightTransformIndex() const { return m_lightTransformIdx; }
     Matrix44 getViewToClip() const { return m_viewToClip; }
 
     B32 needsUpdate() const { return m_dirty; }
 
+    B32 intersects(const Bounds3D& bounds);
+
 private:
     // Index of the shadow in a given shadow map, depending on if it is within an array.
     U32 m_shadowIdx;
+    // Light transform index.
+    U32 m_lightTransformIdx;
     // Shadow type.
     ShadowType m_type;
     // Shadow resolution.
@@ -89,7 +101,11 @@ void generateShadowCommands
         //
         GeometrySubMesh** pSubMeshes,
         //
-        U32 submeshCount
+        U32 submeshCount,
+        // Global
+        gfx::Resource* pGlobal,
+        // Light Transforms
+        Lights::LightSystem* pLightSystem
     );
 // Generate the shadow resolve. This is to be used for one direction light only!
 // 

@@ -7,10 +7,17 @@ cbuffer MeshTransform : register ( b0 )
 	MeshTransforms Mesh;
 };
 
-PSInputAlpha main( VSInputGeometry Input )
+cbuffer PerspectiveTransform : register ( b1 )
 {
-	PSInputAlpha Output;
-	Output.Position = float4( mul( Input.Position, Mesh.WorldToViewClip ) );
-	Output.TexCoord = Input.TexCoord;
+	float4x4 ViewToClip;
+};
+
+
+PSInputBasic main( VSInputGeometry Input )
+{
+	PSInputBasic Output;
+	float4x4 WorldToViewClip = mul( ViewToClip, Mesh.World );
+	Output.Position = mul( WorldToViewClip, Input.Position );
+	//Output.TexCoord = Input.TexCoord;
 	return Output;
 }

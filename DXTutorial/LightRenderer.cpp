@@ -53,6 +53,11 @@ void LightSystem::initialize(gfx::BackendRenderer* pRenderer,
                             gfx::RESOURCE_USAGE_CPU_TO_GPU,
                             gfx::RESOURCE_BIND_SHADER_RESOURCE,
                             sizeof(DirLight) * pointLightCount, 0, TEXT("PointLightBuffer"));
+    pRenderer->createBuffer(&m_lightTransformsResource,
+                            gfx::RESOURCE_USAGE_CPU_TO_GPU,
+                            gfx::RESOURCE_BIND_SHADER_RESOURCE,
+                            256 * (directionLightCount + pointLightCount + spotLightCount), 
+                            0, TEXT("LightTransforms"));
     gfx::ShaderResourceViewDesc srvDesc = { };
     srvDesc._dimension = gfx::RESOURCE_DIMENSION_BUFFER;
     srvDesc._format = DXGI_FORMAT_UNKNOWN;
@@ -66,6 +71,22 @@ void LightSystem::initialize(gfx::BackendRenderer* pRenderer,
     srvDesc._buffer._numElements = spotLightCount;
     srvDesc._buffer._structureByteStride = sizeof(RSpotLight);
     pRenderer->createShaderResourceView(&m_pSpotLightsSRV, m_pSpotLightResource, srvDesc);
+    srvDesc._buffer._numElements = directionLightCount + pointLightCount + spotLightCount;
+    srvDesc._buffer._structureByteStride = 256;
+    pRenderer->createShaderResourceView(&m_pLightTransformSRV, m_lightTransformsResource, srvDesc);
+
+    m_directionLights.resize(directionLightCount);
+    m_pointLights.resize(pointLightCount);
+    m_spotLights.resize(spotLightCount);
+    m_lightTransformations.resize(directionLightCount + pointLightCount + spotLightCount);
+
+    U64 idx = 0;
+    for (U32 i = 0; i < directionLightCount; ++i)
+        m_directionLights[i]._transform = idx++;
+    for (U32 i = 0; i < pointLightCount; ++i)
+        m_pointLights[i]._transform = idx++;
+    for (U32 i = 0; i < spotLightCount; ++i)
+        m_spotLights[i]._transform = idx++;
 }
 
 
@@ -206,6 +227,96 @@ gfx::ShaderResourceView* getSpotLightsSRV(LightSystem* pLightSystem)
 gfx::ShaderResourceView* getDirectionLightsSRV(LightSystem* pLightSystem)
 {
     return pLightSystem->m_pDirectionLightsSRV;
+}
+
+
+void LightSystem::mapLightSystem(void** dirPtr, void** pointPtr, void** spotPtr, void** transformPtr)
+{
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+        int _3[4];
+    } DirLight;
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+        float _3[4];
+    } RSpotLight;
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+    } RPointLight;
+
+    
+    *dirPtr = m_pDirectionLightResource->map(nullptr);
+    *pointPtr = m_pPointLightResource->map(nullptr);
+    *spotPtr = m_pSpotLightResource->map(nullptr);
+    *transformPtr = m_lightTransformsResource->map(nullptr);
+}
+
+
+void LightSystem::unmapLightSystem()
+{
+    m_pDirectionLightResource->unmap(nullptr);
+    m_pSpotLightResource->unmap(nullptr);
+    m_pPointLightResource->unmap(nullptr);
+}
+
+
+void LightSystem::update()
+{ 
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+        int _3[4];
+    } DirLight;
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+        float _3[4];
+    } RSpotLight;
+    struct {
+        float _0[4];
+        float _1[4];
+        float _2[4];
+    } RPointLight;
+
+    void* dirPtr = nullptr;
+    void* pointPtr = nullptr;
+    void* spotDir = nullptr;
+    void* transformPtr = nullptr; 
+    mapLightSystem(&dirPtr, &pointPtr, &spotDir, &transformPtr);
+
+    for (U32 i = 0; i < m_directionLights.size(); ++i) {
+        *(R32*)((U8*)dirPtr + sizeof(DirLight) * i) = m_directionLights[i]._direction[0]; 
+        *(R32*)((U8*)dirPtr + sizeof(DirLight) * i + 32) = m_directionLights[i]._direction[1];
+        *(R32*)((U8*)dirPtr + sizeof(DirLight) * i + 64) = m_directionLights[i]._direction[2];
+        *(R32*)((U8*)dirPtr + sizeof(DirLight) * i + 96) = 1.0f;
+    }
+
+    U32 idx = 0;
+    for (U32 i = 0; i < m_directionLights.size() + m_spotLights.size() + m_pointLights.size(); ++i) {
+        struct TransformGPU {
+            Matrix44 _viewToClip;
+            Matrix44 _clipToView;
+        };
+        TransformGPU* t = (TransformGPU*)((U8*)transformPtr + 256 * i);
+        t->_clipToView = m_lightTransformations[idx]._clipToView;
+        t->_viewToClip = m_lightTransformations[idx++]._viewToClip;
+    }
+    
+    unmapLightSystem();
+}
+
+
+gfx::Resource* getLightTransforms(LightSystem* system)
+{
+    return system->m_lightTransformsResource;
 }
 } // Lights
 } // jcl

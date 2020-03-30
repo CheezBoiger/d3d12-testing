@@ -251,8 +251,8 @@ D3D11_RENDER_TARGET_VIEW_DESC processRenderTargetViewDesc(const RenderTargetView
 UINT processDSVFlags(U32 flags)
 {
     UINT nativeFlags = 0;
-    if (flags & DEPTH_STENCIL_FLAG_ONLY_DEPTH) nativeFlags |= D3D11_DSV_READ_ONLY_DEPTH;
-    if (flags & DEPTH_STENCIL_FLAG_ONLY_STENCIL) nativeFlags |= D3D11_DSV_READ_ONLY_STENCIL;
+    if (flags & DEPTH_STENCIL_FLAG_READ_ONLY_DEPTH) nativeFlags |= D3D11_DSV_READ_ONLY_DEPTH;
+    if (flags & DEPTH_STENCIL_FLAG_READ_ONLY_STENCIL) nativeFlags |= D3D11_DSV_READ_ONLY_STENCIL;
     return nativeFlags;
 }
 
@@ -412,7 +412,7 @@ D3D11_UNORDERED_ACCESS_VIEW_DESC processUnorderedAccessViewDesc(const UnorderedA
 }
 
 
-void* BufferD3D11::map(U64 start, U64 end)
+void* BufferD3D11::map(const ResourceMappingRange* pRange)
 {
   ID3D11Buffer* pBuffer = static_cast<ID3D11Buffer*>(_pBackend->getResource(getUUID()));
   D3D11_MAPPED_SUBRESOURCE mapped = { };
@@ -422,7 +422,7 @@ void* BufferD3D11::map(U64 start, U64 end)
 }
 
 
-void BufferD3D11::unmap(U64 start, U64 end)
+void BufferD3D11::unmap(const ResourceMappingRange* pRange)
 {
   ID3D11Buffer* pBuffer = static_cast<ID3D11Buffer*>(_pBackend->getResource(getUUID()));
   _pBackend->getImmediateCtx()->Unmap(pBuffer, 0);

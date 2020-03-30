@@ -98,6 +98,13 @@ private:
 };
 
 
+struct ResourceMappingRange
+{
+    U64 _start;
+    U64 _sz;
+};
+
+
 class Resource : public GPUObject
 {
 public:
@@ -108,8 +115,8 @@ public:
     : _dimension(dimension)
     , _usage(usage)
     , _bindFlags(flags) { }
-  virtual void* map(U64 start, U64 sz) { return nullptr; }
-  virtual void unmap(U64 start, U64 sz) { }
+  virtual void* map(const ResourceMappingRange* pRange = nullptr) { return nullptr; }
+  virtual void unmap(const ResourceMappingRange* pRange = nullptr) { }
 };
 
 
@@ -263,8 +270,8 @@ struct RenderTargetViewDesc
 enum DepthStencilFlags
 {
     DEPTH_STENCIL_FLAG_NONE,
-    DEPTH_STENCIL_FLAG_ONLY_DEPTH = 0x1,
-    DEPTH_STENCIL_FLAG_ONLY_STENCIL = 0x2
+    DEPTH_STENCIL_FLAG_READ_ONLY_DEPTH = 0x1,
+    DEPTH_STENCIL_FLAG_READ_ONLY_STENCIL = 0x2
 };
 
 struct Texture1DDSV
@@ -931,10 +938,11 @@ public:
     virtual void setIndexBuffer(IndexBufferView* buffer) { }
     virtual void setGraphicsRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) { }
     virtual void setComputeRootDescriptorTable(U32 rootParameterIndex, DescriptorTable* pTable) { }
-    virtual void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
+    virtual void setComputeRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer, U64 offset = 0ull) { }
     virtual void setComputeRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) { }
-    virtual void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer) { }
+    virtual void setGraphicsRootConstantBufferView(U32 rootParameterIndex, Resource* pConstantBuffer, U64 offset = 0ull) { }
     virtual void setGraphicsRootShaderResourceView(U32 rootParameterIndex, Resource* pShaderResourceView) { }
+    virtual void setGraphicsRoot32BitConstant(U32 rootParameterIndex) { }
     virtual void close() { }
     virtual void setViewports(Viewport* pViewports, U32 viewportCount) { }
     virtual void setScissors(Scissor* pScissors, U32 scissorCount) { }

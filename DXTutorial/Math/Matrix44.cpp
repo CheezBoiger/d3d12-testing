@@ -17,4 +17,13 @@ Matrix44 Matrix44::perspectiveRH(R32 fovy, R32 aspect, R32 zNear, R32 zFar) {
     per[3][3] = 0.0f;
     return per;
 }
+
+
+Matrix44 Matrix44::orthographicRH(R32 width, R32 height, R32 zNear, R32 zFar)
+{
+    return Matrix44(2.0f/width,    0,          0,                  0,
+                    0,          2.0f/height,   0,                  0,
+                    0,          0,          1.0f/(zNear-zFar),     0,
+                    0,          0,          zNear/(zNear-zFar), 1.0f);
+}
 }

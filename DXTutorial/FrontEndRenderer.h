@@ -115,6 +115,7 @@ private:
 
     GeometryPass m_geometryPass;
     Lights::LightSystem m_lightSystem;
+    Shadows::LightShadow dirShadow;
 
     // To be run after PreZPass.
     gfx::ComputePipeline* m_clusterAssignmentPipeline;

@@ -60,8 +60,8 @@ struct BufferD3D12 : public Resource
     , _structureByteStride(structureByteStride)
     , Resource(dimension, usage, flags) { }
 
-  void* map(U64 start, U64 sz) override;
-  void unmap(U64 start, U64 sz) override;
+  void* map(const ResourceMappingRange* pRange) override;
+  void unmap(const ResourceMappingRange* pRange) override;
 
   D3D12Backend* pBackend;
   U32 _structureByteStride;
