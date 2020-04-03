@@ -59,7 +59,7 @@ void LightSystem::initialize(gfx::BackendRenderer* pRenderer,
                             256 * (directionLightCount + pointLightCount + spotLightCount), 
                             0, TEXT("LightTransforms"));
     gfx::ShaderResourceViewDesc srvDesc = { };
-    srvDesc._dimension = gfx::RESOURCE_DIMENSION_BUFFER;
+    srvDesc._dimension = gfx::SRV_DIMENSION_BUFFER;
     srvDesc._format = DXGI_FORMAT_UNKNOWN;
     srvDesc._buffer._firstElement = 0;
     srvDesc._buffer._numElements = directionLightCount;
@@ -135,7 +135,7 @@ void initializeLights(gfx::BackendRenderer* pRenderer)
                              gfx::RESOURCE_BIND_RENDER_TARGET | gfx::RESOURCE_BIND_SHADER_RESOURCE,
                              DXGI_FORMAT_R8G8B8A8_UNORM, 1920, 1080, 1, 0, TEXT("LightOutput"));
     gfx::RenderTargetViewDesc rtvDesc = { };
-    rtvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    rtvDesc._dimension = gfx::RTV_DIMENSION_TEXTURE_2D;
     rtvDesc._texture2D._mipSlice = 0;
     rtvDesc._texture2D._planeSlice = 0; 
     rtvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -143,7 +143,7 @@ void initializeLights(gfx::BackendRenderer* pRenderer)
                                       lightOutputResource,
                                       rtvDesc);
     gfx::ShaderResourceViewDesc srvDesc = { };
-    srvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    srvDesc._dimension = gfx::SRV_DIMENSION_TEXTURE_2D;
     srvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
     srvDesc._texture2D._mipLevels = 1;
     srvDesc._texture2D._mostDetailedMip = 0;
@@ -153,7 +153,7 @@ void initializeLights(gfx::BackendRenderer* pRenderer)
                                         lightOutputResource, 
                                         srvDesc);
     gfx::UnorderedAccessViewDesc uavDesc = { };
-    uavDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    uavDesc._dimension = gfx::UAV_DIMENSION_TEXTURE_2D;
     uavDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
     uavDesc._texture2D._mipSlice = 0;
     uavDesc._texture2D._planeSlice = 0;

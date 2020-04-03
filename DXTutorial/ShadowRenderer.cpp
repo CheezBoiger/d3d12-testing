@@ -236,21 +236,21 @@ void generateShadowResolveCommand(gfx::CommandList* pList)
 
 void initializeShadowRenderer(gfx::BackendRenderer* pRenderer)
 {
-    // 4MB
+    // 8MB
     pRenderer->createTexture(&directionLightShadowMapAtlasResource, 
                              gfx::RESOURCE_DIMENSION_2D,
                              gfx::RESOURCE_USAGE_DEFAULT,
                              gfx::RESOURCE_BIND_DEPTH_STENCIL | gfx::RESOURCE_BIND_SHADER_RESOURCE,
                              DXGI_FORMAT_R32_TYPELESS,
                              512u, 512u, 8u, 0, TEXT("DirectionLightShadowAtlas"));
-    // 16MB
+    // 50MB
     pRenderer->createTexture(&pointLightShadowMapAtlasResource,
                              gfx::RESOURCE_DIMENSION_2D,
                              gfx::RESOURCE_USAGE_DEFAULT,
                              gfx::RESOURCE_BIND_DEPTH_STENCIL | gfx::RESOURCE_BIND_SHADER_RESOURCE,
                              DXGI_FORMAT_R16_TYPELESS,
-                             512u, 512u, 32u, 0u, TEXT("PointLightShadowAtlas"));
-    // 16MB
+                             256u, 256u, 6u * 32u, 0u, TEXT("PointLightShadowAtlas"));
+    // 34MB
     pRenderer->createTexture(&spotLightShadowMapAtlasResource,
                              gfx::RESOURCE_DIMENSION_2D,
                              gfx::RESOURCE_USAGE_DEFAULT,
@@ -275,7 +275,7 @@ void registerShadow(gfx::BackendRenderer* pRenderer, LightShadow* shadow)
                 directionLightShadows.push_back(shadow);
                 index = static_cast<U32>(directionLightShadows.size() - 1ull);
                 desc._format = DXGI_FORMAT_D32_FLOAT;
-                desc._dimension = gfx::RESOURCE_DIMENSION_2D;
+                desc._dimension = gfx::DSV_DIMENSION_TEXTURE_2D;
                 desc._texture2D._mipSlice = index; // MipSlice + ( ArraySlice * MipLevels )
                 //desc._flags = gfx::DEPTH_STENCIL_FLAG_ONLY_DEPTH;
                 pRenderer->createDepthStencilView(&dsv, directionLightShadowMapAtlasResource, desc);
@@ -291,7 +291,7 @@ void registerShadow(gfx::BackendRenderer* pRenderer, LightShadow* shadow)
                 index = static_cast<U32>(pointLightShadows.size() - 1ull);
                 desc._texture2D._mipSlice = index;
                 //desc._flags = gfx::DEPTH_STENCIL_FLAG_ONLY_DEPTH;
-                desc._dimension = gfx::RESOURCE_DIMENSION_2D;
+                desc._dimension = gfx::DSV_DIMENSION_TEXTURE_2D_ARRAY;
                 pRenderer->createDepthStencilView(&dsv, pointLightShadowMapAtlasResource, desc);
                 pointLightDSVs.push_back(dsv);
                 gfx::RenderPass* rp = nullptr;
@@ -304,7 +304,7 @@ void registerShadow(gfx::BackendRenderer* pRenderer, LightShadow* shadow)
                 index = static_cast<U32>(spotLightShadows.size() - 1ull);
                 desc._texture2D._mipSlice = index;
                 //desc._flags = gfx::DEPTH_STENCIL_FLAG_ONLY_DEPTH;
-                desc._dimension = gfx::RESOURCE_DIMENSION_2D;
+                desc._dimension = gfx::DSV_DIMENSION_TEXTURE_2D;
                 pRenderer->createDepthStencilView(&dsv, spotLightShadowMapAtlasResource, desc);
                 spotLightDSVs.push_back(dsv);
                 gfx::RenderPass* rp = nullptr;

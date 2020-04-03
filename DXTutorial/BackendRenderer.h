@@ -59,11 +59,6 @@ enum ResourceDimension
     RESOURCE_DIMENSION_1D,
     RESOURCE_DIMENSION_2D,
     RESOURCE_DIMENSION_3D,
-    RESOURCE_DIMENSION_1D_ARRAY,
-    RESOURCE_DIMENSION_2D_ARRAY,
-    RESOURCE_DIMENSION_TEXTURE_CUBE,
-    RESOURCE_DIMENSION_TEXTURE_CUBE_ARRAY,
-    RESOURCE_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE
 };
 
 
@@ -124,6 +119,51 @@ enum BufferSrvFlags
 {
     BUFFER_SRV_FLAGS_NONE,
     BUFFER_SRV_FLAGS_RAW = 0x1
+};
+
+
+enum RTVDimension
+{
+    RTV_DIMENSION_BUFFER,
+    RTV_DIMENSION_TEXTURE_1D,   
+    RTV_DIMENSION_TEXTURE_1D_ARRAY,
+    RTV_DIMENSION_TEXTURE_2D,
+    RTV_DIMENSION_TEXTURE_2D_ARRAY,
+    RTV_DIMENSION_TEXTURE_3D
+};
+
+
+enum SRVDimension
+{
+    SRV_DIMENSION_BUFFER,
+    SRV_DIMENSION_TEXTURE_1D,
+    SRV_DIMENSION_TEXTURE_1D_ARRAY,
+    SRV_DIMENSION_TEXTURE_2D,
+    SRV_DIMENSION_TEXTURE_2D_ARRAY,
+    SRV_DIMENSION_TEXTURE_3D,
+    SRV_DIMENSION_TEXTURE_CUBE,
+    SRV_DIMENSION_TEXTURE_CUBE_ARRAY,
+    SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE
+};
+
+
+enum UAVDimension
+{
+    UAV_DIMENSION_BUFFER,
+    UAV_DIMENSION_TEXTURE_1D,
+    UAV_DIMENSION_TEXTURE_1D_ARRAY,
+    UAV_DIMENSION_TEXTURE_2D,
+    UAV_DIMENSION_TEXTURE_2D_ARRAY,
+    UAV_DIMENSION_TEXTURE_3D
+};
+
+
+enum DSVDimension
+{
+    DSV_DIMENSION_TEXTURE_1D,
+    DSV_DIMENSION_TEXTURE_1D_ARRAY,
+    DSV_DIMENSION_TEXTURE_2D,
+    DSV_DIMENSION_TEXTURE_2D_ARRAY
 };
 
 
@@ -199,7 +239,7 @@ struct RayTracingAccelerationStructureSRV
 
 struct ShaderResourceViewDesc
 {
-    ResourceDimension _dimension;
+    SRVDimension _dimension;
     DXGI_FORMAT _format;
     union {
         BufferSRV _buffer;
@@ -255,7 +295,7 @@ struct Texture3DRTV
 
 struct RenderTargetViewDesc
 {
-    ResourceDimension _dimension;
+    RTVDimension _dimension;
     DXGI_FORMAT _format;
     union {
         BufferRTV _buffer;
@@ -301,7 +341,7 @@ struct Texture2DArrayDSV
 struct DepthStencilViewDesc
 {
     DXGI_FORMAT _format;
-    ResourceDimension _dimension;
+    DSVDimension _dimension;
     U32 _flags;
     union {
         Texture1DDSV _texture1D;
@@ -362,7 +402,7 @@ struct Texture3DUAV
 
 struct UnorderedAccessViewDesc
 {
-    ResourceDimension _dimension;
+    UAVDimension _dimension;
     DXGI_FORMAT _format;
     union {
         BufferUAV _buffer;

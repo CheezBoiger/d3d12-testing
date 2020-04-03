@@ -97,7 +97,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                 1, 0, TEXT("GBufferEmissive"));
     gfx::ShaderResourceViewDesc srvDesc = { };
     srvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    srvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    srvDesc._dimension = gfx::SRV_DIMENSION_TEXTURE_2D;
     srvDesc._texture2D._mipLevels = 1;
     srvDesc._texture2D._mostDetailedMip = 0;
     srvDesc._texture2D._planeSlice = 0;
@@ -115,7 +115,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                                          m_gbuffer.pEmissiveTexture,
                                          srvDesc);
     gfx::RenderTargetViewDesc rtvDesc = { };
-    rtvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    rtvDesc._dimension = gfx::RTV_DIMENSION_TEXTURE_2D;
     rtvDesc._format = DXGI_FORMAT_R8G8B8A8_UNORM;
     rtvDesc._texture2D._mipSlice = 0;
     rtvDesc._texture2D._planeSlice = 0;
@@ -159,7 +159,7 @@ void FrontEndRenderer::init(HWND handle, RendererRHI rhi)
                             1920,
                             1080, 1, 0, TEXT("SceneDepth"));
     gfx::DepthStencilViewDesc dsvDesc = { };
-    dsvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    dsvDesc._dimension = gfx::DSV_DIMENSION_TEXTURE_2D;
     dsvDesc._format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     dsvDesc._texture2D._mipSlice = 0;
     m_pBackend->createDepthStencilView(&m_pSceneDepthView, 
@@ -505,9 +505,9 @@ RenderUUID FrontEndRenderer::createTexture(gfx::ResourceDimension dimension, gfx
     gfx::ShaderResourceView* view = nullptr;
     gfx::ShaderResourceViewDesc srvDesc = { };
     srvDesc._format = format;
-    srvDesc._dimension = dimension;
+    srvDesc._dimension = gfx::SRV_DIMENSION_TEXTURE_2D;
     switch ( srvDesc._dimension ) {
-        case gfx::RESOURCE_DIMENSION_2D:
+        case gfx::SRV_DIMENSION_TEXTURE_2D:
             {
                 srvDesc._texture2D._mipLevels = 1;
                 srvDesc._texture2D._mostDetailedMip = 0;
@@ -740,7 +740,7 @@ RenderUUID FrontEndRenderer::createTexture2D(U64 width, U64 height, void* pData,
 
     gfx::ShaderResourceView* pView = nullptr;
     gfx::ShaderResourceViewDesc srvDesc = { };
-    srvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    srvDesc._dimension = gfx::SRV_DIMENSION_TEXTURE_2D;
     srvDesc._format = format;
     srvDesc._texture2D._mipLevels = 1;
     srvDesc._texture2D._mostDetailedMip = 0;

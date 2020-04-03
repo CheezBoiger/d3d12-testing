@@ -128,7 +128,7 @@ void initializeRenderTarget(gfx::BackendRenderer* pRenderer)
                             1920, 1080, 1,
                             0, TEXT("VelocityTexture"));
     gfx::RenderTargetViewDesc rtvDesc = { };
-    rtvDesc._dimension = gfx::RESOURCE_DIMENSION_2D;
+    rtvDesc._dimension = gfx::RTV_DIMENSION_TEXTURE_2D;
     rtvDesc._format = DXGI_FORMAT_R16G16_FLOAT;
     rtvDesc._texture2D._mipSlice = 0;
     rtvDesc._texture2D._planeSlice = 0;
